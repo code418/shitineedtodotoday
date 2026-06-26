@@ -36,8 +36,11 @@ seam, CI, and docs.
   recorded actuals.
 - **Forgiving controls** — "not today" / snooze, and an overwhelm **reset**
   ("declare bankruptcy") that reschedules everything cleanly.
-- **Categories / rooms / zones**, **starter templates** (e.g. the daily/weekly
-  cleaning planner), and a first-run onboarding wizard.
+- **Categories / rooms / zones** and a first-run onboarding wizard built on the
+  **starter templates** — a curated weekly cleaning plan (themed days + time
+  estimates) transcribed from the planner PDF already ships in
+  `lib/features/tasks/data/starter_tasks.dart` and is offered on the empty
+  Today screen; P1/P2 wires "tap to add" into real task creation.
 - **Seasonal & one-off tasks** ("every summer", annual deep-clean).
 
 ### P3 — Reminders
