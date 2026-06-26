@@ -1,14 +1,19 @@
-# Shit I Need To Do Today
+# Stuff I Need To Do Today
 
 A friendly little app for staying on top of everyday chores — without the guilt
 or the overwhelm.
+
+> The name is **SINTDT** — "Stuff I Need To Do Today" — with a knowing wink at a
+> slightly more colourful original. There's an optional **profanity mode**
+> (off by default) in Settings that swaps the in-app wording for something a
+> little more… honest.
 
 ## The idea
 
 Keeping on top of regular tasks is hard. Most to-do apps just pile up missed
 items until the list feels impossible and you give up.
 
-**Shit I Need To Do Today** works differently:
+**SINTDT** works differently:
 
 - 📝 **Add a task and say how often it needs doing** — "every Monday", "once a
   week", "every summer", whatever fits.

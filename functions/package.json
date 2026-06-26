@@ -1,6 +1,6 @@
 {
   "name": "functions",
-  "description": "Cloud Functions for Shit I Need To Do Today",
+  "description": "Cloud Functions for Stuff I Need To Do Today",
   "private": true,
   "engines": {
     "node": "22"

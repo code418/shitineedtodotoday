@@ -1,11 +1,11 @@
 {
-    "name": "Shit I Need To Do Today",
-    "short_name": "SINTD",
+    "name": "Stuff I Need To Do Today",
+    "short_name": "SINTDT",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "Shit I Need To Do Today - a forgiving recurring-task planner",
+    "description": "Stuff I Need To Do Today - a forgiving recurring-task planner",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

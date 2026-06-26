@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../features/settings/application/settings_providers.dart';
 import 'router.dart';
 import 'theme.dart';
 
@@ -12,7 +13,7 @@ class SnitdApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
     return MaterialApp.router(
-      title: 'Shit I Need To Do Today',
+      title: ref.watch(appStringsProvider).appTitle,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
