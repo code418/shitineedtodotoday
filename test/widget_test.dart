@@ -1,10 +1,20 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:snitd/app/app.dart';
+import 'package:snitd/features/settings/application/settings_providers.dart';
 
 void main() {
   testWidgets('Today screen renders its empty state', (tester) async {
-    await tester.pumpWidget(const ProviderScope(child: SnitdApp()));
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+        child: const SnitdApp(),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Today'), findsOneWidget);

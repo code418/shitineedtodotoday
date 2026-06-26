@@ -5,19 +5,25 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/app.dart';
 import 'core/firebase/firebase_providers.dart';
 import 'features/auth/data/auth_repository.dart';
+import 'features/settings/application/settings_providers.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final firebaseReady = await _initializeFirebase();
+  final prefs = await SharedPreferences.getInstance();
 
   final container = ProviderContainer(
-    overrides: [firebaseReadyProvider.overrideWithValue(firebaseReady)],
+    overrides: [
+      firebaseReadyProvider.overrideWithValue(firebaseReady),
+      sharedPreferencesProvider.overrideWithValue(prefs),
+    ],
   );
 
   if (firebaseReady) {

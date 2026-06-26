@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// Security rules for "Shit I Need To Do Today".
+// Security rules for "Stuff I Need To Do Today".
 // Everything a user owns lives under users/{userId}; a signed-in user can only
 // ever read or write their own subtree. Anonymous users count as signed in.
 service cloud.firestore {

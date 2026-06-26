@@ -1,6 +1,6 @@
 # Roadmap
 
-**Shit I Need To Do Today** helps people stay on top of recurring chores
+**Stuff I Need To Do Today** (SINTDT) helps people stay on top of recurring chores
 *without* getting overwhelmed. You add a task, say how often it needs doing,
 and the app builds a manageable **daily checklist**. Miss something? It forgives
 you and neatly reschedules instead of letting work pile up.

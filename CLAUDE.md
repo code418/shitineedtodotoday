@@ -4,8 +4,8 @@ Guidance for working in this repository.
 
 ## What this is
 
-**Shit I Need To Do Today** — a Flutter + Firebase app for managing recurring
-chores without getting overwhelmed. The user composes a task and sets how often
+**Stuff I Need To Do Today** (SINTDT) — a Flutter + Firebase app for managing
+recurring chores without getting overwhelmed. The user composes a task and sets how often
 it needs doing; the app builds a manageable **daily checklist** and, when
 something is missed, **neatly reschedules** it instead of letting work pile up.
 Recurrence ranges from strict (every Monday) to fuzzy (once a week, every
@@ -27,8 +27,15 @@ See `docs/ROADMAP.md` for the phased plan.
   no on-device local notifications.
 - `riverpod_lint` / `custom_lint` are intentionally omitted (version clash with
   current Riverpod/Freezed). Re-add when constraints align.
-- Package name `snitd`; application/bundle id `io.agilepixel.snitd`; display
-  name "Shit I Need To Do Today".
+- **Naming:** the store/display name is the clean **"Stuff I Need To Do Today"**
+  (acronym SINTDT). The internal Dart package `snitd` and bundle id
+  `io.agilepixel.snitd` predate the rename and are kept as-is — they're not
+  store-visible and renaming would be needless churn.
+- **Profanity mode** (`features/settings`): an opt-in toggle (off by default,
+  persisted via `shared_preferences`) swaps app-chrome text from
+  `AppStrings.clean` to `AppStrings.profane`. All user-facing chrome strings go
+  through `appStringsProvider` (`lib/core/strings/app_strings.dart`); the native
+  OS launcher label stays clean regardless.
 
 ## Commands
 
