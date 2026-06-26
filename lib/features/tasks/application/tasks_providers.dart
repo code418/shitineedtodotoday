@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../data/starter_tasks.dart';
 import '../domain/scheduling/scheduler.dart';
 import '../domain/scheduling/task_occurrence.dart';
+import '../domain/task_suggestion.dart';
 
 /// The active scheduling engine.
 ///
@@ -26,3 +28,20 @@ final todayChecklistProvider = Provider<List<TaskOccurrence>>((ref) {
     existing: const [],
   );
 });
+
+/// Ready-made starter tasks (the curated cleaning plan from the planner PDF),
+/// offered to new users so they can get going without a blank page.
+final starterSuggestionsProvider = Provider<List<TaskSuggestion>>(
+  (ref) => kStarterCleaningPlan,
+);
+
+/// The starter suggestions grouped by their themed day/category, preserving the
+/// catalogue's order (Mon → Sun).
+final starterSuggestionsByCategoryProvider =
+    Provider<Map<String, List<TaskSuggestion>>>((ref) {
+      final grouped = <String, List<TaskSuggestion>>{};
+      for (final suggestion in ref.watch(starterSuggestionsProvider)) {
+        grouped.putIfAbsent(suggestion.category, () => []).add(suggestion);
+      }
+      return grouped;
+    });
