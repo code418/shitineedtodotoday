@@ -1,0 +1,12 @@
+# Compiled output
+lib/
+
+# Dependencies
+node_modules/
+
+# Firebase / runtime
+firebase-debug.log
+firebase-debug.*.log
+*.local
+.env
+.runtimeconfig.json

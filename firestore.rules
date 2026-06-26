@@ -1,0 +1,19 @@
+rules_version = '2';
+
+// Security rules for "Shit I Need To Do Today".
+// Everything a user owns lives under users/{userId}; a signed-in user can only
+// ever read or write their own subtree. Anonymous users count as signed in.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      allow read, write: if request.auth != null
+                         && request.auth.uid == userId;
+
+      // Tasks, occurrences, tokens, settings, etc.
+      match /{document=**} {
+        allow read, write: if request.auth != null
+                           && request.auth.uid == userId;
+      }
+    }
+  }
+}
