@@ -11,9 +11,13 @@ something is missed, **neatly reschedules** it instead of letting work pile up.
 Recurrence ranges from strict (every Monday) to fuzzy (once a week, every
 summer).
 
-Current state: **scaffold / P0** — the architecture, models and a forgiving
-`Scheduler` seam exist; the real scheduling engine and task UI are stubbed.
-See `docs/ROADMAP.md` for the phased plan.
+Current state: **P1–P5 feature-complete** — the forgiving scheduling engine,
+task CRUD + daily checklist with complete-with-duration + effort learning,
+energy-budget load balancing + overwhelm reset + onboarding, server-driven FCM
+reminders (settings + Cloud Function dispatcher), account upgrade + shared
+households, and insights + drag-to-reschedule agenda, all behind a Today /
+Schedule / Insights / You bottom-nav shell. See `docs/ROADMAP.md` for the
+phased plan (P6 multi-surface/accessibility remains).
 
 ## Stack & key decisions
 

@@ -14,13 +14,16 @@ Everything below builds on the two foundations laid in the scaffold:
 
 ## Phases
 
-### P0 — Scaffold ✅ (this commit)
+> **Status:** P1–P5 are feature-complete (built out from the scaffold).
+> P6 (multi-surface & accessibility) remains.
+
+### P0 — Scaffold ✅
 Buildable Flutter app (Android-first; iOS/web/desktop ride along), Riverpod,
 anonymous-first auth, Firebase wired (Firestore, FCM, Analytics, Crashlytics,
 Cloud Functions in **europe-west2 / London**), domain models, the `Scheduler`
 seam, CI, and docs.
 
-### P1 — MVP
+### P1 — MVP ✅
 - Task CRUD (compose a task, set its recurrence, effort estimate, category).
 - Real `Scheduler.buildToday`: materialise occurrences from strict + flexible
   recurrences.
@@ -29,7 +32,7 @@ seam, CI, and docs.
 - Basic forgiving reschedule for missed items.
 - Persist tasks + occurrences to Firestore, scoped to the anonymous user.
 
-### P2 — The forgiving scheduler, properly
+### P2 — The forgiving scheduler, properly ✅
 - **Smart load balancing** — per-task effort weight + a daily "energy budget"
   so no single day is overwhelming.
 - **Effort learning** — refine each task's `estimatedEffortMinutes` from the
@@ -43,18 +46,18 @@ seam, CI, and docs.
   Today screen; P1/P2 wires "tap to add" into real task creation.
 - **Seasonal & one-off tasks** ("every summer", annual deep-clean).
 
-### P3 — Reminders
+### P3 — Reminders ✅
 - Server-driven **FCM push** reminders via the scheduled Cloud Function
   (`functions/src/index.ts`), targeting stored device tokens.
 - Notification preferences: quiet hours, per-task reminder times.
 
-### P4 — Accounts & sharing
+### P4 — Accounts & sharing ✅
 - Upgrade the anonymous account to Google / Apple / email (link, don't lose
   data).
 - Offline-first persistence and multi-device sync.
 - **Shared households** — assign and share tasks across members.
 
-### P5 — Insight & intelligence
+### P5 — Insight & intelligence ✅
 - Completion trends; surface which tasks slip most (Analytics-driven).
 - **Adaptive scheduling** — learn *when* tasks actually get done and suggest
   better slots.
