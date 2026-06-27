@@ -4,9 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design/design.dart';
+import '../../../core/strings/app_strings.dart';
 import '../../settings/application/settings_providers.dart';
 import '../../tasks/application/tasks_providers.dart';
-import '../../tasks/domain/scheduling/recurrence.dart';
+import '../../tasks/domain/task.dart';
 import '../domain/insights.dart';
 
 class InsightsScreen extends ConsumerStatefulWidget {
@@ -135,34 +136,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
             // ── Suggestion card ────────────────────────────────────────────
             if (s.suggestion != null) ...[
               const SizedBox(height: AppSpacing.x4),
-              AppCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      strings.suggestionHeading,
-                      style: theme.textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: AppSpacing.x2),
-                    Text(
-                      s.suggestion!.message,
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: AppSpacing.x4),
-                    AppButton(
-                      label: strings.suggestionApply,
-                      variant: AppButtonVariant.tonal,
-                      onPressed: () => _applySuggestion(
-                        context,
-                        ref,
-                        s.suggestion!.taskId,
-                        s.suggestion!.suggestedRecurrence,
-                        strings.suggestionApplied,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              _SuggestionCard(suggestion: s.suggestion!, tasks: tasks),
             ],
 
             const SizedBox(height: AppSpacing.x11),
@@ -170,24 +144,6 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
         ],
       ),
     );
-  }
-
-  Future<void> _applySuggestion(
-    BuildContext context,
-    WidgetRef ref,
-    String taskId,
-    Recurrence suggestedRecurrence,
-    String successMessage,
-  ) async {
-    final task = ref.read(taskByIdProvider(taskId));
-    if (task == null) return;
-    await ref
-        .read(taskServiceProvider)
-        ?.updateTask(task.copyWith(recurrence: suggestedRecurrence));
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(successMessage)));
   }
 }
 
@@ -331,6 +287,71 @@ class _BucketBar extends StatelessWidget {
   }
 }
 
+// ── Suggestion card ───────────────────────────────────────────────────────────
+
+/// Renders the adaptive suggestion card, building the human-readable message
+/// in the presentation layer (FIX 10: message no longer lives in the domain).
+class _SuggestionCard extends ConsumerWidget {
+  const _SuggestionCard({required this.suggestion, required this.tasks});
+
+  final AdaptiveSuggestion suggestion;
+  final List<Task> tasks;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = ref.watch(appStringsProvider);
+    final theme = Theme.of(context);
+
+    // Resolve task title from the already-loaded tasks list.
+    Task? task;
+    for (final t in tasks) {
+      if (t.id == suggestion.taskId) {
+        task = t;
+        break;
+      }
+    }
+    final title = (task != null && task.title.isNotEmpty)
+        ? task.title
+        : 'This task';
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(strings.suggestionHeading, style: theme.textTheme.titleMedium),
+          const SizedBox(height: AppSpacing.x2),
+          Text(
+            '$title ${strings.suggestionTail}',
+            style: theme.textTheme.bodyMedium,
+          ),
+          const SizedBox(height: AppSpacing.x4),
+          AppButton(
+            label: strings.suggestionApply,
+            variant: AppButtonVariant.tonal,
+            onPressed: () => _applySuggestion(context, ref, strings),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _applySuggestion(
+    BuildContext context,
+    WidgetRef ref,
+    AppStrings strings,
+  ) async {
+    final task = ref.read(taskByIdProvider(suggestion.taskId));
+    if (task == null) return;
+    await ref
+        .read(taskServiceProvider)
+        ?.updateTask(task.copyWith(recurrence: suggestion.suggestedRecurrence));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(strings.suggestionApplied)));
+  }
+}
+
 // ── Slip row ──────────────────────────────────────────────────────────────────
 
 class _SlipRow extends ConsumerWidget {
@@ -341,6 +362,7 @@ class _SlipRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final task = ref.watch(taskByIdProvider(slip.taskId));
+    final strings = ref.watch(appStringsProvider);
     final title = task?.title ?? '—';
     final theme = Theme.of(context);
 
@@ -348,7 +370,10 @@ class _SlipRow extends ConsumerWidget {
       children: [
         Expanded(child: Text(title, style: theme.textTheme.bodyMedium)),
         const SizedBox(width: AppSpacing.x2),
-        AppChip(label: '${slip.skips}× skipped', tone: AppChipTone.reschedule),
+        AppChip(
+          label: '${slip.skips}× ${strings.skippedLabel}',
+          tone: AppChipTone.reschedule,
+        ),
       ],
     );
   }

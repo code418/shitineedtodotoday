@@ -20,11 +20,9 @@ class TaskSlip {
 class AdaptiveSuggestion {
   const AdaptiveSuggestion({
     required this.taskId,
-    required this.message,
     required this.suggestedRecurrence,
   });
   final String taskId;
-  final String message;
   final Recurrence suggestedRecurrence;
 }
 
@@ -173,17 +171,16 @@ InsightsSummary computeInsights({
   final topSlips = slips.take(3).toList();
 
   // Suggestion — first slip with a StrictRecurrence task.
+  // The human-readable message is composed in the presentation layer via
+  // appStringsProvider, keeping user-facing copy out of the domain.
   AdaptiveSuggestion? suggestion;
   final taskMap = {for (final t in tasks) t.id: t};
   for (final slip in topSlips) {
     final task = taskMap[slip.taskId];
     if (task == null) continue;
     if (task.recurrence is StrictRecurrence) {
-      final title = task.title.isNotEmpty ? task.title : 'This task';
       suggestion = AdaptiveSuggestion(
         taskId: slip.taskId,
-        message:
-            '$title slips a fair bit — making it flexible lets it move to a quieter day.',
         suggestedRecurrence: const Recurrence.flexible(
           period: FrequencyPeriod.week,
         ),

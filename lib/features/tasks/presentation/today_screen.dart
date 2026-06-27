@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router.dart';
 import '../../../core/design/design.dart';
 import '../../../core/firebase/firebase_providers.dart';
+import '../../schedule/application/schedule_providers.dart';
 import '../../settings/application/settings_providers.dart';
 import '../application/tasks_providers.dart';
 import '../domain/scheduling/task_occurrence.dart';
@@ -89,10 +90,14 @@ class TodayScreen extends ConsumerWidget {
                               onPressed: () async {
                                 final svc = ref.read(occurrenceServiceProvider);
                                 if (svc == null) return;
-                                final open = ref
-                                    .read(todayChecklistProvider)
-                                    .where((o) => o.isOpen)
-                                    .toList();
+                                // Pass the whole week's open occurrences so the
+                                // rebalancer knows about existing load on future
+                                // days and doesn't over-fill them.
+                                final week = ref.read(weekAgendaProvider);
+                                final open = [
+                                  for (final d in week)
+                                    ...d.occurrences.where((o) => o.isOpen),
+                                ];
                                 await svc.rebalanceOpen(
                                   open: open,
                                   tasks:

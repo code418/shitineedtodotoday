@@ -97,6 +97,57 @@ test("shouldSendDailyNudge: suppressed inside quiet hours", () => {
   );
 });
 
+test("shouldSendDailyNudge: no double-send at boundary (tolerance 14)", () => {
+  // Nudge at 08:00 (480), tolerance 14 → window [480, 494].
+  // Tick at 480 fires; next tick at 495 must not fire.
+  assert.equal(
+    shouldSendDailyNudge({
+      prefs: defaultPrefs,
+      nowMinute: 480,
+      hasOpenTasks: true,
+      toleranceMinutes: 14,
+    }),
+    true,
+  );
+  assert.equal(
+    shouldSendDailyNudge({
+      prefs: defaultPrefs,
+      nowMinute: 495,
+      hasOpenTasks: true,
+      toleranceMinutes: 14,
+    }),
+    false,
+    "second tick 15 min later is outside the 14-min window",
+  );
+});
+
+test("shouldSendDailyNudge: wraps midnight", () => {
+  // Nudge at 23:50 (1430), tolerance 14 → window wraps: 00:00 (0) is 10 min after.
+  // Quiet hours are disabled so 00:00 (inside the default 21:00-07:00 window)
+  // is not suppressed.
+  const latePrefs = {...defaultPrefs, dailyNudgeTime: "23:50", quietHoursEnabled: false};
+  assert.equal(
+    shouldSendDailyNudge({
+      prefs: latePrefs,
+      nowMinute: 0,
+      hasOpenTasks: true,
+      toleranceMinutes: 14,
+    }),
+    true,
+    "midnight (00:00) is 10 min after 23:50, within tolerance",
+  );
+  assert.equal(
+    shouldSendDailyNudge({
+      prefs: latePrefs,
+      nowMinute: 1425,
+      hasOpenTasks: true,
+      toleranceMinutes: 14,
+    }),
+    false,
+    "23:45 is 5 min before 23:50, outside the window",
+  );
+});
+
 test("prefsFromDoc fills defaults and reads overrides", () => {
   assert.deepEqual(prefsFromDoc(undefined), defaultPrefs);
   assert.equal(prefsFromDoc({dailyNudgeEnabled: false}).dailyNudgeEnabled, false);

@@ -18,9 +18,10 @@ Task _task(Recurrence recurrence, {String id = 't1', bool isActive = true}) =>
 void main() {
   const scheduler = ForgivingScheduler();
 
-  // 2026-06-29 is a Monday; 2026-07-01 a Wednesday.
+  // 2026-06-29 is a Monday; 2026-06-30 a Tuesday; 2026-07-01 a Wednesday.
   final monday = DateTime(2026, 6, 29);
   final tuesday = DateTime(2026, 6, 30);
+  final wednesday = DateTime(2026, 7, 1);
 
   group('occurrenceId', () {
     test('is deterministic and zero-padded', () {
@@ -190,6 +191,48 @@ void main() {
       );
       expect(scheduler.buildToday(tasks: [task], today: monday), isEmpty);
     });
+
+    test(
+      'an occurrence moved to another day is not regenerated on its original day',
+      () {
+        // Regression: a strict-Monday task whose occurrence was moved to
+        // Wednesday (same deterministic id, different scheduledDate) must NOT be
+        // regenerated on Monday, but must still appear on Wednesday.
+        final task = _task(
+          const Recurrence.strict(weekdays: [DateTime.monday]),
+        );
+        final moved = TaskOccurrence(
+          id: occurrenceId('t1', monday),
+          taskId: 't1',
+          scheduledDate: wednesday,
+          status: OccurrenceStatus.rescheduled,
+          originalDate: monday,
+        );
+
+        // Monday: the id already exists → no regeneration.
+        final onMonday = scheduler.buildToday(
+          tasks: [task],
+          today: monday,
+          existing: [moved],
+        );
+        expect(
+          onMonday,
+          isEmpty,
+          reason:
+              'moved occurrence must not be regenerated on its original day',
+        );
+
+        // Wednesday: the occurrence is scheduled there → it appears.
+        final onWednesday = scheduler.buildToday(
+          tasks: [task],
+          today: wednesday,
+          existing: [moved],
+        );
+        expect(onWednesday, hasLength(1));
+        expect(onWednesday.single.id, occurrenceId('t1', monday));
+        expect(onWednesday.single.scheduledDate, wednesday);
+      },
+    );
 
     test('a skipped occurrence is hidden from today and not regenerated', () {
       final task = _task(const Recurrence.strict(weekdays: [DateTime.monday]));

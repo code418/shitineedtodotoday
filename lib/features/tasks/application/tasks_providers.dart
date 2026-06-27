@@ -41,11 +41,18 @@ final occurrencesProvider = StreamProvider<List<TaskOccurrence>>((ref) {
 });
 
 /// Today's checklist — the owner's active tasks run through the scheduler,
-/// merged with anything already persisted for today. Empty until data loads.
+/// merged with anything already persisted for today. Empty until BOTH the
+/// tasks and occurrences streams have emitted at least one value, so a
+/// transient load-race never regenerates already-done/skipped occurrences as
+/// fresh pending items.
 final todayChecklistProvider = Provider<List<TaskOccurrence>>((ref) {
-  final tasks = ref.watch(tasksProvider).value ?? const <Task>[];
-  final existing =
-      ref.watch(occurrencesProvider).value ?? const <TaskOccurrence>[];
+  final occAsync = ref.watch(occurrencesProvider);
+  final tasksAsync = ref.watch(tasksProvider);
+  if (!occAsync.hasValue || !tasksAsync.hasValue) {
+    return const <TaskOccurrence>[];
+  }
+  final tasks = tasksAsync.value!;
+  final existing = occAsync.value!;
   final now = ref.watch(clockProvider)();
   return ref
       .watch(schedulerProvider)

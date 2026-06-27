@@ -287,7 +287,6 @@ void main() {
         );
         expect(s.suggestion, isNotNull);
         expect(s.suggestion!.taskId, 't1');
-        expect(s.suggestion!.message, contains('Vacuum'));
         expect(s.suggestion!.suggestedRecurrence, isA<FlexibleRecurrence>());
       },
     );
@@ -318,7 +317,9 @@ void main() {
       },
     );
 
-    test('suggestion uses "This task" when task title is empty', () {
+    test('suggestion is non-null for strict slipper with empty title', () {
+      // Verifies the domain still produces a suggestion even with an empty
+      // task title (the message is now built in the presentation layer).
       final strictTask = _task(
         id: 't1',
         recurrence: const Recurrence.strict(weekdays: [DateTime.monday]),
@@ -337,7 +338,8 @@ void main() {
         period: InsightsPeriod.week,
       );
       expect(s.suggestion, isNotNull);
-      expect(s.suggestion!.message, startsWith('This task'));
+      expect(s.suggestion!.taskId, 't1');
+      expect(s.suggestion!.suggestedRecurrence, isA<FlexibleRecurrence>());
     });
   });
 }

@@ -47,7 +47,11 @@ bool shouldSendDailyNudge({
 
   final nudge = minuteOfDay(prefs.dailyNudgeTime);
   if (nudge == null) return false;
-  final due = nowMinute >= nudge && nowMinute <= nudge + toleranceMinutes;
+  // Modular distance so the window is exactly [nudge, nudge+tolerance] mod 1440.
+  // This handles midnight wrap and prevents double-sends when two scheduler
+  // ticks both fall inside a window wider than the tick interval.
+  final diff = (nowMinute - nudge + 1440) % 1440;
+  final due = diff <= toleranceMinutes;
   if (!due) return false;
 
   if (prefs.quietHoursEnabled) {

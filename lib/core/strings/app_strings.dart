@@ -145,6 +145,7 @@ class AppStrings {
     required this.suggestionHeading,
     required this.suggestionApply,
     required this.suggestionApplied,
+    required this.suggestionTail,
     required this.insightsEmpty,
 
     // Schedule
@@ -311,6 +312,10 @@ class AppStrings {
   final String suggestionHeading;
   final String suggestionApply;
   final String suggestionApplied;
+
+  /// Appended after the task title to form the full suggestion sentence.
+  /// E.g. "Vacuum [suggestionTail]".
+  final String suggestionTail;
   final String insightsEmpty;
 
   // Schedule
@@ -470,6 +475,8 @@ class AppStrings {
     suggestionHeading: 'A gentle suggestion',
     suggestionApply: 'Make it flexible',
     suggestionApplied: 'Done — it can move to a quieter day now',
+    suggestionTail:
+        'slips a fair bit — making it flexible lets it move to a quieter day.',
     insightsEmpty: 'Tick a few things off and your trends show up here.',
     scheduleTitle: 'Schedule',
     scheduleSettingsLink: 'Schedule',
@@ -625,6 +632,8 @@ class AppStrings {
     suggestionHeading: 'A gentle suggestion',
     suggestionApply: 'Make it flexible',
     suggestionApplied: 'Done — it can move to a quieter day now',
+    suggestionTail:
+        'slips a fair bit — make it flexible so it can shift to a quieter day.',
     insightsEmpty: 'Tick a few things off and your trends show up here.',
     scheduleTitle: 'Schedule',
     scheduleSettingsLink: 'Schedule',

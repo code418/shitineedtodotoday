@@ -55,16 +55,25 @@ class ForgivingScheduler implements Scheduler {
       }
     }
 
+    // Build a set of all existing occurrence ids so we can skip regeneration for
+    // tasks whose cycle-occurrence was moved to another day (same id, different
+    // scheduledDate).  The claimed set above only catches same-day occurrences.
+    final existingIds = {for (final o in existing) o.id};
+
     // 2. Materialise fresh, pending occurrences for active tasks that fall on
     //    today and aren't already represented.
     for (final task in tasks) {
       if (!task.isActive) continue;
       if (claimed.contains(task.id)) continue;
       if (!_occursOn(task.recurrence, day)) continue;
+      // If this cycle's deterministic occurrence already exists (possibly on a
+      // different day after a reschedule), don't regenerate it here.
+      final id = occurrenceId(task.id, day);
+      if (existingIds.contains(id)) continue;
       final window = _windowFor(task.recurrence, day);
       result.add(
         TaskOccurrence(
-          id: occurrenceId(task.id, day),
+          id: id,
           taskId: task.id,
           scheduledDate: day,
           originalDate: day,

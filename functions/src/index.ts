@@ -13,9 +13,10 @@ setGlobalOptions({region: "europe-west2"});
 initializeApp();
 
 const TIME_ZONE = "Europe/London";
-// Widen the firing window to the schedule interval so a tick still catches the
-// chosen nudge minute.
-const TICK_TOLERANCE_MINUTES = 15;
+// Tolerance of 14 means the window is [nudge, nudge+14], which is narrower than
+// one 15-minute tick interval — so exactly one tick can fire per nudge time
+// (prevents double-sends when two consecutive ticks both fall in a wider window).
+const TICK_TOLERANCE_MINUTES = 14;
 
 /**
  * Reminder dispatcher.

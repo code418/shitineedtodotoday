@@ -79,7 +79,11 @@ export function shouldSendDailyNudge(args: {
 
   const nudge = minuteOfDay(prefs.dailyNudgeTime);
   if (nudge === null) return false;
-  if (!(nowMinute >= nudge && nowMinute <= nudge + tolerance)) return false;
+  // Modular distance so the window is exactly [nudge, nudge+tolerance] mod 1440.
+  // Handles midnight wrap and prevents double-sends when two scheduler ticks
+  // both fall inside a window wider than the tick interval.
+  const diff = ((nowMinute - nudge) % 1440 + 1440) % 1440;
+  if (!(diff <= tolerance)) return false;
 
   if (prefs.quietHoursEnabled) {
     const start = minuteOfDay(prefs.quietHoursStart);

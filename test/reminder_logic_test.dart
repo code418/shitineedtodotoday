@@ -142,6 +142,65 @@ void main() {
       );
     });
 
+    test(
+      'fires once across consecutive ticks (no double-send at boundary)',
+      () {
+        // Nudge at 08:00 (480), tolerance 14 → window [480, 494].
+        // Tick at 480 fires; next tick at 495 must NOT fire.
+        expect(
+          shouldSendDailyNudge(
+            prefs: prefs,
+            nowMinute: 480,
+            hasOpenTasks: true,
+            toleranceMinutes: 14,
+          ),
+          isTrue,
+        );
+        expect(
+          shouldSendDailyNudge(
+            prefs: prefs,
+            nowMinute: 495,
+            hasOpenTasks: true,
+            toleranceMinutes: 14,
+          ),
+          isFalse,
+          reason: 'second tick 15 min later is outside the 14-min window',
+        );
+      },
+    );
+
+    test('wraps past midnight', () {
+      // Nudge at 23:50 (1430), tolerance 14 → window [1430, 1443 mod 1440] = [1430, 3].
+      // nowMinute 0 (00:00) is inside the window (diff = 10 ≤ 14).
+      // nowMinute 1425 (23:45) is before the window (diff = 1435 > 14).
+      // Quiet hours are disabled so 00:00 (which falls in the default 21-07
+      // window) is not suppressed by them.
+      final latePrefs = prefs.copyWith(
+        dailyNudgeTime: '23:50',
+        quietHoursEnabled: false,
+      );
+      expect(
+        shouldSendDailyNudge(
+          prefs: latePrefs,
+          nowMinute: 0,
+          hasOpenTasks: true,
+          toleranceMinutes: 14,
+        ),
+        isTrue,
+        reason: 'midnight (00:00) is 10 min after 23:50, within tolerance',
+      );
+      expect(
+        shouldSendDailyNudge(
+          prefs: latePrefs,
+          nowMinute: 1425,
+          hasOpenTasks: true,
+          toleranceMinutes: 14,
+        ),
+        isFalse,
+        reason: '23:45 is 5 min before 23:50, outside the window',
+      );
+    });
+
     test('suppressed inside quiet hours', () {
       // Nudge at 06:00 but quiet hours 21:00–07:00 covers it.
       final early = prefs.copyWith(dailyNudgeTime: '06:00');

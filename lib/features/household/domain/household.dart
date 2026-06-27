@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 /// A person in the household who takes a turn on shared chores.
 class HouseholdMember {
   const HouseholdMember({required this.id, required this.name});
@@ -26,6 +24,16 @@ class HouseholdMember {
 
   @override
   String toString() => 'HouseholdMember(id: $id, name: $name)';
+}
+
+/// Pure-Dart shallow equality for [HouseholdMember] lists, replacing the
+/// Flutter-only `listEquals` so this domain class stays platform-agnostic.
+bool _listEquals(List<HouseholdMember> a, List<HouseholdMember> b) {
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) return false;
+  }
+  return true;
 }
 
 /// The set of people who share chores in this household.
@@ -72,7 +80,7 @@ class Household {
       other is Household &&
           runtimeType == other.runtimeType &&
           name == other.name &&
-          listEquals(members, other.members);
+          _listEquals(members, other.members);
 
   @override
   int get hashCode => Object.hash(name, Object.hashAll(members));

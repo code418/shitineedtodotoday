@@ -246,6 +246,106 @@ void main() {
         );
       },
     );
+
+    test(
+      'a movable today-occurrence is not placed on a future day already at budget',
+      () async {
+        // Regression for the overwhelm-reset screen fix: passing the full week's
+        // open occurrences (including a strict one at budget on Tuesday) must
+        // keep the flexible item off that full day.
+        final monday = DateTime(2026, 6, 29);
+        final tuesday = DateTime(2026, 6, 30);
+
+        // Strict task: 60 min, locked to Tuesday — fills the 60-min budget.
+        final strictTask = Task(
+          id: 't2',
+          ownerId: 'u1',
+          title: 'Strict Tuesday',
+          recurrence: const Recurrence.strict(weekdays: [DateTime.tuesday]),
+          estimatedEffortMinutes: 60,
+          createdAt: DateTime(2026),
+          updatedAt: DateTime(2026),
+        );
+
+        // Flexible task: 40 min — the one being rebalanced.
+        final flexTaskA = Task(
+          id: 't1',
+          ownerId: 'u1',
+          title: 'Flexible',
+          recurrence: const Recurrence.flexible(
+            timesPerPeriod: 1,
+            period: FrequencyPeriod.week,
+            windowDays: 7,
+          ),
+          estimatedEffortMinutes: 40,
+          createdAt: DateTime(2026),
+          updatedAt: DateTime(2026),
+        );
+        // A second flexible task to push Monday over the 60-min budget.
+        final flexTaskB = flexTaskA.copyWith(id: 't3', title: 'Flex 2');
+
+        final strictOcc = TaskOccurrence(
+          id: 't2_2026-06-30',
+          taskId: 't2',
+          scheduledDate: tuesday,
+          status: OccurrenceStatus.pending,
+        );
+        final flexOcc1 = TaskOccurrence(
+          id: 't1_2026-06-29',
+          taskId: 't1',
+          scheduledDate: monday,
+          windowStart: monday,
+          windowEnd: DateTime(2026, 7, 5),
+          status: OccurrenceStatus.pending,
+        );
+        final flexOcc2 = TaskOccurrence(
+          id: 't3_2026-06-29',
+          taskId: 't3',
+          scheduledDate: monday,
+          windowStart: monday,
+          windowEnd: DateTime(2026, 7, 5),
+          status: OccurrenceStatus.pending,
+        );
+
+        final localOccRepo = FakeOccurrenceRepository();
+        final localTaskRepo = FakeTaskRepository();
+        final svc = OccurrenceService(
+          occurrences: localOccRepo,
+          tasks: localTaskRepo,
+          scheduler: const ForgivingScheduler(),
+          ownerId: 'u1',
+          now: () => DateTime(2026, 6, 29, 9),
+        );
+
+        final tasks = [strictTask, flexTaskA, flexTaskB];
+        // Simulate the screen passing the full week's open occurrences.
+        final open = [strictOcc, flexOcc1, flexOcc2];
+
+        final result = await svc.rebalanceOpen(
+          open: open,
+          tasks: tasks,
+          dailyBudgetMinutes: 60,
+        );
+
+        // Find the occurrence(s) that were moved off Monday.
+        final movedOffMonday = result.where(
+          (o) => o.taskId != 't2' && o.scheduledDate != monday,
+        );
+        // At least one flexible occurrence must have been moved off Monday.
+        expect(
+          movedOffMonday.isNotEmpty,
+          isTrue,
+          reason: 'some flex occurrences should be rescheduled off Monday',
+        );
+        // None of the moved flexible occurrences should land on Tuesday —
+        // the strict task already fills the 60-min budget there.
+        expect(
+          movedOffMonday.every((o) => o.scheduledDate != tuesday),
+          isTrue,
+          reason: 'Tuesday is at budget; flex occurrence must skip it',
+        );
+      },
+    );
   });
 
   // ---------------------------------------------------------------------------

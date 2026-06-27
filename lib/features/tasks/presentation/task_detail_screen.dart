@@ -161,7 +161,11 @@ class TaskDetailScreen extends ConsumerWidget {
                 if (recentEffort.isEmpty)
                   Text(strings.noEffortYet, style: theme.textTheme.bodyMedium)
                 else
-                  _EffortChart(occurrences: recentEffort, estimate: estimate),
+                  _EffortChart(
+                    occurrences: recentEffort,
+                    estimate: estimate,
+                    estimateLabel: strings.estimateLabel,
+                  ),
               ],
             ),
           ),
@@ -239,10 +243,15 @@ class TaskDetailScreen extends ConsumerWidget {
 // ── Effort bar chart ──────────────────────────────────────────────────────────
 
 class _EffortChart extends StatelessWidget {
-  const _EffortChart({required this.occurrences, required this.estimate});
+  const _EffortChart({
+    required this.occurrences,
+    required this.estimate,
+    required this.estimateLabel,
+  });
 
   final List<TaskOccurrence> occurrences;
   final int estimate;
+  final String estimateLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -267,7 +276,7 @@ class _EffortChart extends StatelessWidget {
                   child: Container(height: 1.5, color: AppColors.ink300),
                 ),
                 const SizedBox(width: 4),
-                Text('estimate', style: AppTypography.mono(size: 10)),
+                Text(estimateLabel, style: AppTypography.mono(size: 10)),
               ],
             ),
           ),
