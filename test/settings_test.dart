@@ -52,6 +52,35 @@ void main() {
   });
 
   test(
+    'onboardingComplete defaults to false and setOnboardingComplete persists',
+    () async {
+      final container = await makeContainer();
+
+      // Default value.
+      expect(
+        container.read(settingsControllerProvider).onboardingComplete,
+        isFalse,
+      );
+
+      // Update via controller.
+      await container
+          .read(settingsControllerProvider.notifier)
+          .setOnboardingComplete(true);
+
+      expect(
+        container.read(settingsControllerProvider).onboardingComplete,
+        isTrue,
+      );
+
+      // Persisted: loading fresh from the same prefs returns the new value.
+      expect(
+        container.read(settingsRepositoryProvider).load().onboardingComplete,
+        isTrue,
+      );
+    },
+  );
+
+  test(
     'daily energy budget defaults to 55 and setDailyEnergyBudget persists',
     () async {
       final container = await makeContainer();

@@ -6,7 +6,7 @@ import 'package:snitd/features/settings/application/settings_providers.dart';
 
 void main() {
   testWidgets('Today screen renders its empty state', (tester) async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({'onboarding_complete': true});
     final prefs = await SharedPreferences.getInstance();
 
     await tester.pumpWidget(

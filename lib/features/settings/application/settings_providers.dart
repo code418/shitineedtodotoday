@@ -32,10 +32,21 @@ class SettingsController extends Notifier<AppSettings> {
     await ref.read(settingsRepositoryProvider).setDailyEnergyBudget(minutes);
     state = state.copyWith(dailyEnergyBudgetMinutes: minutes);
   }
+
+  Future<void> setOnboardingComplete(bool value) async {
+    await ref.read(settingsRepositoryProvider).setOnboardingComplete(value);
+    state = state.copyWith(onboardingComplete: value);
+  }
 }
 
 final settingsControllerProvider =
     NotifierProvider<SettingsController, AppSettings>(SettingsController.new);
+
+/// True once the user has completed (or skipped) the first-run onboarding wizard.
+final onboardingCompleteProvider = Provider<bool>(
+  (ref) =>
+      ref.watch(settingsControllerProvider.select((s) => s.onboardingComplete)),
+);
 
 /// The current daily energy budget in minutes.
 final dailyEnergyBudgetProvider = Provider<int>(

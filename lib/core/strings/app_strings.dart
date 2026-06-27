@@ -67,6 +67,19 @@ class AppStrings {
     required this.overBudgetTitle,
     required this.spreadAction,
     required this.spreadDone,
+
+    // Onboarding wizard
+    required this.welcomeTitle,
+    required this.welcomeBody,
+    required this.paceStepTitle,
+    required this.paceStepBody,
+    required this.pickStepTitle,
+    required this.pickStepBody,
+    required this.onboardingNext,
+    required this.onboardingBack,
+    required this.getStarted,
+    required this.skipForNow,
+    required this.onboardingAdded,
   });
 
   /// In-app title (task switcher / MaterialApp). The OS launcher label is the
@@ -139,6 +152,19 @@ class AppStrings {
   final String spreadAction;
   final String spreadDone;
 
+  // Onboarding wizard
+  final String welcomeTitle;
+  final String welcomeBody;
+  final String paceStepTitle;
+  final String paceStepBody;
+  final String pickStepTitle;
+  final String pickStepBody;
+  final String onboardingNext;
+  final String onboardingBack;
+  final String getStarted;
+  final String skipForNow;
+  final String onboardingAdded;
+
   /// The default, store-safe wording.
   static const AppStrings clean = AppStrings(
     appTitle: 'Stuff I Need To Do Today',
@@ -205,6 +231,22 @@ class AppStrings {
     overBudgetTitle: "Today's looking full — want to spread it out?",
     spreadAction: 'Spread it out',
     spreadDone: 'Spread across the days ahead',
+    welcomeTitle: 'Welcome to your calmer to-do list',
+    welcomeBody:
+        "Add what needs doing, say how often, and we'll build a manageable daily "
+        'checklist — and quietly reschedule anything you miss.',
+    paceStepTitle: "What's a realistic day?",
+    paceStepBody:
+        "We'll keep each day under this so it never piles up. You can change it any time.",
+    pickStepTitle: 'Start with a ready-made routine?',
+    pickStepBody:
+        'A gentle weekly cleaning plan, split into themed days. Pick the days you '
+        'want — or skip and add your own.',
+    onboardingNext: 'Next',
+    onboardingBack: 'Back',
+    getStarted: 'Get started',
+    skipForNow: 'Skip for now',
+    onboardingAdded: 'Your list is ready',
   );
 
   /// The cheeky, mildly-sweary wording — opt-in via the profanity toggle.
@@ -272,5 +314,21 @@ class AppStrings {
     overBudgetTitle: "Today's a lot — want to spread it out?",
     spreadAction: 'Spread it out',
     spreadDone: 'Spread across the days ahead',
+    welcomeTitle: 'Welcome to your calmer shit-list',
+    welcomeBody:
+        "Add your shit, say how often, and we'll build a checklist that won't do "
+        'your head in — and quietly shuffle whatever you miss.',
+    paceStepTitle: "What's a realistic day?",
+    paceStepBody:
+        "We'll keep each day under this so it never piles up. Change it whenever.",
+    pickStepTitle: 'Start with a ready-made routine?',
+    pickStepBody:
+        'A no-nonsense weekly plan, split into themed days. Pick the days you '
+        'want — or skip and add your own.',
+    onboardingNext: 'Next',
+    onboardingBack: 'Back',
+    getStarted: 'Get started',
+    skipForNow: 'Skip for now',
+    onboardingAdded: "Your list's ready",
   );
 }

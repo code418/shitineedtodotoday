@@ -13,10 +13,12 @@ class SettingsRepository {
 
   static const _kProfanityEnabled = 'profanity_enabled';
   static const _kDailyEnergyBudget = 'daily_energy_budget_minutes';
+  static const _kOnboardingComplete = 'onboarding_complete';
 
   AppSettings load() => AppSettings(
     profanityEnabled: _prefs.getBool(_kProfanityEnabled) ?? false,
     dailyEnergyBudgetMinutes: _prefs.getInt(_kDailyEnergyBudget) ?? 55,
+    onboardingComplete: _prefs.getBool(_kOnboardingComplete) ?? false,
   );
 
   Future<void> setProfanityEnabled(bool value) =>
@@ -24,4 +26,7 @@ class SettingsRepository {
 
   Future<void> setDailyEnergyBudget(int minutes) =>
       _prefs.setInt(_kDailyEnergyBudget, minutes);
+
+  Future<void> setOnboardingComplete(bool value) =>
+      _prefs.setBool(_kOnboardingComplete, value);
 }
