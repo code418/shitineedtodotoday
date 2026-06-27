@@ -15,6 +15,9 @@ abstract interface class TaskRepository {
   Future<void> upsert(Task task);
 
   Future<void> delete(String ownerId, String taskId);
+
+  /// A fresh, unique id for a new task document owned by [ownerId].
+  String newId(String ownerId);
 }
 
 /// Firestore-backed [TaskRepository].
@@ -48,6 +51,9 @@ class FirestoreTaskRepository implements TaskRepository {
   @override
   Future<void> delete(String ownerId, String taskId) =>
       _tasksRef(ownerId).doc(taskId).delete();
+
+  @override
+  String newId(String ownerId) => _tasksRef(ownerId).doc().id;
 }
 
 final taskRepositoryProvider = Provider<TaskRepository>(
