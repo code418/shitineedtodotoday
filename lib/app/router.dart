@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../dev/gallery/gallery_screen.dart';
 import '../features/auth/presentation/account_screen.dart';
 import '../features/household/presentation/household_screen.dart';
+import '../features/insights/presentation/insights_screen.dart';
 import '../features/notifications/presentation/reminders_screen.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../features/settings/application/settings_providers.dart';
@@ -20,6 +21,7 @@ abstract final class Routes {
   static const account = '/account';
   static const reminders = '/reminders';
   static const household = '/household';
+  static const insights = '/insights';
   static const gallery = '/gallery';
   static const taskDetail = '/task/:id';
 
@@ -66,6 +68,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.household,
         builder: (context, state) => const HouseholdScreen(),
+      ),
+      GoRoute(
+        path: Routes.insights,
+        builder: (context, state) => const InsightsScreen(),
       ),
       GoRoute(
         path: Routes.taskDetail,

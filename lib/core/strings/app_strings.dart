@@ -130,6 +130,22 @@ class AppStrings {
     required this.emailInUse,
     required this.weakPassword,
     required this.upgradeFailed,
+
+    // Insights
+    required this.insightsTitle,
+    required this.insightsSettingsLink,
+    required this.periodWeek,
+    required this.periodMonth,
+    required this.periodYear,
+    required this.completionRateLabel,
+    required this.streakLabel,
+    required this.timeSpentLabel,
+    required this.slipsHeading,
+    required this.noSlips,
+    required this.suggestionHeading,
+    required this.suggestionApply,
+    required this.suggestionApplied,
+    required this.insightsEmpty,
   });
 
   /// In-app title (task switcher / MaterialApp). The OS launcher label is the
@@ -267,6 +283,22 @@ class AppStrings {
   final String weakPassword;
   final String upgradeFailed;
 
+  // Insights
+  final String insightsTitle;
+  final String insightsSettingsLink;
+  final String periodWeek;
+  final String periodMonth;
+  final String periodYear;
+  final String completionRateLabel;
+  final String streakLabel;
+  final String timeSpentLabel;
+  final String slipsHeading;
+  final String noSlips;
+  final String suggestionHeading;
+  final String suggestionApply;
+  final String suggestionApplied;
+  final String insightsEmpty;
+
   /// The default, store-safe wording.
   static const AppStrings clean = AppStrings(
     appTitle: 'Stuff I Need To Do Today',
@@ -397,6 +429,20 @@ class AppStrings {
     emailInUse: 'That email is already in use',
     weakPassword: 'That password is too weak',
     upgradeFailed: "Couldn't save your account — please try again",
+    insightsTitle: 'Insights',
+    insightsSettingsLink: 'Insights',
+    periodWeek: 'Week',
+    periodMonth: 'Month',
+    periodYear: 'Year',
+    completionRateLabel: 'Done vs skipped',
+    streakLabel: 'Day streak',
+    timeSpentLabel: 'Time spent',
+    slipsHeading: 'Slips most often',
+    noSlips: 'Nothing slipping — nicely done.',
+    suggestionHeading: 'A gentle suggestion',
+    suggestionApply: 'Make it flexible',
+    suggestionApplied: 'Done — it can move to a quieter day now',
+    insightsEmpty: 'Tick a few things off and your trends show up here.',
   );
 
   /// The cheeky, mildly-sweary wording — opt-in via the profanity toggle.
@@ -528,5 +574,19 @@ class AppStrings {
     emailInUse: 'That email is already in use',
     weakPassword: 'That password is too weak',
     upgradeFailed: "Couldn't save your account — please try again",
+    insightsTitle: 'Insights',
+    insightsSettingsLink: 'Insights',
+    periodWeek: 'Week',
+    periodMonth: 'Month',
+    periodYear: 'Year',
+    completionRateLabel: 'Done vs skipped',
+    streakLabel: 'Day streak',
+    timeSpentLabel: 'Time spent',
+    slipsHeading: 'Slips most often',
+    noSlips: 'Nothing slipping — nicely done.',
+    suggestionHeading: 'A gentle suggestion',
+    suggestionApply: 'Make it flexible',
+    suggestionApplied: 'Done — it can move to a quieter day now',
+    insightsEmpty: 'Tick a few things off and your trends show up here.',
   );
 }

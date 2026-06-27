@@ -1,0 +1,221 @@
+import '../../tasks/domain/scheduling/forgiving_scheduler.dart' show dateOnly;
+import '../../tasks/domain/scheduling/recurrence.dart';
+import '../../tasks/domain/scheduling/task_occurrence.dart';
+import '../../tasks/domain/task.dart';
+
+enum InsightsPeriod { week, month, year }
+
+class InsightBucket {
+  const InsightBucket(this.label, this.doneCount);
+  final String label;
+  final int doneCount;
+}
+
+class TaskSlip {
+  const TaskSlip(this.taskId, this.skips);
+  final String taskId;
+  final int skips;
+}
+
+class AdaptiveSuggestion {
+  const AdaptiveSuggestion({
+    required this.taskId,
+    required this.message,
+    required this.suggestedRecurrence,
+  });
+  final String taskId;
+  final String message;
+  final Recurrence suggestedRecurrence;
+}
+
+class InsightsSummary {
+  const InsightsSummary({
+    required this.completedCount,
+    required this.skippedCount,
+    required this.completionRate,
+    required this.streakDays,
+    required this.totalMinutes,
+    required this.buckets,
+    required this.slips,
+    this.suggestion,
+  });
+
+  final int completedCount;
+  final int skippedCount;
+  final double completionRate; // 0..1
+  final int streakDays;
+  final int totalMinutes;
+  final List<InsightBucket> buckets;
+  final List<TaskSlip> slips;
+  final AdaptiveSuggestion? suggestion;
+}
+
+/// Pure analytics function — takes a fixed [now] and makes no Firebase/clock
+/// calls of its own.
+InsightsSummary computeInsights({
+  required List<TaskOccurrence> occurrences,
+  required List<Task> tasks,
+  required DateTime now,
+  required InsightsPeriod period,
+}) {
+  final today = dateOnly(now);
+
+  // Window: inclusive days ending today.
+  final windowStart = switch (period) {
+    InsightsPeriod.week => today.subtract(const Duration(days: 6)),
+    InsightsPeriod.month => today.subtract(const Duration(days: 29)),
+    InsightsPeriod.year => today.subtract(const Duration(days: 364)),
+  };
+
+  // Occurrences whose scheduledDate falls within the window.
+  final inWindow = occurrences.where((o) {
+    final d = dateOnly(o.scheduledDate);
+    return !d.isBefore(windowStart) && !d.isAfter(today);
+  }).toList();
+
+  // Aggregate window stats.
+  var completedCount = 0;
+  var skippedCount = 0;
+  var totalMinutes = 0;
+  for (final occ in inWindow) {
+    if (occ.status == OccurrenceStatus.done) {
+      completedCount++;
+      totalMinutes += occ.actualDurationMinutes ?? 0;
+    } else if (occ.status == OccurrenceStatus.skipped) {
+      skippedCount++;
+    }
+  }
+
+  final denominator = completedCount + skippedCount;
+  final completionRate = denominator == 0 ? 0.0 : completedCount / denominator;
+
+  // Streak — walk back from today across ALL occurrences (not window-limited).
+  var streakDays = 0;
+  var cursor = today;
+  while (true) {
+    final hasDone = occurrences.any(
+      (o) =>
+          o.status == OccurrenceStatus.done &&
+          dateOnly(o.scheduledDate) == cursor,
+    );
+    if (!hasDone) break;
+    streakDays++;
+    cursor = cursor.subtract(const Duration(days: 1));
+  }
+
+  // Buckets (oldest → newest).
+  final List<InsightBucket> buckets;
+  switch (period) {
+    case InsightsPeriod.week:
+      // 7 daily buckets labelled by weekday short name.
+      buckets = List.generate(7, (i) {
+        final day = windowStart.add(Duration(days: i));
+        final label = _weekdayShort[day.weekday - 1];
+        final doneCount = inWindow
+            .where(
+              (o) =>
+                  o.status == OccurrenceStatus.done &&
+                  dateOnly(o.scheduledDate) == day,
+            )
+            .length;
+        return InsightBucket(label, doneCount);
+      });
+
+    case InsightsPeriod.month:
+      // 4 buckets of 7 days (most recent 28 days); W1 = oldest, W4 = most recent.
+      buckets = List.generate(4, (i) {
+        final bucketStart = today.subtract(Duration(days: 27 - i * 7));
+        final bucketEnd = today.subtract(Duration(days: 21 - i * 7));
+        final doneCount = inWindow.where((o) {
+          final d = dateOnly(o.scheduledDate);
+          return o.status == OccurrenceStatus.done &&
+              !d.isBefore(bucketStart) &&
+              !d.isAfter(bucketEnd);
+        }).length;
+        return InsightBucket('W${i + 1}', doneCount);
+      });
+
+    case InsightsPeriod.year:
+      // 12 calendar-month buckets for the last 12 months (oldest → newest).
+      buckets = List.generate(12, (i) {
+        var month = today.month - 11 + i;
+        var year = today.year;
+        while (month <= 0) {
+          month += 12;
+          year--;
+        }
+        final monthStart = DateTime(year, month);
+        // Last day of month: first day of next month minus one day.
+        final monthEnd = DateTime(year, month + 1, 0);
+        final label = _monthShort[month - 1];
+        final doneCount = occurrences.where((o) {
+          final d = dateOnly(o.scheduledDate);
+          return o.status == OccurrenceStatus.done &&
+              !d.isBefore(monthStart) &&
+              !d.isAfter(monthEnd);
+        }).length;
+        return InsightBucket(label, doneCount);
+      });
+  }
+
+  // Slips — skipped occurrences in window, grouped by taskId, top 3 desc.
+  final slipMap = <String, int>{};
+  for (final occ in inWindow) {
+    if (occ.status == OccurrenceStatus.skipped) {
+      slipMap[occ.taskId] = (slipMap[occ.taskId] ?? 0) + 1;
+    }
+  }
+  final slips = slipMap.entries.map((e) => TaskSlip(e.key, e.value)).toList()
+    ..sort((a, b) {
+      final cmp = b.skips.compareTo(a.skips);
+      return cmp != 0 ? cmp : a.taskId.compareTo(b.taskId);
+    });
+  final topSlips = slips.take(3).toList();
+
+  // Suggestion — first slip with a StrictRecurrence task.
+  AdaptiveSuggestion? suggestion;
+  final taskMap = {for (final t in tasks) t.id: t};
+  for (final slip in topSlips) {
+    final task = taskMap[slip.taskId];
+    if (task == null) continue;
+    if (task.recurrence is StrictRecurrence) {
+      final title = task.title.isNotEmpty ? task.title : 'This task';
+      suggestion = AdaptiveSuggestion(
+        taskId: slip.taskId,
+        message:
+            '$title slips a fair bit — making it flexible lets it move to a quieter day.',
+        suggestedRecurrence: const Recurrence.flexible(
+          period: FrequencyPeriod.week,
+        ),
+      );
+      break;
+    }
+  }
+
+  return InsightsSummary(
+    completedCount: completedCount,
+    skippedCount: skippedCount,
+    completionRate: completionRate,
+    streakDays: streakDays,
+    totalMinutes: totalMinutes,
+    buckets: buckets,
+    slips: topSlips,
+    suggestion: suggestion,
+  );
+}
+
+const _weekdayShort = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const _monthShort = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];

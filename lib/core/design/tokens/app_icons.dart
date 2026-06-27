@@ -25,6 +25,8 @@ abstract final class AppIcons {
   static const IconData person = Symbols.person_rounded;
   static const IconData group = Symbols.group_rounded;
 
+  static const IconData insights = Symbols.insights_rounded;
+
   // Category / themed-day glyphs.
   static const IconData countertops = Symbols.countertops_rounded;
   static const IconData laundry = Symbols.local_laundry_service_rounded;
