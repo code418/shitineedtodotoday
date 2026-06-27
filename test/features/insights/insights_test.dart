@@ -187,6 +187,34 @@ void main() {
       expect(s.totalMinutes, 50); // 30 + 20 + 0
     });
 
+    // ── month window (28 days = 4 × 7) ─────────────────────────────────────
+
+    test('month window is exactly 28 days: 27 days ago included, 28 excluded', () {
+      // windowStart = _now - 27 days = 2026-06-02.
+      // An occurrence 27 days ago (2026-06-02 = windowStart) must be included.
+      // An occurrence 28 days ago (2026-06-01, one day before windowStart) must
+      // be excluded. This locks the month rate and the 4-bucket chart to the
+      // same 28-day span.
+      final inside = _occ(
+        taskId: 't1',
+        scheduledDate: _now.subtract(const Duration(days: 27)),
+        status: OccurrenceStatus.done,
+      );
+      final outside = _occ(
+        taskId: 't2',
+        scheduledDate: _now.subtract(const Duration(days: 28)),
+        status: OccurrenceStatus.done,
+      );
+      final s = computeInsights(
+        occurrences: [inside, outside],
+        tasks: const [],
+        now: _now,
+        period: InsightsPeriod.month,
+      );
+      // Only the 27-days-ago occurrence is in window.
+      expect(s.completedCount, 1);
+    });
+
     // ── week buckets ────────────────────────────────────────────────────────
 
     test('week buckets have length 7 and counts land on the right weekday', () {

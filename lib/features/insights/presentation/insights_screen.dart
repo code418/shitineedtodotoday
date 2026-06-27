@@ -8,6 +8,7 @@ import '../../../core/strings/app_strings.dart';
 import '../../settings/application/settings_providers.dart';
 import '../../tasks/application/tasks_providers.dart';
 import '../../tasks/domain/task.dart';
+import '../application/insights_providers.dart';
 import '../domain/insights.dart';
 
 class InsightsScreen extends ConsumerStatefulWidget {
@@ -25,15 +26,9 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
     final strings = ref.watch(appStringsProvider);
     final occurrences = ref.watch(occurrencesProvider).value ?? [];
     final tasks = ref.watch(tasksProvider).value ?? [];
-    final now = ref.watch(clockProvider)();
     final theme = Theme.of(context);
 
-    final s = computeInsights(
-      occurrences: occurrences,
-      tasks: tasks,
-      now: now,
-      period: _period,
-    );
+    final s = ref.watch(insightsSummaryProvider(_period));
 
     return Scaffold(
       appBar: AppBar(title: Text(strings.insightsTitle)),

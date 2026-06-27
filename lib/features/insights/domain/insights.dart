@@ -58,11 +58,22 @@ InsightsSummary computeInsights({
 }) {
   final today = dateOnly(now);
 
-  // Window: inclusive days ending today.
+  // Window: inclusive days ending today, aligned to the chart buckets.
+  //   week  — 7 days  (7 daily buckets)
+  //   month — 28 days (4 × 7-day buckets); subtract 27 so window = [today-27, today]
+  //   year  — 12 calendar months; start on the 1st of the month 11 months ago
   final windowStart = switch (period) {
     InsightsPeriod.week => today.subtract(const Duration(days: 6)),
-    InsightsPeriod.month => today.subtract(const Duration(days: 29)),
-    InsightsPeriod.year => today.subtract(const Duration(days: 364)),
+    InsightsPeriod.month => today.subtract(const Duration(days: 27)),
+    InsightsPeriod.year => () {
+      var m = today.month - 11;
+      var y = today.year;
+      while (m <= 0) {
+        m += 12;
+        y--;
+      }
+      return DateTime(y, m);
+    }(),
   };
 
   // Occurrences whose scheduledDate falls within the window.
@@ -88,15 +99,14 @@ InsightsSummary computeInsights({
   final completionRate = denominator == 0 ? 0.0 : completedCount / denominator;
 
   // Streak — walk back from today across ALL occurrences (not window-limited).
+  // Build a set of done dates first so each cursor step is O(1) not O(n).
+  final doneDays = <DateTime>{
+    for (final o in occurrences)
+      if (o.status == OccurrenceStatus.done) dateOnly(o.scheduledDate),
+  };
   var streakDays = 0;
   var cursor = today;
-  while (true) {
-    final hasDone = occurrences.any(
-      (o) =>
-          o.status == OccurrenceStatus.done &&
-          dateOnly(o.scheduledDate) == cursor,
-    );
-    if (!hasDone) break;
+  while (doneDays.contains(cursor)) {
     streakDays++;
     cursor = cursor.subtract(const Duration(days: 1));
   }
@@ -135,6 +145,8 @@ InsightsSummary computeInsights({
 
     case InsightsPeriod.year:
       // 12 calendar-month buckets for the last 12 months (oldest → newest).
+      // The oldest bucket starts on windowStart (first of the month 11 months
+      // ago), so counting from inWindow keeps buckets and rate on the same span.
       buckets = List.generate(12, (i) {
         var month = today.month - 11 + i;
         var year = today.year;
@@ -146,7 +158,7 @@ InsightsSummary computeInsights({
         // Last day of month: first day of next month minus one day.
         final monthEnd = DateTime(year, month + 1, 0);
         final label = _monthShort[month - 1];
-        final doneCount = occurrences.where((o) {
+        final doneCount = inWindow.where((o) {
           final d = dateOnly(o.scheduledDate);
           return o.status == OccurrenceStatus.done &&
               !d.isBefore(monthStart) &&

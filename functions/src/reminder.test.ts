@@ -6,6 +6,7 @@ import {
   isWithinQuietHours,
   minuteOfDay,
   minuteOfDayInZone,
+  occursOn,
   prefsFromDoc,
   shouldSendDailyNudge,
 } from "./reminder";
@@ -158,4 +159,51 @@ test("minuteOfDayInZone respects the time zone (BST in June)", () => {
   // 08:30 UTC on 29 Jun 2026 is 09:30 in London (BST, +1).
   const m = minuteOfDayInZone(new Date("2026-06-29T08:30:00Z"), "Europe/London");
   assert.equal(m, 9 * 60 + 30);
+});
+
+// ── occursOn ──────────────────────────────────────────────────────────────────
+
+test("occursOn: strict weekday — Mon-only true on Monday, false on Tuesday", () => {
+  // 2026-06-29 is a Monday (UTC day-only).
+  const mon = new Date(Date.UTC(2026, 5, 29)); // June 29
+  const tue = new Date(Date.UTC(2026, 5, 30)); // June 30
+  const rec = {runtimeType: "strict", weekdays: [1]}; // ISO 1 = Monday
+  assert.equal(occursOn(rec, mon), true);
+  assert.equal(occursOn(rec, tue), false);
+});
+
+test("occursOn: strict dayOfMonth clamps to last day of a short month", () => {
+  // Day 31 in February 2026 (not a leap year): clamp to 28.
+  const rec = {runtimeType: "strict", dayOfMonth: 31};
+  const feb28 = new Date(Date.UTC(2026, 1, 28));
+  const feb27 = new Date(Date.UTC(2026, 1, 27));
+  assert.equal(occursOn(rec, feb28), true);
+  assert.equal(occursOn(rec, feb27), false);
+});
+
+test("occursOn: flexible weekly fires only on the week's Monday", () => {
+  // timesPerPeriod=1 → anchor at offset 0 of the ISO week = Monday.
+  const rec = {runtimeType: "flexible", period: "week", timesPerPeriod: 1};
+  const mon = new Date(Date.UTC(2026, 5, 29)); // 2026-06-29 Mon
+  const wed = new Date(Date.UTC(2026, 6, 1));  // 2026-07-01 Wed
+  assert.equal(occursOn(rec, mon), true);
+  assert.equal(occursOn(rec, wed), false);
+});
+
+test("occursOn: flexible daily fires on any day", () => {
+  const rec = {runtimeType: "flexible", period: "day", timesPerPeriod: 1};
+  const mon = new Date(Date.UTC(2026, 5, 29));
+  const sat = new Date(Date.UTC(2026, 5, 27));
+  assert.equal(occursOn(rec, mon), true);
+  assert.equal(occursOn(rec, sat), true);
+});
+
+test("occursOn: seasonal summer fires on 1 June only", () => {
+  const rec = {runtimeType: "flexible", season: "summer"};
+  const jun1 = new Date(Date.UTC(2026, 5, 1)); // June 1 = summer start
+  const jun2 = new Date(Date.UTC(2026, 5, 2)); // June 2
+  const sep1 = new Date(Date.UTC(2026, 8, 1)); // Sep 1 (autumn start, not summer)
+  assert.equal(occursOn(rec, jun1), true);
+  assert.equal(occursOn(rec, jun2), false);
+  assert.equal(occursOn(rec, sep1), false);
 });
