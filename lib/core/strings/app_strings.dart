@@ -100,6 +100,23 @@ class AppStrings {
     required this.testNudgeSent,
     required this.nudgeBodyHasTasks,
     required this.nudgeBodyClear,
+
+    // Account / upgrade
+    required this.accountTitle,
+    required this.accountSettingsLink,
+    required this.guestTitle,
+    required this.guestBody,
+    required this.emailLabel,
+    required this.passwordLabel,
+    required this.upgradeCta,
+    required this.accountUpgraded,
+    required this.signedInAs,
+    required this.signOut,
+    required this.signOutConfirmTitle,
+    required this.signOutConfirmBody,
+    required this.emailInUse,
+    required this.weakPassword,
+    required this.upgradeFailed,
   });
 
   /// In-app title (task switcher / MaterialApp). The OS launcher label is the
@@ -207,6 +224,23 @@ class AppStrings {
   final String nudgeBodyHasTasks;
   final String nudgeBodyClear;
 
+  // Account / upgrade
+  final String accountTitle;
+  final String accountSettingsLink;
+  final String guestTitle;
+  final String guestBody;
+  final String emailLabel;
+  final String passwordLabel;
+  final String upgradeCta;
+  final String accountUpgraded;
+  final String signedInAs;
+  final String signOut;
+  final String signOutConfirmTitle;
+  final String signOutConfirmBody;
+  final String emailInUse;
+  final String weakPassword;
+  final String upgradeFailed;
+
   /// The default, store-safe wording.
   static const AppStrings clean = AppStrings(
     appTitle: 'Stuff I Need To Do Today',
@@ -308,6 +342,23 @@ class AppStrings {
     nudgeBodyHasTasks:
         "You've got things lined up for today — open when you're ready.",
     nudgeBodyClear: 'Nothing on today. Enjoy the breather.',
+    accountTitle: 'Account',
+    accountSettingsLink: 'Account',
+    guestTitle: "You're a guest",
+    guestBody:
+        'Your list is saved to this device. Add an email to keep it safe and '
+        'use it on another device — nothing is lost.',
+    emailLabel: 'Email',
+    passwordLabel: 'Password',
+    upgradeCta: 'Save my account',
+    accountUpgraded: 'Account saved — your stuff is safe now',
+    signedInAs: 'Signed in as',
+    signOut: 'Sign out',
+    signOutConfirmTitle: 'Sign out?',
+    signOutConfirmBody: "You'll need your email and password to sign back in.",
+    emailInUse: 'That email is already in use',
+    weakPassword: 'That password is too weak',
+    upgradeFailed: "Couldn't save your account — please try again",
   );
 
   /// The cheeky, mildly-sweary wording — opt-in via the profanity toggle.
@@ -410,5 +461,22 @@ class AppStrings {
     nudgeBodyHasTasks:
         "You've got shit lined up today — open when you're ready.",
     nudgeBodyClear: 'Sweet F.A. today. Enjoy the breather.',
+    accountTitle: 'Account',
+    accountSettingsLink: 'Account',
+    guestTitle: "You're a guest",
+    guestBody:
+        "Your shit's saved to this device. Add an email to keep it safe and "
+        "use it elsewhere — nothing's lost.",
+    emailLabel: 'Email',
+    passwordLabel: 'Password',
+    upgradeCta: 'Save my account',
+    accountUpgraded: "Account saved — your shit's safe now",
+    signedInAs: 'Signed in as',
+    signOut: 'Sign out',
+    signOutConfirmTitle: 'Sign out?',
+    signOutConfirmBody: "You'll need your email and password to sign back in.",
+    emailInUse: 'That email is already in use',
+    weakPassword: 'That password is too weak',
+    upgradeFailed: "Couldn't save your account — please try again",
   );
 }

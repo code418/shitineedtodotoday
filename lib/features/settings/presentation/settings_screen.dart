@@ -89,6 +89,24 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: AppSpacing.x4),
           AppCard(
+            onTap: () => context.push(Routes.account),
+            interactive: true,
+            child: Row(
+              children: [
+                Icon(AppIcons.person, color: AppColors.brand),
+                const SizedBox(width: AppSpacing.x4),
+                Expanded(
+                  child: Text(
+                    strings.accountSettingsLink,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                Icon(AppIcons.expandMore, color: AppColors.textMuted),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.x4),
+          AppCard(
             onTap: () => context.push(Routes.reminders),
             interactive: true,
             child: Row(

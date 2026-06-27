@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/firebase/firebase_providers.dart';
+import '../domain/account_status.dart';
 
 /// Thin wrapper around [FirebaseAuth] for the app's anonymous-first auth flow.
 ///
@@ -27,6 +28,21 @@ class AuthRepository {
   }
 
   Future<void> signOut() => _auth.signOut();
+
+  /// Link the current (anonymous) user to an email/password credential,
+  /// upgrading the account in place so the uid — and all their data — is kept.
+  Future<void> linkEmailPassword({
+    required String email,
+    required String password,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) throw StateError('No signed-in user to upgrade.');
+    final credential = EmailAuthProvider.credential(
+      email: email,
+      password: password,
+    );
+    await user.linkWithCredential(credential);
+  }
 }
 
 final authRepositoryProvider = Provider<AuthRepository>(
@@ -37,3 +53,14 @@ final authRepositoryProvider = Provider<AuthRepository>(
 final authStateChangesProvider = StreamProvider<User?>(
   (ref) => ref.watch(authRepositoryProvider).authStateChanges(),
 );
+
+/// Derives account status from the current auth state.
+final accountStatusProvider = Provider<AccountStatus>((ref) {
+  final user = ref.watch(authStateChangesProvider).value;
+  if (user == null) return AccountStatus.signedOut;
+  return AccountStatus(
+    signedIn: true,
+    isAnonymous: user.isAnonymous,
+    email: user.email,
+  );
+});
