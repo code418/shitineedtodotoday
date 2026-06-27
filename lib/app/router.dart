@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/design/gallery/gallery_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
 import '../features/tasks/presentation/today_screen.dart';
 
@@ -8,6 +9,7 @@ import '../features/tasks/presentation/today_screen.dart';
 abstract final class Routes {
   static const today = '/';
   static const settings = '/settings';
+  static const gallery = '/gallery';
 }
 
 /// The app's [GoRouter]. Exposed as a provider so routes can later depend on
@@ -23,6 +25,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.settings,
         builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: Routes.gallery,
+        builder: (context, state) => const GalleryScreen(),
       ),
     ],
   );
