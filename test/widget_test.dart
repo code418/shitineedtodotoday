@@ -17,7 +17,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Today'), findsOneWidget);
+    expect(find.text('Today'), findsWidgets);
     expect(find.text('Nothing on your list today'), findsOneWidget);
     // Firebase is not configured in tests, so the notice should be shown.
     expect(find.textContaining('Firebase is not configured'), findsOneWidget);

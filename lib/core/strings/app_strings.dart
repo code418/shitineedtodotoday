@@ -154,6 +154,12 @@ class AppStrings {
     required this.scheduleEmptyDay,
     required this.movedToDay,
     required this.todayLabelShort,
+
+    // Bottom nav
+    required this.navToday,
+    required this.navSchedule,
+    required this.navInsights,
+    required this.navYou,
   });
 
   /// In-app title (task switcher / MaterialApp). The OS launcher label is the
@@ -315,6 +321,12 @@ class AppStrings {
   final String movedToDay;
   final String todayLabelShort;
 
+  // Bottom nav
+  final String navToday;
+  final String navSchedule;
+  final String navInsights;
+  final String navYou;
+
   /// The default, store-safe wording.
   static const AppStrings clean = AppStrings(
     appTitle: 'Stuff I Need To Do Today',
@@ -465,6 +477,10 @@ class AppStrings {
     scheduleEmptyDay: 'Nothing here',
     movedToDay: 'Moved to',
     todayLabelShort: 'Today',
+    navToday: 'Today',
+    navSchedule: 'Schedule',
+    navInsights: 'Insights',
+    navYou: 'You',
   );
 
   /// The cheeky, mildly-sweary wording — opt-in via the profanity toggle.
@@ -616,5 +632,9 @@ class AppStrings {
     scheduleEmptyDay: 'Nothing here',
     movedToDay: 'Moved to',
     todayLabelShort: 'Today',
+    navToday: 'Today',
+    navSchedule: 'Schedule',
+    navInsights: 'Insights',
+    navYou: 'You',
   );
 }

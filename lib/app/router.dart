@@ -5,14 +5,12 @@ import 'package:go_router/go_router.dart';
 import '../dev/gallery/gallery_screen.dart';
 import '../features/auth/presentation/account_screen.dart';
 import '../features/household/presentation/household_screen.dart';
-import '../features/insights/presentation/insights_screen.dart';
 import '../features/notifications/presentation/reminders_screen.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
-import '../features/schedule/presentation/schedule_screen.dart';
 import '../features/settings/application/settings_providers.dart';
 import '../features/settings/presentation/settings_screen.dart';
 import '../features/tasks/presentation/task_detail_screen.dart';
-import '../features/tasks/presentation/today_screen.dart';
+import 'home_shell.dart';
 
 /// App route names, kept in one place to avoid stringly-typed navigation.
 abstract final class Routes {
@@ -49,7 +47,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(
         path: Routes.today,
-        builder: (context, state) => const TodayScreen(),
+        builder: (context, state) => const HomeShell(),
       ),
       GoRoute(
         path: Routes.onboarding,
@@ -70,14 +68,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.household,
         builder: (context, state) => const HouseholdScreen(),
-      ),
-      GoRoute(
-        path: Routes.insights,
-        builder: (context, state) => const InsightsScreen(),
-      ),
-      GoRoute(
-        path: Routes.schedule,
-        builder: (context, state) => const ScheduleScreen(),
       ),
       GoRoute(
         path: Routes.taskDetail,

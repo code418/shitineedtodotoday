@@ -36,17 +36,7 @@ class TodayScreen extends ConsumerWidget {
     final budget = ref.watch(dailyEnergyBudgetProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(strings.todayTitle),
-        actions: [
-          AppIconButton(
-            icon: AppIcons.settings,
-            tooltip: strings.settingsTitle,
-            onPressed: () => context.push(Routes.settings),
-          ),
-          const SizedBox(width: AppSpacing.x2),
-        ],
-      ),
+      appBar: AppBar(title: Text(strings.todayTitle)),
       body: Column(
         children: [
           if (!firebaseReady)

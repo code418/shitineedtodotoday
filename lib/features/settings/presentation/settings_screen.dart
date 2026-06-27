@@ -141,42 +141,6 @@ class SettingsScreen extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.x4),
-          AppCard(
-            onTap: () => context.push(Routes.insights),
-            interactive: true,
-            child: Row(
-              children: [
-                Icon(AppIcons.insights, color: AppColors.brand),
-                const SizedBox(width: AppSpacing.x4),
-                Expanded(
-                  child: Text(
-                    strings.insightsSettingsLink,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
-                Icon(AppIcons.expandMore, color: AppColors.textMuted),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.x4),
-          AppCard(
-            onTap: () => context.push(Routes.schedule),
-            interactive: true,
-            child: Row(
-              children: [
-                Icon(AppIcons.calendar, color: AppColors.brand),
-                const SizedBox(width: AppSpacing.x4),
-                Expanded(
-                  child: Text(
-                    strings.scheduleSettingsLink,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
-                Icon(AppIcons.expandMore, color: AppColors.textMuted),
-              ],
-            ),
-          ),
           if (kDebugMode) ...[
             const SizedBox(height: AppSpacing.x4),
             AppCard(
