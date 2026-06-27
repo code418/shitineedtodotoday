@@ -9,16 +9,19 @@ void main() {
     expect(AppMotion.spring, const Cubic(0.34, 1.56, 0.64, 1));
   });
 
-  testWidgets('of() collapses to zero when animations are disabled',
-      (tester) async {
+  testWidgets('of() collapses to zero when animations are disabled', (
+    tester,
+  ) async {
     late Duration resolved;
     await tester.pumpWidget(
       MediaQuery(
         data: const MediaQueryData(disableAnimations: true),
-        child: Builder(builder: (context) {
-          resolved = AppMotion.of(context, AppMotion.normal);
-          return const SizedBox();
-        }),
+        child: Builder(
+          builder: (context) {
+            resolved = AppMotion.of(context, AppMotion.normal);
+            return const SizedBox();
+          },
+        ),
       ),
     );
     expect(resolved, Duration.zero);

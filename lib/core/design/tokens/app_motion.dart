@@ -15,6 +15,6 @@ abstract final class AppMotion {
   /// Returns [d], or [Duration.zero] when the user has asked for reduced motion.
   static Duration of(BuildContext context, Duration d) =>
       (MediaQuery.maybeOf(context)?.disableAnimations ?? false)
-          ? Duration.zero
-          : d;
+      ? Duration.zero
+      : d;
 }

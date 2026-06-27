@@ -42,22 +42,34 @@ abstract final class AppTypography {
         ? AppColors.textSecondary
         : AppColors.ink300;
 
-    TextStyle sans(double size, FontWeight weight,
-            {double height = leadingNormal, double? spacing, Color? color}) =>
-        TextStyle(
-          fontFamily: fontSans,
-          fontSize: size,
-          fontWeight: weight,
-          height: height,
-          letterSpacing: spacing,
-          color: color ?? primary,
-        );
+    TextStyle sans(
+      double size,
+      FontWeight weight, {
+      double height = leadingNormal,
+      double? spacing,
+      Color? color,
+    }) => TextStyle(
+      fontFamily: fontSans,
+      fontSize: size,
+      fontWeight: weight,
+      height: height,
+      letterSpacing: spacing,
+      color: color ?? primary,
+    );
 
     return TextTheme(
-      displayLarge:
-          sans(display, bold, height: leadingTight, spacing: trackingTight),
-      headlineLarge:
-          sans(h1, bold, height: leadingSnug, spacing: trackingTight),
+      displayLarge: sans(
+        display,
+        bold,
+        height: leadingTight,
+        spacing: trackingTight,
+      ),
+      headlineLarge: sans(
+        h1,
+        bold,
+        height: leadingSnug,
+        spacing: trackingTight,
+      ),
       headlineMedium: sans(h2, bold, height: leadingSnug),
       titleLarge: sans(h3, bold, height: leadingSnug),
       titleMedium: sans(title, bold, height: leadingSnug),
@@ -66,21 +78,26 @@ abstract final class AppTypography {
       bodySmall: sans(sizeXs, regular, color: secondary),
       labelLarge: sans(title, bold), // buttons
       labelMedium: sans(sizeXs, semibold, color: secondary),
-      labelSmall: sans(size2xs, semibold,
-          height: leadingNormal, spacing: trackingCaps, color: secondary),
+      labelSmall: sans(
+        size2xs,
+        semibold,
+        height: leadingNormal,
+        spacing: trackingCaps,
+        color: secondary,
+      ),
     );
   }
 
   /// Mono style for durations / counts (e.g. "~15m", "55m / 55m").
-  static TextStyle mono(
-          {double size = sizeXs,
-          FontWeight weight = medium,
-          Color color = AppColors.textSecondary}) =>
-      TextStyle(
-        fontFamily: fontMono,
-        fontSize: size,
-        fontWeight: weight,
-        color: color,
-        letterSpacing: -0.13,
-      );
+  static TextStyle mono({
+    double size = sizeXs,
+    FontWeight weight = medium,
+    Color color = AppColors.textSecondary,
+  }) => TextStyle(
+    fontFamily: fontMono,
+    fontSize: size,
+    fontWeight: weight,
+    color: color,
+    letterSpacing: -0.13,
+  );
 }

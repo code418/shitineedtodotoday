@@ -67,9 +67,9 @@ class AppTheme {
         foregroundColor: scheme.onSurface,
         elevation: 0,
         scrolledUnderElevation: 0,
-        titleTextStyle: AppTypography.textTheme(scheme.brightness)
-            .headlineMedium!
-            .copyWith(color: scheme.onSurface),
+        titleTextStyle: AppTypography.textTheme(
+          scheme.brightness,
+        ).headlineMedium!.copyWith(color: scheme.onSurface),
       ),
       cardTheme: CardThemeData(
         color: scheme.surface,
@@ -94,8 +94,9 @@ class AppTheme {
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: scheme.surface,
         shape: const RoundedRectangleBorder(
-          borderRadius:
-              BorderRadius.vertical(top: Radius.circular(AppRadii.xxl)),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppRadii.xxl),
+          ),
         ),
       ),
       splashFactory: InkRipple.splashFactory,
