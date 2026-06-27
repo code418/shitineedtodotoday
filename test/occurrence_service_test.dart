@@ -247,6 +247,57 @@ void main() {
       },
     );
   });
+
+  // ---------------------------------------------------------------------------
+  // moveTo — drag-to-reschedule
+  // ---------------------------------------------------------------------------
+  group('moveTo', () {
+    test(
+      'moves occurrence to the target day, marks rescheduled, preserves originalDate',
+      () async {
+        final monday = DateTime(2026, 6, 29);
+        final thursday = DateTime(2026, 7, 2, 14, 30); // has time component
+        final occ = TaskOccurrence(
+          id: 't1_2026-06-29',
+          taskId: 't1',
+          scheduledDate: monday,
+        );
+
+        final moved = await service.moveTo(occ, thursday);
+
+        // scheduledDate is date-only Thursday.
+        expect(moved.scheduledDate, DateTime(2026, 7, 2));
+        expect(moved.status, OccurrenceStatus.rescheduled);
+        // originalDate is preserved from Monday.
+        expect(moved.originalDate, monday);
+        // Persisted.
+        expect(occRepo.store[moved.id]!.scheduledDate, DateTime(2026, 7, 2));
+      },
+    );
+
+    test(
+      'preserves an existing originalDate when moving a previously moved occurrence',
+      () async {
+        final originalMonday = DateTime(2026, 6, 22);
+        final wednesday = DateTime(2026, 6, 24);
+        final friday = DateTime(2026, 6, 26);
+        // Already moved once — originalDate is set.
+        final alreadyMoved = TaskOccurrence(
+          id: 't1_2026-06-24',
+          taskId: 't1',
+          scheduledDate: wednesday,
+          originalDate: originalMonday,
+          status: OccurrenceStatus.rescheduled,
+        );
+
+        final moved = await service.moveTo(alreadyMoved, friday);
+
+        // originalDate should stay as the original Monday, not overwritten.
+        expect(moved.originalDate, originalMonday);
+        expect(moved.scheduledDate, DateTime(2026, 6, 26));
+      },
+    );
+  });
 }
 
 final _monday = DateTime(2026, 6, 29);

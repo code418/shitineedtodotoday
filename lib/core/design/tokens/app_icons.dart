@@ -27,6 +27,9 @@ abstract final class AppIcons {
 
   static const IconData insights = Symbols.insights_rounded;
 
+  static const IconData calendar = Symbols.calendar_month_rounded;
+  static const IconData dragHandle = Symbols.drag_handle_rounded;
+
   // Category / themed-day glyphs.
   static const IconData countertops = Symbols.countertops_rounded;
   static const IconData laundry = Symbols.local_laundry_service_rounded;

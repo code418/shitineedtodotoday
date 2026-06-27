@@ -8,6 +8,7 @@ import '../features/household/presentation/household_screen.dart';
 import '../features/insights/presentation/insights_screen.dart';
 import '../features/notifications/presentation/reminders_screen.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
+import '../features/schedule/presentation/schedule_screen.dart';
 import '../features/settings/application/settings_providers.dart';
 import '../features/settings/presentation/settings_screen.dart';
 import '../features/tasks/presentation/task_detail_screen.dart';
@@ -22,6 +23,7 @@ abstract final class Routes {
   static const reminders = '/reminders';
   static const household = '/household';
   static const insights = '/insights';
+  static const schedule = '/schedule';
   static const gallery = '/gallery';
   static const taskDetail = '/task/:id';
 
@@ -72,6 +74,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.insights,
         builder: (context, state) => const InsightsScreen(),
+      ),
+      GoRoute(
+        path: Routes.schedule,
+        builder: (context, state) => const ScheduleScreen(),
       ),
       GoRoute(
         path: Routes.taskDetail,

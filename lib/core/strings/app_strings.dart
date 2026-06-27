@@ -146,6 +146,14 @@ class AppStrings {
     required this.suggestionApply,
     required this.suggestionApplied,
     required this.insightsEmpty,
+
+    // Schedule
+    required this.scheduleTitle,
+    required this.scheduleSettingsLink,
+    required this.scheduleDragHint,
+    required this.scheduleEmptyDay,
+    required this.movedToDay,
+    required this.todayLabelShort,
   });
 
   /// In-app title (task switcher / MaterialApp). The OS launcher label is the
@@ -299,6 +307,14 @@ class AppStrings {
   final String suggestionApplied;
   final String insightsEmpty;
 
+  // Schedule
+  final String scheduleTitle;
+  final String scheduleSettingsLink;
+  final String scheduleDragHint;
+  final String scheduleEmptyDay;
+  final String movedToDay;
+  final String todayLabelShort;
+
   /// The default, store-safe wording.
   static const AppStrings clean = AppStrings(
     appTitle: 'Stuff I Need To Do Today',
@@ -443,6 +459,12 @@ class AppStrings {
     suggestionApply: 'Make it flexible',
     suggestionApplied: 'Done — it can move to a quieter day now',
     insightsEmpty: 'Tick a few things off and your trends show up here.',
+    scheduleTitle: 'Schedule',
+    scheduleSettingsLink: 'Schedule',
+    scheduleDragHint: 'Press and hold a task, then drag it to another day.',
+    scheduleEmptyDay: 'Nothing here',
+    movedToDay: 'Moved to',
+    todayLabelShort: 'Today',
   );
 
   /// The cheeky, mildly-sweary wording — opt-in via the profanity toggle.
@@ -588,5 +610,11 @@ class AppStrings {
     suggestionApply: 'Make it flexible',
     suggestionApplied: 'Done — it can move to a quieter day now',
     insightsEmpty: 'Tick a few things off and your trends show up here.',
+    scheduleTitle: 'Schedule',
+    scheduleSettingsLink: 'Schedule',
+    scheduleDragHint: 'Press and hold a task, then drag it to another day.',
+    scheduleEmptyDay: 'Nothing here',
+    movedToDay: 'Moved to',
+    todayLabelShort: 'Today',
   );
 }

@@ -1,6 +1,7 @@
 import '../data/occurrence_repository.dart';
 import '../data/task_repository.dart';
 import '../domain/effort_learning.dart';
+import '../domain/scheduling/forgiving_scheduler.dart' show dateOnly;
 import '../domain/scheduling/load_balancer.dart';
 import '../domain/scheduling/scheduler.dart';
 import '../domain/scheduling/task_occurrence.dart';
@@ -113,6 +114,18 @@ class OccurrenceService {
       }
     }
     return balanced;
+  }
+
+  /// Move an occurrence to an explicit [day] (drag-to-reschedule). Marks it
+  /// rescheduled and preserves its originalDate so the "moved from…" note shows.
+  Future<TaskOccurrence> moveTo(TaskOccurrence occurrence, DateTime day) async {
+    final moved = occurrence.copyWith(
+      scheduledDate: dateOnly(day),
+      status: OccurrenceStatus.rescheduled,
+      originalDate: occurrence.originalDate ?? occurrence.scheduledDate,
+    );
+    await occurrences.upsert(ownerId, moved);
+    return moved;
   }
 
   /// Un-tick a previously completed or skipped occurrence, returning it to
