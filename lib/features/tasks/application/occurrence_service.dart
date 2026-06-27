@@ -86,4 +86,16 @@ class OccurrenceService {
     await occurrences.upsert(ownerId, moved);
     return moved;
   }
+
+  /// Un-tick a previously completed or skipped occurrence, returning it to
+  /// pending so the user can re-do it.
+  Future<TaskOccurrence> reopen(TaskOccurrence occurrence) async {
+    final reopened = occurrence.copyWith(
+      status: OccurrenceStatus.pending,
+      completedAt: null,
+      actualDurationMinutes: null,
+    );
+    await occurrences.upsert(ownerId, reopened);
+    return reopened;
+  }
 }

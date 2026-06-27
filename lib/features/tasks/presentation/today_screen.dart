@@ -7,7 +7,10 @@ import '../../../core/design/design.dart';
 import '../../../core/firebase/firebase_providers.dart';
 import '../../settings/application/settings_providers.dart';
 import '../application/tasks_providers.dart';
+import '../domain/scheduling/task_occurrence.dart';
 import '../domain/task_suggestion.dart';
+import 'log_duration_sheet.dart';
+import 'task_composer_sheet.dart';
 import 'widgets/task_item.dart';
 
 const _weekdayNames = [
@@ -20,9 +23,7 @@ const _weekdayNames = [
   'Sunday',
 ];
 
-/// The home screen: today's checklist. Behaviour is the P0 placeholder
-/// (empty checklist + starter suggestions, "coming soon" on add); this slice
-/// only restyles it with the design system.
+/// The home screen: today's checklist + the add-task FAB.
 class TodayScreen extends ConsumerWidget {
   const TodayScreen({super.key});
 
@@ -72,8 +73,32 @@ class TodayScreen extends ConsumerWidget {
                     itemCount: checklist.length,
                     separatorBuilder: (_, _) =>
                         const SizedBox(height: AppSpacing.x2),
-                    itemBuilder: (context, index) =>
-                        AppTaskItem(title: checklist[index].taskId),
+                    itemBuilder: (context, index) {
+                      final occ = checklist[index];
+                      final task = ref.watch(taskByIdProvider(occ.taskId));
+                      return AppTaskItem(
+                        title: task?.title ?? occ.taskId,
+                        minutes: task?.estimatedEffortMinutes,
+                        category: task?.category,
+                        done: occ.status == OccurrenceStatus.done,
+                        movedFrom:
+                            (occ.status == OccurrenceStatus.rescheduled &&
+                                occ.originalDate != null)
+                            ? _weekdayNames[occ.originalDate!.weekday - 1]
+                            : null,
+                        onToggle: (next) {
+                          if (next && task != null) {
+                            showLogDurationSheet(
+                              context,
+                              occurrence: occ,
+                              task: task,
+                            );
+                          } else if (!next) {
+                            ref.read(occurrenceServiceProvider)?.reopen(occ);
+                          }
+                        },
+                      );
+                    },
                   ),
           ),
         ],
@@ -82,14 +107,10 @@ class TodayScreen extends ConsumerWidget {
         label: strings.addTask,
         icon: AppIcons.add,
         pill: true,
-        onPressed: () => _showComingSoon(context, strings.comingSoon),
+        onPressed: () => showTaskComposer(context),
       ),
     );
   }
-}
-
-void _showComingSoon(BuildContext context, String message) {
-  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
 }
 
 class _EmptyStateWithSuggestions extends ConsumerWidget {
@@ -164,10 +185,27 @@ class _SuggestionGroup extends ConsumerWidget {
               padding: const EdgeInsets.only(bottom: AppSpacing.x2),
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onTap: () => _showComingSoon(
-                  context,
-                  ref.read(appStringsProvider).comingSoon,
-                ),
+                onTap: () {
+                  final svc = ref.read(taskServiceProvider);
+                  if (svc == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          ref.read(appStringsProvider).firebaseNotConfigured,
+                        ),
+                      ),
+                    );
+                    return;
+                  }
+                  svc.addFromSuggestion(suggestion).then((_) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(ref.read(appStringsProvider).taskAdded),
+                      ),
+                    );
+                  });
+                },
                 child: Row(
                   children: [
                     Icon(AppIcons.addCircle, size: 20, color: AppColors.brand),

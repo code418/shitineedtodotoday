@@ -134,6 +134,28 @@ void main() {
       expect(occRepo.store[moved.id]!.status, OccurrenceStatus.rescheduled);
     },
   );
+
+  test(
+    'reopen clears completedAt, actualDurationMinutes and sets pending',
+    () async {
+      final done = TaskOccurrence(
+        id: 't1_2026-06-29',
+        taskId: 't1',
+        scheduledDate: _monday,
+        status: OccurrenceStatus.done,
+        completedAt: clock,
+        actualDurationMinutes: 12,
+      );
+      occRepo.store[done.id] = done;
+
+      final reopened = await service.reopen(done);
+
+      expect(reopened.status, OccurrenceStatus.pending);
+      expect(reopened.completedAt, isNull);
+      expect(reopened.actualDurationMinutes, isNull);
+      expect(occRepo.store[done.id]!.status, OccurrenceStatus.pending);
+    },
+  );
 }
 
 final _monday = DateTime(2026, 6, 29);
