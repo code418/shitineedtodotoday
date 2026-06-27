@@ -397,8 +397,7 @@ import 'package:flutter/painting.dart';
 /// Soft, low-spread, faint-blue-tinted shadows. Cards lift gently; the primary
 /// CTA carries a coloured brand shadow. Ported from `tokens/spacing.css`.
 abstract final class AppShadows {
-  static const _ink = Color(0xFF1B1D29);
-
+  // Alphas below derive from the ink base #1B1D29 (e.g. 0x0F ≈ 6% opacity).
   static const List<BoxShadow> xs = [
     BoxShadow(color: Color(0x0F1B1D29), blurRadius: 2, offset: Offset(0, 1)),
   ];
@@ -423,10 +422,6 @@ abstract final class AppShadows {
   static const List<BoxShadow> brand = [
     BoxShadow(color: Color(0x4D4C6FFF), blurRadius: 16, offset: Offset(0, 6)),
   ];
-
-  /// Kept to document the ink base colour the alphas above derive from.
-  // ignore: unused_field
-  static const _base = _ink;
 }
 ```
 
@@ -3422,6 +3417,5 @@ git commit -m "chore: format + final foundation verification"
 ## Notes for the implementer
 
 - Widgets import tokens via `../tokens/tokens.dart`; screens import the top-level `../core/design/design.dart` barrel.
-- `withValues(alpha:)` is the current (non-deprecated) Flutter API for opacity on `Color`; if the pinned SDK predates it, substitute `withOpacity(...)`.
-- If `flutter analyze` flags the documentation-only `_base`/`_ink` field in `app_shadows.dart`, delete it — it exists only to record provenance.
+- `withValues(alpha:)` is the current (non-deprecated) Flutter API for opacity on `Color` (available on Flutter 3.44 / Dart 3.12.2).
 - Variable fonts cover all weights via the `wght` axis; no per-weight asset entries are needed.
