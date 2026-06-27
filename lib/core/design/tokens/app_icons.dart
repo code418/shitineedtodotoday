@@ -20,6 +20,8 @@ abstract final class AppIcons {
   static const IconData error = Symbols.error_rounded;
   static const IconData edit = Symbols.edit_rounded;
   static const IconData delete = Symbols.delete_rounded;
+  static const IconData notifications = Symbols.notifications_rounded;
+  static const IconData bedtime = Symbols.bedtime_rounded;
 
   // Category / themed-day glyphs.
   static const IconData countertops = Symbols.countertops_rounded;

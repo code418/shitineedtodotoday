@@ -84,6 +84,22 @@ class AppStrings {
     required this.getStarted,
     required this.skipForNow,
     required this.onboardingAdded,
+
+    // Reminders / notification settings
+    required this.remindersTitle,
+    required this.remindersSettingsLink,
+    required this.dailyNudgeTitle,
+    required this.dailyNudgeSubtitle,
+    required this.reminderTimeLabel,
+    required this.quietHoursTitle,
+    required this.quietHoursSubtitle,
+    required this.quietStartLabel,
+    required this.quietEndLabel,
+    required this.previewHeading,
+    required this.testNudge,
+    required this.testNudgeSent,
+    required this.nudgeBodyHasTasks,
+    required this.nudgeBodyClear,
   });
 
   /// In-app title (task switcher / MaterialApp). The OS launcher label is the
@@ -175,6 +191,22 @@ class AppStrings {
   final String skipForNow;
   final String onboardingAdded;
 
+  // Reminders / notification settings
+  final String remindersTitle;
+  final String remindersSettingsLink;
+  final String dailyNudgeTitle;
+  final String dailyNudgeSubtitle;
+  final String reminderTimeLabel;
+  final String quietHoursTitle;
+  final String quietHoursSubtitle;
+  final String quietStartLabel;
+  final String quietEndLabel;
+  final String previewHeading;
+  final String testNudge;
+  final String testNudgeSent;
+  final String nudgeBodyHasTasks;
+  final String nudgeBodyClear;
+
   /// The default, store-safe wording.
   static const AppStrings clean = AppStrings(
     appTitle: 'Stuff I Need To Do Today',
@@ -261,6 +293,21 @@ class AppStrings {
     getStarted: 'Get started',
     skipForNow: 'Skip for now',
     onboardingAdded: 'Your list is ready',
+    remindersTitle: 'Reminders',
+    remindersSettingsLink: 'Reminders',
+    dailyNudgeTitle: 'Daily nudge',
+    dailyNudgeSubtitle: 'One gentle reminder about your list each day.',
+    reminderTimeLabel: 'Remind me at',
+    quietHoursTitle: 'Quiet hours',
+    quietHoursSubtitle: "We won't nudge you during these hours.",
+    quietStartLabel: 'From',
+    quietEndLabel: 'Until',
+    previewHeading: 'Preview',
+    testNudge: 'Send a test nudge',
+    testNudgeSent: 'Test nudge sent',
+    nudgeBodyHasTasks:
+        "You've got things lined up for today — open when you're ready.",
+    nudgeBodyClear: 'Nothing on today. Enjoy the breather.',
   );
 
   /// The cheeky, mildly-sweary wording — opt-in via the profanity toggle.
@@ -348,5 +395,20 @@ class AppStrings {
     getStarted: 'Get started',
     skipForNow: 'Skip for now',
     onboardingAdded: "Your list's ready",
+    remindersTitle: 'Reminders',
+    remindersSettingsLink: 'Reminders',
+    dailyNudgeTitle: 'Daily nudge',
+    dailyNudgeSubtitle: 'One gentle nudge about your shit each day.',
+    reminderTimeLabel: 'Nudge me at',
+    quietHoursTitle: 'Quiet hours',
+    quietHoursSubtitle: "We won't bother you during these hours.",
+    quietStartLabel: 'From',
+    quietEndLabel: 'Until',
+    previewHeading: 'Preview',
+    testNudge: 'Send a test nudge',
+    testNudgeSent: 'Test nudge sent',
+    nudgeBodyHasTasks:
+        "You've got shit lined up today — open when you're ready.",
+    nudgeBodyClear: 'Sweet F.A. today. Enjoy the breather.',
   );
 }

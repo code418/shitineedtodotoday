@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../dev/gallery/gallery_screen.dart';
+import '../features/notifications/presentation/reminders_screen.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../features/settings/application/settings_providers.dart';
 import '../features/settings/presentation/settings_screen.dart';
@@ -14,6 +15,7 @@ abstract final class Routes {
   static const today = '/';
   static const onboarding = '/onboarding';
   static const settings = '/settings';
+  static const reminders = '/reminders';
   static const gallery = '/gallery';
   static const taskDetail = '/task/:id';
 
@@ -48,6 +50,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.settings,
         builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: Routes.reminders,
+        builder: (context, state) => const RemindersScreen(),
       ),
       GoRoute(
         path: Routes.taskDetail,
