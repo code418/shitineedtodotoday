@@ -50,4 +50,38 @@ void main() {
       isTrue,
     );
   });
+
+  test(
+    'daily energy budget defaults to 55 and setDailyEnergyBudget persists',
+    () async {
+      final container = await makeContainer();
+
+      // Default value
+      expect(
+        container.read(settingsControllerProvider).dailyEnergyBudgetMinutes,
+        55,
+      );
+      expect(container.read(dailyEnergyBudgetProvider), 55);
+
+      // Update via controller
+      await container
+          .read(settingsControllerProvider.notifier)
+          .setDailyEnergyBudget(90);
+
+      expect(container.read(dailyEnergyBudgetProvider), 90);
+      expect(
+        container.read(settingsControllerProvider).dailyEnergyBudgetMinutes,
+        90,
+      );
+
+      // Persisted: loading fresh from the same prefs returns the new value.
+      expect(
+        container
+            .read(settingsRepositoryProvider)
+            .load()
+            .dailyEnergyBudgetMinutes,
+        90,
+      );
+    },
+  );
 }

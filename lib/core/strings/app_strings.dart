@@ -59,6 +59,14 @@ class AppStrings {
     required this.taskUpdated,
     required this.taskDeleted,
     required this.estimateLabel,
+
+    // Energy budget / overwhelm reset
+    required this.todaysLoad,
+    required this.dailyPaceTitle,
+    required this.dailyPaceSubtitle,
+    required this.overBudgetTitle,
+    required this.spreadAction,
+    required this.spreadDone,
   });
 
   /// In-app title (task switcher / MaterialApp). The OS launcher label is the
@@ -123,6 +131,14 @@ class AppStrings {
   final String taskDeleted;
   final String estimateLabel;
 
+  // Energy budget / overwhelm reset
+  final String todaysLoad;
+  final String dailyPaceTitle;
+  final String dailyPaceSubtitle;
+  final String overBudgetTitle;
+  final String spreadAction;
+  final String spreadDone;
+
   /// The default, store-safe wording.
   static const AppStrings clean = AppStrings(
     appTitle: 'Stuff I Need To Do Today',
@@ -182,6 +198,13 @@ class AppStrings {
     taskUpdated: 'Saved',
     taskDeleted: 'Removed',
     estimateLabel: 'Estimate',
+    todaysLoad: "Today's load",
+    dailyPaceTitle: 'Daily pace',
+    dailyPaceSubtitle:
+        'Roughly how much you can take on in a day. We keep each day under this.',
+    overBudgetTitle: "Today's looking full — want to spread it out?",
+    spreadAction: 'Spread it out',
+    spreadDone: 'Spread across the days ahead',
   );
 
   /// The cheeky, mildly-sweary wording — opt-in via the profanity toggle.
@@ -242,5 +265,12 @@ class AppStrings {
     taskUpdated: 'Saved',
     taskDeleted: 'Binned',
     estimateLabel: 'Estimate',
+    todaysLoad: "Today's load",
+    dailyPaceTitle: 'Daily pace',
+    dailyPaceSubtitle:
+        'How much you can be arsed with in a day. We keep each day under this.',
+    overBudgetTitle: "Today's a lot — want to spread it out?",
+    spreadAction: 'Spread it out',
+    spreadDone: 'Spread across the days ahead',
   );
 }

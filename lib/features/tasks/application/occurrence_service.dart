@@ -1,6 +1,7 @@
 import '../data/occurrence_repository.dart';
 import '../data/task_repository.dart';
 import '../domain/effort_learning.dart';
+import '../domain/scheduling/load_balancer.dart';
 import '../domain/scheduling/scheduler.dart';
 import '../domain/scheduling/task_occurrence.dart';
 import '../domain/task.dart';
@@ -85,6 +86,33 @@ class OccurrenceService {
     );
     await occurrences.upsert(ownerId, moved);
     return moved;
+  }
+
+  /// Overwhelm reset: spread the given OPEN occurrences across the next
+  /// [horizonDays] under [dailyBudgetMinutes], persisting any that moved.
+  Future<List<TaskOccurrence>> rebalanceOpen({
+    required List<TaskOccurrence> open,
+    required List<Task> tasks,
+    required int dailyBudgetMinutes,
+    int horizonDays = 7,
+  }) async {
+    final balanced = rebalance(
+      occurrences: open,
+      tasks: tasks,
+      from: now(),
+      horizonDays: horizonDays,
+      dailyBudgetMinutes: dailyBudgetMinutes,
+    );
+    final byId = {for (final o in open) o.id: o};
+    for (final o in balanced) {
+      final before = byId[o.id];
+      if (before == null ||
+          before.scheduledDate != o.scheduledDate ||
+          before.status != o.status) {
+        await occurrences.upsert(ownerId, o);
+      }
+    }
+    return balanced;
   }
 
   /// Un-tick a previously completed or skipped occurrence, returning it to

@@ -27,10 +27,22 @@ class SettingsController extends Notifier<AppSettings> {
     await ref.read(settingsRepositoryProvider).setProfanityEnabled(value);
     state = state.copyWith(profanityEnabled: value);
   }
+
+  Future<void> setDailyEnergyBudget(int minutes) async {
+    await ref.read(settingsRepositoryProvider).setDailyEnergyBudget(minutes);
+    state = state.copyWith(dailyEnergyBudgetMinutes: minutes);
+  }
 }
 
 final settingsControllerProvider =
     NotifierProvider<SettingsController, AppSettings>(SettingsController.new);
+
+/// The current daily energy budget in minutes.
+final dailyEnergyBudgetProvider = Provider<int>(
+  (ref) => ref.watch(
+    settingsControllerProvider.select((s) => s.dailyEnergyBudgetMinutes),
+  ),
+);
 
 /// The active [AppStrings] set, chosen by the profanity toggle. Defaults to the
 /// clean wording.

@@ -16,12 +16,46 @@ class SettingsScreen extends ConsumerWidget {
     final profanityEnabled = ref.watch(
       settingsControllerProvider.select((s) => s.profanityEnabled),
     );
+    final budget = ref.watch(dailyEnergyBudgetProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(strings.settingsTitle)),
       body: ListView(
         padding: const EdgeInsets.all(AppLayout.screenPad),
         children: [
+          AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        strings.dailyPaceTitle,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ),
+                    AppBadge(label: '${budget}m', tone: AppBadgeTone.brand),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  strings.dailyPaceSubtitle,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                Slider(
+                  min: 15,
+                  max: 180,
+                  divisions: 33,
+                  value: budget.toDouble(),
+                  onChanged: (v) => ref
+                      .read(settingsControllerProvider.notifier)
+                      .setDailyEnergyBudget(v.round()),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.x4),
           AppCard(
             child: Row(
               children: [

@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:snitd/features/tasks/application/occurrence_service.dart';
 import 'package:snitd/features/tasks/data/occurrence_repository.dart';
 import 'package:snitd/features/tasks/domain/scheduling/forgiving_scheduler.dart';
+import 'package:snitd/features/tasks/domain/scheduling/load_balancer.dart';
 import 'package:snitd/features/tasks/domain/scheduling/recurrence.dart';
 import 'package:snitd/features/tasks/domain/scheduling/task_occurrence.dart';
 import 'package:snitd/features/tasks/domain/task.dart';
@@ -156,6 +157,96 @@ void main() {
       expect(occRepo.store[done.id]!.status, OccurrenceStatus.pending);
     },
   );
+
+  // ---------------------------------------------------------------------------
+  // rebalanceOpen — overwhelm reset
+  // ---------------------------------------------------------------------------
+  group('rebalanceOpen', () {
+    // 3 flexible-weekly tasks, 40 min each, all on Monday (window Mon–Sun).
+    // Budget = 60 → at most 1 task (40 min) fits on Monday;
+    // the other two must be moved to later days.
+    final windowStart = DateTime(2026, 6, 29); // Mon 29 Jun
+    final windowEnd = DateTime(2026, 7, 5); // Sun  5 Jul
+
+    Task flexTask(String id) => Task(
+      id: id,
+      ownerId: 'u1',
+      title: 'Flex task $id',
+      recurrence: const Recurrence.flexible(
+        timesPerPeriod: 1,
+        period: FrequencyPeriod.week,
+        windowDays: 7,
+      ),
+      estimatedEffortMinutes: 40,
+      createdAt: DateTime(2026),
+      updatedAt: DateTime(2026),
+    );
+
+    TaskOccurrence openOcc(String taskId) => TaskOccurrence(
+      id: '${taskId}_2026-06-29',
+      taskId: taskId,
+      scheduledDate: windowStart,
+      windowStart: windowStart,
+      windowEnd: windowEnd,
+      status: OccurrenceStatus.pending,
+    );
+
+    test(
+      'spreads over-budget occurrences across the week and persists moves',
+      () async {
+        final localOccRepo = FakeOccurrenceRepository();
+        final localTaskRepo = FakeTaskRepository();
+        final svc = OccurrenceService(
+          occurrences: localOccRepo,
+          tasks: localTaskRepo,
+          scheduler: const ForgivingScheduler(),
+          ownerId: 'u1',
+          now: () => DateTime(2026, 6, 29, 9),
+        );
+
+        final tasks = ['t1', 't2', 't3'].map(flexTask).toList();
+        final open = ['t1', 't2', 't3'].map(openOcc).toList();
+
+        // Seed repo with the original open occurrences on Monday.
+        for (final o in open) {
+          localOccRepo.store[o.id] = o;
+        }
+
+        final result = await svc.rebalanceOpen(
+          open: open,
+          tasks: tasks,
+          dailyBudgetMinutes: 60,
+          horizonDays: 7,
+        );
+
+        // At least one occurrence must have moved to a later day.
+        expect(
+          result.any(
+            (o) =>
+                o.status == OccurrenceStatus.rescheduled &&
+                o.scheduledDate != windowStart,
+          ),
+          isTrue,
+          reason: 'some occurrences should have been rescheduled off Monday',
+        );
+
+        // Monday's persisted open load must be ≤ budget.
+        final estimate = {
+          for (final t in tasks) t.id: t.estimatedEffortMinutes,
+        };
+        final mondayLoad = loadForDay(
+          localOccRepo.store.values,
+          estimate,
+          windowStart,
+        );
+        expect(
+          mondayLoad,
+          lessThanOrEqualTo(60),
+          reason: "Monday's persisted load should be within the budget",
+        );
+      },
+    );
+  });
 }
 
 final _monday = DateTime(2026, 6, 29);

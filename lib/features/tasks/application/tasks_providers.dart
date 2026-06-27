@@ -5,6 +5,7 @@ import '../data/occurrence_repository.dart';
 import '../data/starter_tasks.dart';
 import '../data/task_repository.dart';
 import '../domain/scheduling/forgiving_scheduler.dart';
+import '../domain/scheduling/load_balancer.dart';
 import '../domain/scheduling/scheduler.dart';
 import '../domain/scheduling/task_occurrence.dart';
 import '../domain/task.dart';
@@ -49,6 +50,26 @@ final todayChecklistProvider = Provider<List<TaskOccurrence>>((ref) {
   return ref
       .watch(schedulerProvider)
       .buildToday(tasks: tasks, today: now, existing: existing);
+});
+
+/// A map from task id to its estimated effort in minutes — derived from the
+/// live tasks stream, used by [todayLoadProvider].
+final estimateByTaskIdProvider = Provider<Map<String, int>>(
+  (ref) => {
+    for (final t in ref.watch(tasksProvider).value ?? const <Task>[])
+      t.id: t.estimatedEffortMinutes,
+  },
+);
+
+/// Total estimated effort (minutes) of the open occurrences on today's
+/// checklist — drives the "today's load" progress meter.
+final todayLoadProvider = Provider<int>((ref) {
+  final now = ref.watch(clockProvider)();
+  return loadForDay(
+    ref.watch(todayChecklistProvider),
+    ref.watch(estimateByTaskIdProvider),
+    now,
+  );
 });
 
 /// All persisted occurrences for one task, oldest persisted order — used by the

@@ -12,11 +12,16 @@ class SettingsRepository {
   final SharedPreferences _prefs;
 
   static const _kProfanityEnabled = 'profanity_enabled';
+  static const _kDailyEnergyBudget = 'daily_energy_budget_minutes';
 
   AppSettings load() => AppSettings(
     profanityEnabled: _prefs.getBool(_kProfanityEnabled) ?? false,
+    dailyEnergyBudgetMinutes: _prefs.getInt(_kDailyEnergyBudget) ?? 55,
   );
 
   Future<void> setProfanityEnabled(bool value) =>
       _prefs.setBool(_kProfanityEnabled, value);
+
+  Future<void> setDailyEnergyBudget(int minutes) =>
+      _prefs.setInt(_kDailyEnergyBudget, minutes);
 }

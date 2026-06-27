@@ -32,6 +32,8 @@ class TodayScreen extends ConsumerWidget {
     final checklist = ref.watch(todayChecklistProvider);
     final firebaseReady = ref.watch(firebaseReadyProvider);
     final strings = ref.watch(appStringsProvider);
+    final todayLoad = ref.watch(todayLoadProvider);
+    final budget = ref.watch(dailyEnergyBudgetProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -63,87 +65,155 @@ class TodayScreen extends ConsumerWidget {
           Expanded(
             child: checklist.isEmpty
                 ? const _EmptyStateWithSuggestions()
-                : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppLayout.screenPad,
-                      AppSpacing.x2,
-                      AppLayout.screenPad,
-                      AppSpacing.x11,
-                    ),
-                    itemCount: checklist.length,
-                    separatorBuilder: (_, _) =>
-                        const SizedBox(height: AppSpacing.x2),
-                    itemBuilder: (context, index) {
-                      final occ = checklist[index];
-                      final task = ref.watch(taskByIdProvider(occ.taskId));
-                      final item = AppTaskItem(
-                        title: task?.title ?? occ.taskId,
-                        minutes: task?.estimatedEffortMinutes,
-                        category: task?.category,
-                        done: occ.status == OccurrenceStatus.done,
-                        movedFrom:
-                            (occ.status == OccurrenceStatus.rescheduled &&
-                                occ.originalDate != null)
-                            ? _weekdayNames[occ.originalDate!.weekday - 1]
-                            : null,
-                        onTap: () =>
-                            context.push(Routes.taskDetailPath(occ.taskId)),
-                        onToggle: (next) {
-                          if (next && task != null) {
-                            showLogDurationSheet(
-                              context,
-                              occurrence: occ,
-                              task: task,
-                            );
-                          } else if (!next) {
-                            ref.read(occurrenceServiceProvider)?.reopen(occ);
-                          }
-                        },
-                      );
-                      return Dismissible(
-                        key: ValueKey(occ.id),
-                        direction: DismissDirection.endToStart,
-                        background: Container(
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: AppSpacing.x5),
-                          decoration: BoxDecoration(
-                            color: AppColors.rescheduleSoft,
-                            borderRadius: BorderRadius.circular(AppRadii.lg),
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppLayout.screenPad,
+                          AppSpacing.x3,
+                          AppLayout.screenPad,
+                          0,
+                        ),
+                        child: AppProgressMeter(
+                          value: todayLoad.toDouble(),
+                          max: budget.toDouble(),
+                          label: strings.todaysLoad,
+                        ),
+                      ),
+                      if (todayLoad > budget)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            AppLayout.screenPad,
+                            AppSpacing.x2,
+                            AppLayout.screenPad,
+                            0,
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                AppIcons.eventRepeat,
-                                color: AppColors.coral600,
-                              ),
-                              const SizedBox(width: AppSpacing.x2),
-                              Text(
-                                strings.notToday,
-                                style: TextStyle(
-                                  fontFamily: AppTypography.fontSans,
-                                  fontSize: AppTypography.sizeSm,
-                                  fontWeight: AppTypography.semibold,
-                                  color: AppColors.coral600,
-                                ),
-                              ),
-                            ],
+                          child: AppBanner(
+                            tone: AppBannerTone.gentle,
+                            message: strings.overBudgetTitle,
+                            action: AppButton(
+                              label: strings.spreadAction,
+                              variant: AppButtonVariant.tonal,
+                              size: AppButtonSize.sm,
+                              onPressed: () async {
+                                final svc = ref.read(occurrenceServiceProvider);
+                                if (svc == null) return;
+                                final open = ref
+                                    .read(todayChecklistProvider)
+                                    .where((o) => o.isOpen)
+                                    .toList();
+                                await svc.rebalanceOpen(
+                                  open: open,
+                                  tasks:
+                                      ref.read(tasksProvider).value ?? const [],
+                                  dailyBudgetMinutes: budget,
+                                );
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(strings.spreadDone)),
+                                  );
+                                }
+                              },
+                            ),
                           ),
                         ),
-                        confirmDismiss: (_) async {
-                          final svc = ref.read(occurrenceServiceProvider);
-                          if (svc == null) return false;
-                          await svc.skip(occ);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(strings.taskSkipped)),
+                      Expanded(
+                        child: ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(
+                            AppLayout.screenPad,
+                            AppSpacing.x2,
+                            AppLayout.screenPad,
+                            AppSpacing.x11,
+                          ),
+                          itemCount: checklist.length,
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: AppSpacing.x2),
+                          itemBuilder: (context, index) {
+                            final occ = checklist[index];
+                            final task = ref.watch(
+                              taskByIdProvider(occ.taskId),
                             );
-                          }
-                          return true;
-                        },
-                        child: item,
-                      );
-                    },
+                            final item = AppTaskItem(
+                              title: task?.title ?? occ.taskId,
+                              minutes: task?.estimatedEffortMinutes,
+                              category: task?.category,
+                              done: occ.status == OccurrenceStatus.done,
+                              movedFrom:
+                                  (occ.status == OccurrenceStatus.rescheduled &&
+                                      occ.originalDate != null)
+                                  ? _weekdayNames[occ.originalDate!.weekday - 1]
+                                  : null,
+                              onTap: () => context.push(
+                                Routes.taskDetailPath(occ.taskId),
+                              ),
+                              onToggle: (next) {
+                                if (next && task != null) {
+                                  showLogDurationSheet(
+                                    context,
+                                    occurrence: occ,
+                                    task: task,
+                                  );
+                                } else if (!next) {
+                                  ref
+                                      .read(occurrenceServiceProvider)
+                                      ?.reopen(occ);
+                                }
+                              },
+                            );
+                            return Dismissible(
+                              key: ValueKey(occ.id),
+                              direction: DismissDirection.endToStart,
+                              background: Container(
+                                alignment: Alignment.centerRight,
+                                padding: const EdgeInsets.only(
+                                  right: AppSpacing.x5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.rescheduleSoft,
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadii.lg,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      AppIcons.eventRepeat,
+                                      color: AppColors.coral600,
+                                    ),
+                                    const SizedBox(width: AppSpacing.x2),
+                                    Text(
+                                      strings.notToday,
+                                      style: TextStyle(
+                                        fontFamily: AppTypography.fontSans,
+                                        fontSize: AppTypography.sizeSm,
+                                        fontWeight: AppTypography.semibold,
+                                        color: AppColors.coral600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              confirmDismiss: (_) async {
+                                final svc = ref.read(occurrenceServiceProvider);
+                                if (svc == null) return false;
+                                await svc.skip(occ);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(strings.taskSkipped),
+                                    ),
+                                  );
+                                }
+                                return true;
+                              },
+                              child: item,
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   ),
           ),
         ],
