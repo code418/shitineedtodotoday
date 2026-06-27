@@ -1,16 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/starter_tasks.dart';
+import '../domain/scheduling/forgiving_scheduler.dart';
 import '../domain/scheduling/scheduler.dart';
 import '../domain/scheduling/task_occurrence.dart';
 import '../domain/task_suggestion.dart';
 
-/// The active scheduling engine.
-///
-/// Swap [PlaceholderScheduler] for the real engine once it lands — every
-/// consumer reads it through this provider, so nothing else needs to change.
+/// The active scheduling engine. Every consumer reads it through this provider.
 final schedulerProvider = Provider<Scheduler>(
-  (ref) => const PlaceholderScheduler(),
+  (ref) => const ForgivingScheduler(),
 );
 
 /// Today's checklist — the occurrences the user should see now.

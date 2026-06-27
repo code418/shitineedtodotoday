@@ -64,3 +64,5 @@ firebase-debug.*.log
 .agents/skills
 
 .vscode
+# Claude Code harness worktrees (not part of the project)
+.claude/worktrees/

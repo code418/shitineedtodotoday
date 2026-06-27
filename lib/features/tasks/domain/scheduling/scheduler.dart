@@ -7,10 +7,8 @@ import 'task_occurrence.dart';
 /// each day's checklist, and it neatly reschedules anything that slips so work
 /// never piles up into an overwhelming day.
 ///
-/// The real algorithm is intentionally **not** implemented in this scaffold;
-/// [PlaceholderScheduler] documents the contract and the intended behaviour so
-/// upcoming development has a clear seam to fill in. See `docs/ROADMAP.md`
-/// (P1/P2) for the planned evolution.
+/// The real implementation is `ForgivingScheduler`
+/// (`forgiving_scheduler.dart`), wired in through `schedulerProvider`.
 abstract interface class Scheduler {
   /// Build the list of occurrences that should appear on [today]'s checklist,
   /// given the user's active [tasks] and any [existing] occurrences already
@@ -36,38 +34,4 @@ abstract interface class Scheduler {
     required TaskOccurrence missed,
     required DateTime now,
   });
-}
-
-/// Documented no-op [Scheduler] used until the real engine lands.
-///
-/// [buildToday] returns an empty checklist; [rescheduleMissed] is unimplemented
-/// on purpose so callers fail loudly rather than silently dropping work.
-class PlaceholderScheduler implements Scheduler {
-  const PlaceholderScheduler();
-
-  @override
-  List<TaskOccurrence> buildToday({
-    required List<Task> tasks,
-    required DateTime today,
-    List<TaskOccurrence> existing = const <TaskOccurrence>[],
-  }) {
-    // TODO(upcoming): materialise occurrences from each active task's
-    // recurrence (strict -> exact days; flexible -> a day chosen within the
-    // window), skipping any already present in [existing].
-    return const <TaskOccurrence>[];
-  }
-
-  @override
-  TaskOccurrence rescheduleMissed({
-    required Task task,
-    required TaskOccurrence missed,
-    required DateTime now,
-  }) {
-    // TODO(upcoming): implement the forgiving reschedule described on
-    // [Scheduler.rescheduleMissed].
-    throw UnimplementedError(
-      'PlaceholderScheduler.rescheduleMissed is not implemented yet. '
-      'Replace PlaceholderScheduler with the real engine (see docs/ROADMAP.md).',
-    );
-  }
 }
