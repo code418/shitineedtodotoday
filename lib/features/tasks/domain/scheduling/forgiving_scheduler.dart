@@ -43,12 +43,15 @@ class ForgivingScheduler implements Scheduler {
     final result = <TaskOccurrence>[];
     final claimed = <String>{};
 
-    // 1. Keep occurrences already persisted for today (any status), so ticked
-    //    or rescheduled-into-today items still render and we never duplicate.
+    // 1. Keep occurrences already persisted for today in the claimed set so we
+    //    never regenerate them; only add to result if not skipped (skipped =
+    //    "not today" → hidden from checklist but not re-created).
     for (final occ in existing) {
       if (dateOnly(occ.scheduledDate) == day) {
-        result.add(occ);
         claimed.add(occ.taskId);
+        if (occ.status != OccurrenceStatus.skipped) {
+          result.add(occ);
+        }
       }
     }
 

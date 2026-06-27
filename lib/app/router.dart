@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../dev/gallery/gallery_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
+import '../features/tasks/presentation/task_detail_screen.dart';
 import '../features/tasks/presentation/today_screen.dart';
 
 /// App route names, kept in one place to avoid stringly-typed navigation.
@@ -11,6 +12,10 @@ abstract final class Routes {
   static const today = '/';
   static const settings = '/settings';
   static const gallery = '/gallery';
+  static const taskDetail = '/task/:id';
+
+  /// Builds the concrete path for a task's detail screen.
+  static String taskDetailPath(String id) => '/task/$id';
 }
 
 /// The app's [GoRouter]. Exposed as a provider so routes can later depend on
@@ -26,6 +31,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.settings,
         builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: Routes.taskDetail,
+        builder: (context, state) =>
+            TaskDetailScreen(taskId: state.pathParameters['id']!),
       ),
       if (kDebugMode)
         GoRoute(

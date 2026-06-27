@@ -18,6 +18,7 @@ abstract final class AppIcons {
   static const IconData info = Symbols.info_rounded;
   static const IconData favorite = Symbols.favorite_rounded;
   static const IconData error = Symbols.error_rounded;
+  static const IconData edit = Symbols.edit_rounded;
   static const IconData delete = Symbols.delete_rounded;
 
   // Category / themed-day glyphs.

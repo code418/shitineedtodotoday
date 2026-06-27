@@ -14,6 +14,7 @@ class AppTaskItem extends StatelessWidget {
     this.done = false,
     this.movedFrom,
     this.onToggle,
+    this.onTap,
   });
 
   final String title;
@@ -23,100 +24,114 @@ class AppTaskItem extends StatelessWidget {
   final String? movedFrom;
   final ValueChanged<bool>? onToggle;
 
+  /// Called when the user taps the row body (outside the checkbox). When null
+  /// the row is not tappable and no [GestureDetector] is inserted.
+  final VoidCallback? onTap;
+
   @override
   Widget build(BuildContext context) {
+    final container = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceCard,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        boxShadow: AppShadows.card,
+      ),
+      child: Row(
+        children: [
+          AppCheckbox(
+            value: done,
+            onChanged: onToggle == null ? null : (v) => onToggle!(v),
+          ),
+          const SizedBox(width: AppSpacing.x3),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: AppTypography.fontSans,
+                    fontSize: AppTypography.title,
+                    fontWeight: AppTypography.bold,
+                    color: AppColors.textPrimary,
+                    decoration: done
+                        ? TextDecoration.lineThrough
+                        : TextDecoration.none,
+                    decorationColor: AppColors.ink300,
+                  ),
+                ),
+                if (category != null || movedFrom != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 3),
+                    child: Row(
+                      children: [
+                        if (category != null)
+                          Text(
+                            category!,
+                            style: TextStyle(
+                              fontFamily: AppTypography.fontSans,
+                              fontSize: AppTypography.sizeXs,
+                              fontWeight: AppTypography.semibold,
+                              color: AppColors.textMuted,
+                            ),
+                          ),
+                        if (category != null && movedFrom != null)
+                          const SizedBox(width: 8),
+                        if (movedFrom != null)
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                AppIcons.eventRepeat,
+                                size: 14,
+                                color: AppColors.coral600,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                'moved from $movedFrom',
+                                style: TextStyle(
+                                  fontFamily: AppTypography.fontSans,
+                                  fontSize: AppTypography.sizeXs,
+                                  fontWeight: AppTypography.semibold,
+                                  color: AppColors.coral600,
+                                ),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          if (minutes != null) ...[
+            const SizedBox(width: AppSpacing.x2),
+            AppBadge(
+              label: '~${minutes}m',
+              tone: done ? AppBadgeTone.done : null,
+            ),
+          ],
+        ],
+      ),
+    );
+
+    final inner = onTap != null
+        ? GestureDetector(
+            onTap: onTap,
+            behavior: HitTestBehavior.opaque,
+            child: container,
+          )
+        : container;
+
     return AnimatedOpacity(
       duration: AppMotion.of(context, AppMotion.normal),
       curve: AppMotion.soft,
       opacity: done ? 0.62 : 1,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceCard,
-          borderRadius: BorderRadius.circular(AppRadii.lg),
-          boxShadow: AppShadows.card,
-        ),
-        child: Row(
-          children: [
-            AppCheckbox(
-              value: done,
-              onChanged: onToggle == null ? null : (v) => onToggle!(v),
-            ),
-            const SizedBox(width: AppSpacing.x3),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontFamily: AppTypography.fontSans,
-                      fontSize: AppTypography.title,
-                      fontWeight: AppTypography.bold,
-                      color: AppColors.textPrimary,
-                      decoration: done
-                          ? TextDecoration.lineThrough
-                          : TextDecoration.none,
-                      decorationColor: AppColors.ink300,
-                    ),
-                  ),
-                  if (category != null || movedFrom != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 3),
-                      child: Row(
-                        children: [
-                          if (category != null)
-                            Text(
-                              category!,
-                              style: TextStyle(
-                                fontFamily: AppTypography.fontSans,
-                                fontSize: AppTypography.sizeXs,
-                                fontWeight: AppTypography.semibold,
-                                color: AppColors.textMuted,
-                              ),
-                            ),
-                          if (category != null && movedFrom != null)
-                            const SizedBox(width: 8),
-                          if (movedFrom != null)
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  AppIcons.eventRepeat,
-                                  size: 14,
-                                  color: AppColors.coral600,
-                                ),
-                                const SizedBox(width: 3),
-                                Text(
-                                  'moved from $movedFrom',
-                                  style: TextStyle(
-                                    fontFamily: AppTypography.fontSans,
-                                    fontSize: AppTypography.sizeXs,
-                                    fontWeight: AppTypography.semibold,
-                                    color: AppColors.coral600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            if (minutes != null) ...[
-              const SizedBox(width: AppSpacing.x2),
-              AppBadge(
-                label: '~${minutes}m',
-                tone: done ? AppBadgeTone.done : null,
-              ),
-            ],
-          ],
-        ),
-      ),
+      child: inner,
     );
   }
 }

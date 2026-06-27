@@ -190,6 +190,26 @@ void main() {
       );
       expect(scheduler.buildToday(tasks: [task], today: monday), isEmpty);
     });
+
+    test('a skipped occurrence is hidden from today and not regenerated', () {
+      final task = _task(const Recurrence.strict(weekdays: [DateTime.monday]));
+      final skipped = TaskOccurrence(
+        id: occurrenceId('t1', monday),
+        taskId: 't1',
+        scheduledDate: monday,
+        status: OccurrenceStatus.skipped,
+      );
+      final list = scheduler.buildToday(
+        tasks: [task],
+        today: monday,
+        existing: [skipped],
+      );
+      expect(
+        list,
+        isEmpty,
+        reason: 'skipped occurrence is hidden AND not regenerated',
+      );
+    });
   });
 
   group('rescheduleMissed — flexible', () {

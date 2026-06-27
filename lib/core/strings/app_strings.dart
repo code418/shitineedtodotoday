@@ -42,6 +42,23 @@ class AppStrings {
     required this.learnedQuicker,
     required this.learnedSettled,
     required this.learnedPrefix,
+
+    // Task detail / delete
+    required this.deleteTaskTitle,
+    required this.deleteTaskBody,
+    required this.deleteConfirm,
+    required this.cancel,
+    required this.effortHeading,
+    required this.historyHeading,
+    required this.noEffortYet,
+    required this.noHistoryYet,
+    required this.notToday,
+    required this.skippedLabel,
+    required this.movedLabel,
+    required this.taskSkipped,
+    required this.taskUpdated,
+    required this.taskDeleted,
+    required this.estimateLabel,
   });
 
   /// In-app title (task switcher / MaterialApp). The OS launcher label is the
@@ -89,6 +106,23 @@ class AppStrings {
   final String learnedSettled;
   final String learnedPrefix;
 
+  // Task detail / delete
+  final String deleteTaskTitle;
+  final String deleteTaskBody;
+  final String deleteConfirm;
+  final String cancel;
+  final String effortHeading;
+  final String historyHeading;
+  final String noEffortYet;
+  final String noHistoryYet;
+  final String notToday;
+  final String skippedLabel;
+  final String movedLabel;
+  final String taskSkipped;
+  final String taskUpdated;
+  final String taskDeleted;
+  final String estimateLabel;
+
   /// The default, store-safe wording.
   static const AppStrings clean = AppStrings(
     appTitle: 'Stuff I Need To Do Today',
@@ -131,6 +165,23 @@ class AppStrings {
     learnedQuicker: 'quicker than you thought',
     learnedSettled: 'good to know',
     learnedPrefix: 'Learned: usually',
+    deleteTaskTitle: 'Delete this task?',
+    deleteTaskBody:
+        'This removes the task and its history. It cannot be undone.',
+    deleteConfirm: 'Delete',
+    cancel: 'Cancel',
+    effortHeading: 'Effort',
+    historyHeading: 'History',
+    noEffortYet:
+        'Tick it off a few times and your effort history shows up here.',
+    noHistoryYet: 'Nothing logged yet.',
+    notToday: 'Not today',
+    skippedLabel: 'skipped',
+    movedLabel: 'moved',
+    taskSkipped: 'Moved off today — no problem.',
+    taskUpdated: 'Saved',
+    taskDeleted: 'Removed',
+    estimateLabel: 'Estimate',
   );
 
   /// The cheeky, mildly-sweary wording — opt-in via the profanity toggle.
@@ -175,5 +226,21 @@ class AppStrings {
     learnedQuicker: 'faster than you reckoned',
     learnedSettled: 'good to know',
     learnedPrefix: 'Learned: usually',
+    deleteTaskTitle: 'Bin this shit?',
+    deleteTaskBody: 'This bins the task and its history. No takebacks.',
+    deleteConfirm: 'Bin it',
+    cancel: 'Cancel',
+    effortHeading: 'Effort',
+    historyHeading: 'History',
+    noEffortYet:
+        'Tick it off a few times and your effort history shows up here.',
+    noHistoryYet: 'Nothing logged yet.',
+    notToday: 'Not today',
+    skippedLabel: 'skipped',
+    movedLabel: 'moved',
+    taskSkipped: "Off today's list — no problem.",
+    taskUpdated: 'Saved',
+    taskDeleted: 'Binned',
+    estimateLabel: 'Estimate',
   );
 }

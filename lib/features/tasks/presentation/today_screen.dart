@@ -76,7 +76,7 @@ class TodayScreen extends ConsumerWidget {
                     itemBuilder: (context, index) {
                       final occ = checklist[index];
                       final task = ref.watch(taskByIdProvider(occ.taskId));
-                      return AppTaskItem(
+                      final item = AppTaskItem(
                         title: task?.title ?? occ.taskId,
                         minutes: task?.estimatedEffortMinutes,
                         category: task?.category,
@@ -86,6 +86,8 @@ class TodayScreen extends ConsumerWidget {
                                 occ.originalDate != null)
                             ? _weekdayNames[occ.originalDate!.weekday - 1]
                             : null,
+                        onTap: () =>
+                            context.push(Routes.taskDetailPath(occ.taskId)),
                         onToggle: (next) {
                           if (next && task != null) {
                             showLogDurationSheet(
@@ -97,6 +99,49 @@ class TodayScreen extends ConsumerWidget {
                             ref.read(occurrenceServiceProvider)?.reopen(occ);
                           }
                         },
+                      );
+                      return Dismissible(
+                        key: ValueKey(occ.id),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: AppSpacing.x5),
+                          decoration: BoxDecoration(
+                            color: AppColors.rescheduleSoft,
+                            borderRadius: BorderRadius.circular(AppRadii.lg),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                AppIcons.eventRepeat,
+                                color: AppColors.coral600,
+                              ),
+                              const SizedBox(width: AppSpacing.x2),
+                              Text(
+                                strings.notToday,
+                                style: TextStyle(
+                                  fontFamily: AppTypography.fontSans,
+                                  fontSize: AppTypography.sizeSm,
+                                  fontWeight: AppTypography.semibold,
+                                  color: AppColors.coral600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        confirmDismiss: (_) async {
+                          final svc = ref.read(occurrenceServiceProvider);
+                          if (svc == null) return false;
+                          await svc.skip(occ);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(strings.taskSkipped)),
+                            );
+                          }
+                          return true;
+                        },
+                        child: item,
                       );
                     },
                   ),
