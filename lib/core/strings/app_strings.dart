@@ -33,6 +33,10 @@ class AppStrings {
     required this.recurrenceWeekdays,
     required this.recurrenceWeekly,
     required this.recurrenceMonthly,
+    required this.recurrenceSeasonal,
+    required this.recurrenceOneOff,
+    required this.chooseDate,
+    required this.pickADate,
     required this.pickADay,
     required this.titleRequired,
     required this.taskAdded,
@@ -113,6 +117,12 @@ class AppStrings {
   final String recurrenceWeekdays;
   final String recurrenceWeekly;
   final String recurrenceMonthly;
+  final String recurrenceSeasonal;
+  final String recurrenceOneOff;
+
+  // Date picker
+  final String chooseDate;
+  final String pickADate;
 
   // Validation / feedback
   final String pickADay;
@@ -198,6 +208,10 @@ class AppStrings {
     recurrenceWeekdays: 'Specific days',
     recurrenceWeekly: 'Once a week',
     recurrenceMonthly: 'Once a month',
+    recurrenceSeasonal: 'Seasonal',
+    recurrenceOneOff: 'One-off',
+    chooseDate: 'Choose a date',
+    pickADate: 'Pick a date first',
     pickADay: 'Pick at least one day',
     titleRequired: 'Give it a name first',
     taskAdded: 'Added to your list',
@@ -282,6 +296,10 @@ class AppStrings {
     recurrenceWeekdays: 'Specific days',
     recurrenceWeekly: 'Once a week',
     recurrenceMonthly: 'Once a month',
+    recurrenceSeasonal: 'Seasonal',
+    recurrenceOneOff: 'One-off',
+    chooseDate: 'Choose a date',
+    pickADate: 'Pick a date first',
     pickADay: 'Pick at least one day',
     titleRequired: 'Give it a name first',
     taskAdded: 'On the list',

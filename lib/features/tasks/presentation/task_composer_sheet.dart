@@ -8,9 +8,10 @@ import '../application/tasks_providers.dart';
 import '../domain/scheduling/recurrence.dart';
 import '../domain/task.dart';
 
-enum _RecurrencePreset { weekdays, weekly, monthly, everyday }
+enum _RecurrencePreset { weekdays, weekly, monthly, everyday, seasonal, oneOff }
 
 const _weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const _seasonLabels = ['Spring', 'Summer', 'Autumn', 'Winter'];
 
 /// Shows the add/edit task modal bottom sheet.
 ///
@@ -40,6 +41,8 @@ class _TaskComposerSheetState extends ConsumerState<_TaskComposerSheet> {
   late int _effort;
   late _RecurrencePreset _preset;
   late Set<int> _selectedWeekdays;
+  Season _season = Season.summer;
+  DateTime? _exactDate;
 
   @override
   void initState() {
@@ -51,9 +54,17 @@ class _TaskComposerSheetState extends ConsumerState<_TaskComposerSheet> {
 
     if (existing != null) {
       final rec = existing.recurrence;
-      if (rec is StrictRecurrence && rec.weekdays.isNotEmpty) {
+      if (rec is StrictRecurrence && rec.exactDate != null) {
+        _preset = _RecurrencePreset.oneOff;
+        _exactDate = rec.exactDate;
+        _selectedWeekdays = {};
+      } else if (rec is StrictRecurrence && rec.weekdays.isNotEmpty) {
         _preset = _RecurrencePreset.weekdays;
         _selectedWeekdays = rec.weekdays.toSet();
+      } else if (rec is FlexibleRecurrence && rec.season != null) {
+        _preset = _RecurrencePreset.seasonal;
+        _season = rec.season!;
+        _selectedWeekdays = {};
       } else if (rec is FlexibleRecurrence) {
         switch (rec.period) {
           case FrequencyPeriod.week:
@@ -102,6 +113,13 @@ class _TaskComposerSheetState extends ConsumerState<_TaskComposerSheet> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(strings.pickADay)));
+      return;
+    }
+
+    if (_preset == _RecurrencePreset.oneOff && _exactDate == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(strings.pickADate)));
       return;
     }
 
@@ -156,8 +174,13 @@ class _TaskComposerSheetState extends ConsumerState<_TaskComposerSheet> {
       _RecurrencePreset.everyday => const Recurrence.flexible(
         period: FrequencyPeriod.day,
       ),
+      _RecurrencePreset.seasonal => Recurrence.flexible(season: _season),
+      _RecurrencePreset.oneOff => Recurrence.strict(exactDate: _exactDate),
     };
   }
+
+  String _formatDate(DateTime d) =>
+      '${d.day} ${const ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.month]} ${d.year}';
 
   String _presetLabel(_RecurrencePreset preset, AppStrings strings) {
     return switch (preset) {
@@ -165,6 +188,8 @@ class _TaskComposerSheetState extends ConsumerState<_TaskComposerSheet> {
       _RecurrencePreset.weekly => strings.recurrenceWeekly,
       _RecurrencePreset.monthly => strings.recurrenceMonthly,
       _RecurrencePreset.everyday => strings.recurrenceEveryday,
+      _RecurrencePreset.seasonal => strings.recurrenceSeasonal,
+      _RecurrencePreset.oneOff => strings.recurrenceOneOff,
     };
   }
 
@@ -322,6 +347,45 @@ class _TaskComposerSheetState extends ConsumerState<_TaskComposerSheet> {
                       }),
                     ),
                 ],
+              ),
+            ],
+
+            // Season chips (shown only when "Seasonal" is selected)
+            if (_preset == _RecurrencePreset.seasonal) ...[
+              const SizedBox(height: AppSpacing.x2),
+              Wrap(
+                spacing: AppSpacing.x2,
+                runSpacing: AppSpacing.x2,
+                children: [
+                  for (int i = 0; i < _seasonLabels.length; i++)
+                    AppChip(
+                      label: _seasonLabels[i],
+                      selectable: true,
+                      selected: _season == Season.values[i],
+                      onTap: () => setState(() => _season = Season.values[i]),
+                    ),
+                ],
+              ),
+            ],
+
+            // Date picker button (shown only when "One-off" is selected)
+            if (_preset == _RecurrencePreset.oneOff) ...[
+              const SizedBox(height: AppSpacing.x2),
+              AppButton(
+                variant: AppButtonVariant.tonal,
+                label: _exactDate == null
+                    ? strings.chooseDate
+                    : _formatDate(_exactDate!),
+                onPressed: () async {
+                  final now = ref.read(clockProvider)();
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _exactDate ?? now,
+                    firstDate: DateTime(now.year, now.month, now.day),
+                    lastDate: DateTime(now.year + 5),
+                  );
+                  if (picked != null) setState(() => _exactDate = picked);
+                },
               ),
             ],
 
