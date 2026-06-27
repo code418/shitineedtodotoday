@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'app/app.dart';
 import 'core/firebase/firebase_providers.dart';
 import 'features/auth/data/auth_repository.dart';
+import 'features/notifications/application/push_registrar.dart';
 import 'features/settings/application/settings_providers.dart';
 import 'firebase_options.dart';
 
@@ -64,10 +65,14 @@ Future<bool> _initializeFirebase() async {
 
 Future<void> _ensureSignedIn(ProviderContainer container) async {
   try {
-    await container.read(authRepositoryProvider).ensureSignedIn();
-    // TODO(upcoming): request FCM permission, read the messaging token and
-    // store it on the user's Firestore doc so server-scheduled reminders
-    // (Cloud Function -> FCM) can target this device.
+    final user = await container.read(authRepositoryProvider).ensureSignedIn();
+    // Register this device for server-scheduled reminders (Cloud Function ->
+    // FCM). Best-effort: a declined permission shouldn't block the app.
+    try {
+      await container.read(pushRegistrarProvider).registerFor(user.uid);
+    } catch (error, stackTrace) {
+      debugPrint('Push registration failed: $error\n$stackTrace');
+    }
   } catch (error, stackTrace) {
     debugPrint('Anonymous sign-in failed: $error\n$stackTrace');
   }
