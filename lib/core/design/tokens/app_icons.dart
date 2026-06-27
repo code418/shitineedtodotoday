@@ -23,6 +23,7 @@ abstract final class AppIcons {
   static const IconData notifications = Symbols.notifications_rounded;
   static const IconData bedtime = Symbols.bedtime_rounded;
   static const IconData person = Symbols.person_rounded;
+  static const IconData group = Symbols.group_rounded;
 
   // Category / themed-day glyphs.
   static const IconData countertops = Symbols.countertops_rounded;

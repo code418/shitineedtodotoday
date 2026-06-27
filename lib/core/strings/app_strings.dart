@@ -101,6 +101,19 @@ class AppStrings {
     required this.nudgeBodyHasTasks,
     required this.nudgeBodyClear,
 
+    // Household
+    required this.householdTitle,
+    required this.householdSettingsLink,
+    required this.householdMembersHeading,
+    required this.addMemberCta,
+    required this.memberNameHint,
+    required this.whoseTurnHeading,
+    required this.unassignedLabel,
+    required this.reassignTitle,
+    required this.removeMember,
+    required this.youLabel,
+    required this.householdEmpty,
+
     // Account / upgrade
     required this.accountTitle,
     required this.accountSettingsLink,
@@ -224,6 +237,19 @@ class AppStrings {
   final String nudgeBodyHasTasks;
   final String nudgeBodyClear;
 
+  // Household
+  final String householdTitle;
+  final String householdSettingsLink;
+  final String householdMembersHeading;
+  final String addMemberCta;
+  final String memberNameHint;
+  final String whoseTurnHeading;
+  final String unassignedLabel;
+  final String reassignTitle;
+  final String removeMember;
+  final String youLabel;
+  final String householdEmpty;
+
   // Account / upgrade
   final String accountTitle;
   final String accountSettingsLink;
@@ -342,6 +368,18 @@ class AppStrings {
     nudgeBodyHasTasks:
         "You've got things lined up for today — open when you're ready.",
     nudgeBodyClear: 'Nothing on today. Enjoy the breather.',
+    householdTitle: 'Household',
+    householdSettingsLink: 'Household',
+    householdMembersHeading: 'Who pitches in',
+    addMemberCta: 'Add someone',
+    memberNameHint: 'Name',
+    whoseTurnHeading: "Today's turns",
+    unassignedLabel: 'Anyone',
+    reassignTitle: 'Whose turn?',
+    removeMember: 'Remove',
+    youLabel: 'You',
+    householdEmpty:
+        'Add the people you share chores with, then hand tasks round.',
     accountTitle: 'Account',
     accountSettingsLink: 'Account',
     guestTitle: "You're a guest",
@@ -461,6 +499,18 @@ class AppStrings {
     nudgeBodyHasTasks:
         "You've got shit lined up today — open when you're ready.",
     nudgeBodyClear: 'Sweet F.A. today. Enjoy the breather.',
+    householdTitle: 'Household',
+    householdSettingsLink: 'Household',
+    householdMembersHeading: 'Who pitches in',
+    addMemberCta: 'Add someone',
+    memberNameHint: 'Name',
+    whoseTurnHeading: "Today's turns",
+    unassignedLabel: 'Anyone',
+    reassignTitle: 'Whose turn?',
+    removeMember: 'Remove',
+    youLabel: 'You',
+    householdEmpty:
+        'Add the folk you share chores with, then hand the shit round.',
     accountTitle: 'Account',
     accountSettingsLink: 'Account',
     guestTitle: "You're a guest",

@@ -36,6 +36,10 @@ abstract class Task with _$Task {
     @Default(15) int estimatedEffortMinutes,
     @Default(TaskPriority.normal) TaskPriority priority,
 
+    /// Household member this task is currently assigned to ("whose turn"), or
+    /// null for unassigned / anyone.
+    String? assigneeId,
+
     /// Preferred reminder time as `HH:mm` (local). Drives the future
     /// server-side FCM reminder scheduling.
     String? reminderTimeOfDay,

@@ -18,6 +18,7 @@ _Task _$TaskFromJson(Map<String, dynamic> json) => _Task(
   priority:
       $enumDecodeNullable(_$TaskPriorityEnumMap, json['priority']) ??
       TaskPriority.normal,
+  assigneeId: json['assigneeId'] as String?,
   reminderTimeOfDay: json['reminderTimeOfDay'] as String?,
   isActive: json['isActive'] as bool? ?? true,
   createdAt: DateTime.parse(json['createdAt'] as String),
@@ -33,6 +34,7 @@ Map<String, dynamic> _$TaskToJson(_Task instance) => <String, dynamic>{
   'recurrence': instance.recurrence,
   'estimatedEffortMinutes': instance.estimatedEffortMinutes,
   'priority': _$TaskPriorityEnumMap[instance.priority]!,
+  'assigneeId': instance.assigneeId,
   'reminderTimeOfDay': instance.reminderTimeOfDay,
   'isActive': instance.isActive,
   'createdAt': instance.createdAt.toIso8601String(),
