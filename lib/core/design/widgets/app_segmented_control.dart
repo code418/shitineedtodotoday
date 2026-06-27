@@ -37,32 +37,37 @@ class AppSegmentedControl<T> extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           for (final seg in segments)
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => onChanged(seg.value),
-              child: AnimatedContainer(
-                duration: AppMotion.of(context, AppMotion.fast),
-                curve: AppMotion.soft,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: seg.value == value
-                      ? AppColors.surfaceCard
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(AppRadii.pill),
-                  boxShadow: seg.value == value ? AppShadows.sm : const [],
-                ),
-                child: Text(
-                  seg.label,
-                  style: TextStyle(
-                    fontFamily: AppTypography.fontSans,
-                    fontSize: small
-                        ? AppTypography.sizeXs
-                        : AppTypography.sizeSm,
-                    fontWeight: AppTypography.bold,
+            Semantics(
+              button: true,
+              selected: seg.value == value,
+              label: seg.label,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => onChanged(seg.value),
+                child: AnimatedContainer(
+                  duration: AppMotion.of(context, AppMotion.fast),
+                  curve: AppMotion.soft,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
                     color: seg.value == value
-                        ? AppColors.textPrimary
-                        : AppColors.textMuted,
+                        ? AppColors.surfaceCard
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(AppRadii.pill),
+                    boxShadow: seg.value == value ? AppShadows.sm : const [],
+                  ),
+                  child: Text(
+                    seg.label,
+                    style: TextStyle(
+                      fontFamily: AppTypography.fontSans,
+                      fontSize: small
+                          ? AppTypography.sizeXs
+                          : AppTypography.sizeSm,
+                      fontWeight: AppTypography.bold,
+                      color: seg.value == value
+                          ? AppColors.textPrimary
+                          : AppColors.textMuted,
+                    ),
                   ),
                 ),
               ),

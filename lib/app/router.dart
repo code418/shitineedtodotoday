@@ -1,7 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../core/design/gallery/gallery_screen.dart';
+import '../dev/gallery/gallery_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
 import '../features/tasks/presentation/today_screen.dart';
 
@@ -26,10 +27,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: Routes.settings,
         builder: (context, state) => const SettingsScreen(),
       ),
-      GoRoute(
-        path: Routes.gallery,
-        builder: (context, state) => const GalleryScreen(),
-      ),
+      if (kDebugMode)
+        GoRoute(
+          path: Routes.gallery,
+          builder: (context, state) => const GalleryScreen(),
+        ),
     ],
   );
 });

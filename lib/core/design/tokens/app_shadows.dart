@@ -28,4 +28,8 @@ abstract final class AppShadows {
   static const List<BoxShadow> brand = [
     BoxShadow(color: Color(0x4D4C6FFF), blurRadius: 16, offset: Offset(0, 6)),
   ];
+
+  static const List<BoxShadow> danger = [
+    BoxShadow(color: Color(0x47E5484D), blurRadius: 16, offset: Offset(0, 6)),
+  ];
 }

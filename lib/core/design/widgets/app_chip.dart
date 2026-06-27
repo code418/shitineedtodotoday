@@ -37,37 +37,46 @@ class AppChip extends StatelessWidget {
     final isFilled = selectable ? selected : true;
     final showBorder = selectable && !selected;
 
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        height: 30,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: isFilled ? bg : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppRadii.pill),
-          border: Border.all(
-            color: showBorder ? AppColors.borderDefault : Colors.transparent,
-            width: 1.5,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              Icon(icon, size: 15, color: isFilled ? fg : AppColors.textMuted),
-              const SizedBox(width: 6),
-            ],
-            Text(
-              label,
-              style: TextStyle(
-                fontFamily: AppTypography.fontSans,
-                fontSize: AppTypography.sizeXs,
-                fontWeight: AppTypography.bold,
-                color: isFilled ? fg : AppColors.textMuted,
-              ),
+    return Semantics(
+      button: onTap != null,
+      selected: selectable ? selected : null,
+      label: label,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          height: 30,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: isFilled ? bg : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppRadii.pill),
+            border: Border.all(
+              color: showBorder ? AppColors.borderDefault : Colors.transparent,
+              width: 1.5,
             ),
-          ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Icon(
+                  icon,
+                  size: 15,
+                  color: isFilled ? fg : AppColors.textMuted,
+                ),
+                const SizedBox(width: 6),
+              ],
+              Text(
+                label,
+                style: TextStyle(
+                  fontFamily: AppTypography.fontSans,
+                  fontSize: AppTypography.sizeXs,
+                  fontWeight: AppTypography.bold,
+                  color: isFilled ? fg : AppColors.textMuted,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

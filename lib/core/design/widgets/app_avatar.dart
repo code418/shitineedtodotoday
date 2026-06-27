@@ -48,7 +48,23 @@ class AppAvatar extends StatelessWidget {
         width: size,
         height: size,
         child: imageUrl != null
-            ? Image.network(imageUrl!, fit: BoxFit.cover)
+            ? Image.network(
+                imageUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  color: bg,
+                  alignment: Alignment.center,
+                  child: Text(
+                    _initials,
+                    style: TextStyle(
+                      fontFamily: AppTypography.fontSans,
+                      fontWeight: AppTypography.bold,
+                      fontSize: (size * 0.4).roundToDouble(),
+                      color: fg,
+                    ),
+                  ),
+                ),
+              )
             : Container(
                 color: bg,
                 alignment: Alignment.center,

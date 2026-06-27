@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../features/tasks/presentation/widgets/task_item.dart';
-import '../design.dart';
+import '../../core/design/design.dart';
+import '../../features/tasks/presentation/widgets/task_item.dart';
 
 /// Debug-only showcase of the design system: tokens + every widget variant.
 /// Linked from Settings in debug builds; useful as living documentation.

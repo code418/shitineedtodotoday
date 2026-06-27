@@ -40,18 +40,23 @@ class _AppCardState extends State<AppCard> {
       child: widget.child,
     );
 
-    if (!widget.interactive && widget.onTap == null) return card;
+    if (!widget.interactive && widget.onTap == null) {
+      return Semantics(button: false, child: card);
+    }
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovering = true),
-      onExit: (_) => setState(() => _hovering = false),
-      cursor: widget.onTap != null
-          ? SystemMouseCursors.click
-          : MouseCursor.defer,
-      child: GestureDetector(
-        onTap: widget.onTap,
-        behavior: HitTestBehavior.opaque,
-        child: card,
+    return Semantics(
+      button: widget.onTap != null,
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _hovering = true),
+        onExit: (_) => setState(() => _hovering = false),
+        cursor: widget.onTap != null
+            ? SystemMouseCursors.click
+            : MouseCursor.defer,
+        child: GestureDetector(
+          onTap: widget.onTap,
+          behavior: HitTestBehavior.opaque,
+          child: card,
+        ),
       ),
     );
   }

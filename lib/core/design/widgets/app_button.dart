@@ -53,10 +53,6 @@ class AppButton extends StatefulWidget {
     AppButtonSize.lg: _SizeSpec(54, 26, AppTypography.h3, 20, 10),
   };
 
-  static const _danger = [
-    BoxShadow(color: Color(0x47E5484D), blurRadius: 16, offset: Offset(0, 6)),
-  ];
-
   static const _variants = {
     AppButtonVariant.primary: _VariantSpec(
       AppColors.brand,
@@ -79,7 +75,7 @@ class AppButton extends StatefulWidget {
     AppButtonVariant.danger: _VariantSpec(
       AppColors.error,
       AppColors.white,
-      _danger,
+      AppShadows.danger,
       null,
     ),
   };
@@ -122,32 +118,37 @@ class _AppButtonState extends State<AppButton> {
       ],
     );
 
-    return Opacity(
-      opacity: enabled ? 1 : 0.45,
-      child: GestureDetector(
-        onTapDown: enabled ? (_) => setState(() => _pressed = true) : null,
-        onTapUp: enabled ? (_) => setState(() => _pressed = false) : null,
-        onTapCancel: enabled ? () => setState(() => _pressed = false) : null,
-        onTap: widget.onPressed,
-        child: AnimatedScale(
-          scale: _pressed ? 0.96 : 1,
-          duration: AppMotion.of(context, AppMotion.fast),
-          curve: AppMotion.spring,
-          child: Container(
-            height: s.height,
-            width: widget.block ? double.infinity : null,
-            padding: EdgeInsets.symmetric(horizontal: s.padX),
-            decoration: BoxDecoration(
-              color: v.bg,
-              borderRadius: BorderRadius.circular(
-                widget.pill ? AppRadii.pill : AppRadii.md,
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: widget.label,
+      child: Opacity(
+        opacity: enabled ? 1 : 0.45,
+        child: GestureDetector(
+          onTapDown: enabled ? (_) => setState(() => _pressed = true) : null,
+          onTapUp: enabled ? (_) => setState(() => _pressed = false) : null,
+          onTapCancel: enabled ? () => setState(() => _pressed = false) : null,
+          onTap: widget.onPressed,
+          child: AnimatedScale(
+            scale: _pressed ? 0.96 : 1,
+            duration: AppMotion.of(context, AppMotion.fast),
+            curve: AppMotion.spring,
+            child: Container(
+              height: s.height,
+              width: widget.block ? double.infinity : null,
+              padding: EdgeInsets.symmetric(horizontal: s.padX),
+              decoration: BoxDecoration(
+                color: v.bg,
+                borderRadius: BorderRadius.circular(
+                  widget.pill ? AppRadii.pill : AppRadii.md,
+                ),
+                boxShadow: enabled ? v.shadow : const [],
+                border: v.border == null
+                    ? null
+                    : Border.all(color: v.border!, width: 1),
               ),
-              boxShadow: enabled ? v.shadow : const [],
-              border: v.border == null
-                  ? null
-                  : Border.all(color: v.border!, width: 1),
+              child: content,
             ),
-            child: content,
           ),
         ),
       ),

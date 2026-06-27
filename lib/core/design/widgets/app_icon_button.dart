@@ -86,8 +86,13 @@ class _AppIconButtonState extends State<AppIconButton> {
         ),
       ),
     );
-    return widget.tooltip == null
-        ? button
-        : Tooltip(message: widget.tooltip!, child: button);
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: widget.tooltip,
+      child: widget.tooltip == null
+          ? button
+          : Tooltip(message: widget.tooltip!, child: button),
+    );
   }
 }
