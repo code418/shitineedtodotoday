@@ -38,6 +38,7 @@ class ForgivingScheduler implements Scheduler {
     required List<Task> tasks,
     required DateTime today,
     List<TaskOccurrence> existing = const <TaskOccurrence>[],
+    bool carryOverdue = false,
   }) {
     final day = dateOnly(today);
     final result = <TaskOccurrence>[];
@@ -52,6 +53,31 @@ class ForgivingScheduler implements Scheduler {
         if (occ.status != OccurrenceStatus.skipped) {
           result.add(occ);
         }
+      }
+    }
+
+    // 1b. Forgiving carry-forward: open occurrences (pending/rescheduled) left
+    //     on past days resurface on today instead of being stranded — the
+    //     "neatly reschedules instead of letting work pile up" promise. Only
+    //     when building the *actual* today ([carryOverdue]); the week agenda
+    //     leaves past days where they are. Earliest-first so the oldest slip is
+    //     the one carried, and only one per task (claimed) to avoid stacking.
+    if (carryOverdue) {
+      final overdue =
+          existing
+              .where((o) => o.isOpen && dateOnly(o.scheduledDate).isBefore(day))
+              .toList()
+            ..sort((a, b) => a.scheduledDate.compareTo(b.scheduledDate));
+      for (final occ in overdue) {
+        if (claimed.contains(occ.taskId)) continue;
+        claimed.add(occ.taskId);
+        result.add(
+          occ.copyWith(
+            scheduledDate: day,
+            status: OccurrenceStatus.rescheduled,
+            originalDate: occ.originalDate ?? occ.scheduledDate,
+          ),
+        );
       }
     }
 

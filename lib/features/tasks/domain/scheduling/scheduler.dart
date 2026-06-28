@@ -17,6 +17,11 @@ abstract interface class Scheduler {
     required List<Task> tasks,
     required DateTime today,
     List<TaskOccurrence> existing,
+
+    /// When true, open occurrences left on past days are carried forward onto
+    /// [today] (the forgiving reschedule). Used when building the real today;
+    /// the week agenda leaves past days in place.
+    bool carryOverdue,
   });
 
   /// Neatly reschedule a [missed] occurrence rather than letting it lapse.

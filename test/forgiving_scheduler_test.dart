@@ -319,4 +319,70 @@ void main() {
       expect(moved.originalDate, monday);
     });
   });
+
+  group('buildToday — carry overdue forward', () {
+    // Today is Wednesday 2026-07-01; an open occurrence sits on Monday.
+    final wednesday = DateTime(2026, 7, 1);
+    TaskOccurrence overdue(OccurrenceStatus status) => TaskOccurrence(
+      id: 'o-mon',
+      taskId: 't1',
+      scheduledDate: monday,
+      originalDate: monday,
+      status: status,
+    );
+
+    test('carries a past open occurrence onto today as rescheduled', () {
+      final task = _task(const Recurrence.flexible());
+      final list = scheduler.buildToday(
+        tasks: [task],
+        today: wednesday,
+        existing: [overdue(OccurrenceStatus.pending)],
+        carryOverdue: true,
+      );
+      expect(list, hasLength(1));
+      expect(list.single.id, 'o-mon', reason: 'same occurrence, carried');
+      expect(list.single.scheduledDate, wednesday);
+      expect(list.single.status, OccurrenceStatus.rescheduled);
+      expect(list.single.originalDate, monday, reason: 'slip origin preserved');
+    });
+
+    test('does not carry forward when carryOverdue is false (agenda mode)', () {
+      final task = _task(const Recurrence.flexible());
+      final list = scheduler.buildToday(
+        tasks: [task],
+        today: wednesday,
+        existing: [overdue(OccurrenceStatus.pending)],
+      );
+      expect(list, isEmpty, reason: 'past day left in place for the agenda');
+    });
+
+    test('does not carry done or skipped past occurrences', () {
+      final task = _task(const Recurrence.flexible());
+      for (final status in [OccurrenceStatus.done, OccurrenceStatus.skipped]) {
+        final list = scheduler.buildToday(
+          tasks: [task],
+          today: wednesday,
+          existing: [overdue(status)],
+          carryOverdue: true,
+        );
+        expect(list, isEmpty, reason: 'resolved slips are not resurrected');
+      }
+    });
+
+    test('carries only one occurrence per task and skips regeneration', () {
+      // Strict-Wednesday task that ALSO has an overdue Monday occurrence: the
+      // carried one wins, today's is not additionally generated.
+      final task = _task(
+        const Recurrence.strict(weekdays: [DateTime.wednesday]),
+      );
+      final list = scheduler.buildToday(
+        tasks: [task],
+        today: wednesday,
+        existing: [overdue(OccurrenceStatus.pending)],
+        carryOverdue: true,
+      );
+      expect(list, hasLength(1));
+      expect(list.single.id, 'o-mon');
+    });
+  });
 }

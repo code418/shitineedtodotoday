@@ -56,7 +56,12 @@ final todayChecklistProvider = Provider<List<TaskOccurrence>>((ref) {
   final now = ref.watch(clockProvider)();
   return ref
       .watch(schedulerProvider)
-      .buildToday(tasks: tasks, today: now, existing: existing);
+      .buildToday(
+        tasks: tasks,
+        today: now,
+        existing: existing,
+        carryOverdue: true,
+      );
 });
 
 /// A map from task id to its estimated effort in minutes — derived from the
