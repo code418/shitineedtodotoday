@@ -15,9 +15,15 @@ class SnitdApp extends ConsumerWidget {
     return MaterialApp.router(
       title: ref.watch(appStringsProvider).appTitle,
       debugShowCheckedModeBanner: false,
+      // The design system only ships LIGHT colour tokens today; the custom
+      // widgets paint hardcoded-light surfaces (e.g. AppColors.surfaceCard).
+      // Letting the OS switch to the half-built dark theme turned that text
+      // white on those white surfaces — unreadable. Pin to the
+      // design-authoritative light theme until real dark tokens land, so the UI
+      // stays legible whatever the device's dark-mode setting.
       theme: AppTheme.light(),
-      darkTheme: AppTheme.dark(),
-      themeMode: ThemeMode.system,
+      darkTheme: AppTheme.light(),
+      themeMode: ThemeMode.light,
       routerConfig: router,
     );
   }
