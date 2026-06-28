@@ -32,6 +32,22 @@ class _FakeTaskRepository implements TaskRepository {
   String newId(String ownerId) => 'task-${_seq++}';
 }
 
+/// A task repo whose writes fail — simulates an offline/permission error
+/// while seeding starter tasks during onboarding.
+class _ThrowingTaskRepository implements TaskRepository {
+  @override
+  Stream<List<Task>> watchTasks(String ownerId) => Stream.value(const <Task>[]);
+
+  @override
+  Future<void> upsert(Task task) async => throw Exception('write failed');
+
+  @override
+  Future<void> delete(String ownerId, String taskId) async {}
+
+  @override
+  String newId(String ownerId) => 'task-x';
+}
+
 /// No-op occurrence repo so taskServiceProvider (which now depends on it for
 /// cascade-delete) builds without Firestore in tests.
 class _FakeOccurrenceRepository implements OccurrenceRepository {
@@ -152,5 +168,52 @@ void main() {
     // No tasks added, but flag is set.
     expect(fakeRepo.store, isEmpty);
     expect(prefs.getBool('onboarding_complete'), isTrue);
+  });
+
+  testWidgets('a failed starter-task seed still completes onboarding', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+
+    final router = GoRouter(
+      initialLocation: '/onboarding',
+      routes: [
+        GoRoute(
+          path: '/onboarding',
+          builder: (c, s) => const OnboardingScreen(),
+        ),
+        GoRoute(path: '/', builder: (c, s) => const SizedBox()),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          currentOwnerIdProvider.overrideWithValue('u1'),
+          taskRepositoryProvider.overrideWithValue(_ThrowingTaskRepository()),
+          occurrenceRepositoryProvider.overrideWithValue(
+            _FakeOccurrenceRepository(),
+          ),
+          clockProvider.overrideWithValue(() => DateTime(2026, 6, 29, 9)),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Tap through to Get started; seeding will throw.
+    await tester.tap(find.text('Next'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Next'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Get started'));
+    await tester.pumpAndSettle();
+
+    // Despite the seed failure, the user is not trapped: onboarding completes
+    // and they leave the onboarding screen.
+    expect(prefs.getBool('onboarding_complete'), isTrue);
+    expect(find.text('Get started'), findsNothing);
   });
 }

@@ -52,24 +52,37 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final strings = ref.read(appStringsProvider);
     final svc = ref.read(taskServiceProvider);
 
+    var seedFailed = false;
     if (addSelected && svc != null) {
       final grouped = ref.read(starterSuggestionsByCategoryProvider);
-      for (final entry in grouped.entries) {
-        if (_selectedCategories.contains(entry.key)) {
-          for (final suggestion in entry.value) {
-            await svc.addFromSuggestion(suggestion);
+      try {
+        for (final entry in grouped.entries) {
+          if (_selectedCategories.contains(entry.key)) {
+            for (final suggestion in entry.value) {
+              await svc.addFromSuggestion(suggestion);
+            }
           }
         }
+      } catch (_) {
+        // Seeding starter tasks failed (e.g. a write error). Don't trap the
+        // user on onboarding — finish anyway; they can add tasks later.
+        seedFailed = true;
       }
     }
 
+    // Always mark onboarding complete so the user is never stuck on this screen
+    // on every launch, even if seeding their starter tasks failed.
     await ref
         .read(settingsControllerProvider.notifier)
         .setOnboardingComplete(true);
 
     if (!mounted) return;
     context.go(Routes.today);
-    if (addSelected) {
+    if (seedFailed) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(strings.actionFailed)));
+    } else if (addSelected) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(strings.onboardingAdded)));
