@@ -1,0 +1,14 @@
+# Code-gen options for Freezed + json_serializable.
+#
+# `explicit_to_json` makes generated `toJson()` call `.toJson()` on nested
+# model objects instead of emitting the live object. This is REQUIRED for
+# Firestore: `DocumentReference.set(map)` uses a binary codec that only accepts
+# primitives / List / Map and throws on a raw Dart object (e.g. a nested
+# `Recurrence`). `jsonEncode` happens to recurse into `toJson()`, which masked
+# this in pure-Dart round-trips, but Firestore does not.
+targets:
+  $default:
+    builders:
+      json_serializable:
+        options:
+          explicit_to_json: true

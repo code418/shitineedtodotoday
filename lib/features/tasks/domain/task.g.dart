@@ -31,7 +31,7 @@ Map<String, dynamic> _$TaskToJson(_Task instance) => <String, dynamic>{
   'title': instance.title,
   'notes': instance.notes,
   'category': instance.category,
-  'recurrence': instance.recurrence,
+  'recurrence': instance.recurrence.toJson(),
   'estimatedEffortMinutes': instance.estimatedEffortMinutes,
   'priority': _$TaskPriorityEnumMap[instance.priority]!,
   'assigneeId': instance.assigneeId,
