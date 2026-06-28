@@ -11,6 +11,7 @@ import 'package:snitd/features/settings/application/settings_providers.dart';
 import 'package:snitd/features/tasks/application/tasks_providers.dart';
 import 'package:snitd/features/tasks/data/occurrence_repository.dart';
 import 'package:snitd/features/tasks/data/task_repository.dart';
+import 'package:snitd/features/tasks/domain/scheduling/recurrence.dart';
 import 'package:snitd/features/tasks/domain/scheduling/task_occurrence.dart';
 import 'package:snitd/features/tasks/domain/task.dart';
 
@@ -169,5 +170,52 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text(AppStrings.clean.actionFailed), findsOneWidget);
+  });
+
+  testWidgets('today\'s turns card renders rows for the checklist', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+
+    final task = Task(
+      id: 't1',
+      ownerId: 'u1',
+      title: 'Do the dishes',
+      recurrence: const Recurrence.strict(weekdays: [DateTime.monday]),
+      estimatedEffortMinutes: 15,
+      assigneeId: 'you',
+      createdAt: DateTime(2026),
+      updatedAt: DateTime(2026),
+    );
+    final occ = TaskOccurrence(
+      id: 't1_2026-06-29',
+      taskId: 't1',
+      scheduledDate: DateTime(2026, 6, 29),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          currentOwnerIdProvider.overrideWithValue('u1'),
+          householdRepositoryProvider.overrideWithValue(
+            _FakeHouseholdRepository(Household.empty),
+          ),
+          taskRepositoryProvider.overrideWithValue(_FakeTaskRepository()),
+          occurrenceRepositoryProvider.overrideWithValue(
+            _FakeOccurrenceRepository(),
+          ),
+          tasksProvider.overrideWith((ref) => Stream.value([task])),
+          todayChecklistProvider.overrideWithValue([occ]),
+        ],
+        child: const MaterialApp(home: HouseholdScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The turn row renders (ref.watch in the StatelessWidget tree works), under
+    // the "You" bucket since the task is assigned to the owner.
+    expect(find.text('Do the dishes'), findsOneWidget);
   });
 }
