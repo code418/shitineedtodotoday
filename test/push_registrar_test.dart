@@ -130,4 +130,42 @@ void main() {
     expect(repo.registered.last.platform, 'ios');
     await registrar.dispose();
   });
+
+  test('a token rotation removes the previous token doc', () async {
+    final messaging = FakePushMessaging('tok-1');
+    final repo = FakePushTokenRepository();
+    final registrar = PushRegistrar(
+      messaging: messaging,
+      tokens: repo,
+      platform: 'android',
+    );
+
+    await registrar.registerFor('u1');
+    messaging.emitRefresh('tok-2');
+    await Future<void>.delayed(Duration.zero);
+
+    // The old token doc is dropped so stale tokens don't accumulate.
+    expect(repo.removed.map((r) => r.token), ['tok-1']);
+    expect(repo.removed.single.owner, 'u1');
+    await registrar.dispose();
+  });
+
+  test('unregister after a rotation removes the rotated-in token', () async {
+    final messaging = FakePushMessaging('tok-1');
+    final repo = FakePushTokenRepository();
+    final registrar = PushRegistrar(
+      messaging: messaging,
+      tokens: repo,
+      platform: 'android',
+    );
+
+    await registrar.registerFor('u1');
+    messaging.emitRefresh('tok-2');
+    await Future<void>.delayed(Duration.zero);
+    await registrar.unregister('u1');
+
+    // tok-1 dropped on rotation; tok-2 dropped on unregister → both gone, so
+    // the owner is left with no token doc for this device.
+    expect(repo.removed.map((r) => r.token), ['tok-1', 'tok-2']);
+  });
 }

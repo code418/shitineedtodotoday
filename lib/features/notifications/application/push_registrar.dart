@@ -23,6 +23,10 @@ class PushRegistrar {
 
   StreamSubscription<String>? _subscription;
 
+  /// The token most recently registered, tracked so a rotation can drop the
+  /// previous doc and [unregister] can remove exactly this device's token.
+  String? _currentToken;
+
   /// Request permission, store the current token (if any), and subscribe to
   /// refreshes for [ownerId].
   Future<void> registerFor(String ownerId) async {
@@ -30,11 +34,20 @@ class PushRegistrar {
     final token = await messaging.getToken();
     if (token != null) {
       await tokens.register(ownerId, token: token, platform: platform);
+      _currentToken = token;
     }
     await _subscription?.cancel();
-    _subscription = messaging.onTokenRefresh.listen(
-      (next) => tokens.register(ownerId, token: next, platform: platform),
-    );
+    _subscription = messaging.onTokenRefresh.listen((next) async {
+      // On rotation, drop the previous token doc before writing the new one —
+      // otherwise stale docs pile up under the owner (keyed by token value) and
+      // can misdirect pushes here after the user signs out.
+      final previous = _currentToken;
+      if (previous != null && previous != next) {
+        await tokens.remove(ownerId, previous);
+      }
+      await tokens.register(ownerId, token: next, platform: platform);
+      _currentToken = next;
+    });
   }
 
   /// Detach this device from [ownerId]: stop listening for refreshes and remove
@@ -45,10 +58,11 @@ class PushRegistrar {
   Future<void> unregister(String ownerId) async {
     await _subscription?.cancel();
     _subscription = null;
-    final token = await messaging.getToken();
+    final token = _currentToken ?? await messaging.getToken();
     if (token != null) {
       await tokens.remove(ownerId, token);
     }
+    _currentToken = null;
   }
 
   Future<void> dispose() async {
