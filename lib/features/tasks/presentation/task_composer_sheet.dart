@@ -44,6 +44,10 @@ class _TaskComposerSheetState extends ConsumerState<_TaskComposerSheet> {
   Season _season = Season.summer;
   DateTime? _exactDate;
 
+  /// Guards against a rapid double-tap on Save persisting the task twice
+  /// (each [TaskService.addTask] mints a fresh id, so two taps = two tasks).
+  bool _submitting = false;
+
   @override
   void initState() {
     super.initState();
@@ -98,6 +102,8 @@ class _TaskComposerSheetState extends ConsumerState<_TaskComposerSheet> {
   }
 
   Future<void> _onSave() async {
+    // Guard against a rapid double-tap saving (and writing) twice.
+    if (_submitting) return;
     final strings = ref.read(appStringsProvider);
     final title = _titleCtrl.text.trim();
     final category = _categoryCtrl.text.trim();
@@ -134,6 +140,7 @@ class _TaskComposerSheetState extends ConsumerState<_TaskComposerSheet> {
     final recurrence = _buildRecurrence();
     final isNew = widget.existing == null;
 
+    setState(() => _submitting = true);
     try {
       if (isNew) {
         await svc.addTask(
@@ -155,6 +162,7 @@ class _TaskComposerSheetState extends ConsumerState<_TaskComposerSheet> {
     } catch (_) {
       // Keep the sheet open so the user can retry without re-entering details.
       if (!mounted) return;
+      setState(() => _submitting = false);
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(strings.actionFailed)));
@@ -410,7 +418,7 @@ class _TaskComposerSheetState extends ConsumerState<_TaskComposerSheet> {
               label: strings.composerSave,
               block: true,
               pill: true,
-              onPressed: _onSave,
+              onPressed: _submitting ? null : _onSave,
             ),
             const SizedBox(height: AppSpacing.x2),
           ],

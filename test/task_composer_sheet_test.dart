@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,6 +14,35 @@ import 'package:snitd/features/tasks/presentation/task_composer_sheet.dart';
 
 import 'occurrence_service_test.dart' show FakeOccurrenceRepository;
 import 'task_service_test.dart' show FakeTaskRepository;
+
+/// A task repository whose [upsert] blocks until [release] is called, so a test
+/// can keep the first save in-flight while attempting a second.
+class _BlockingTaskRepository implements TaskRepository {
+  final Map<String, Task> store = {};
+  final Completer<void> _gate = Completer<void>();
+  int upsertCalls = 0;
+  int _seq = 0;
+
+  void release() => _gate.complete();
+
+  @override
+  Stream<List<Task>> watchTasks(String ownerId) =>
+      Stream.value(store.values.where((t) => t.ownerId == ownerId).toList());
+
+  @override
+  Future<void> upsert(Task task) async {
+    upsertCalls++;
+    await _gate.future;
+    store[task.id] = task;
+  }
+
+  @override
+  Future<void> delete(String ownerId, String taskId) async =>
+      store.remove(taskId);
+
+  @override
+  String newId(String ownerId) => 'task-${_seq++}';
+}
 
 void main() {
   testWidgets(
@@ -63,6 +94,63 @@ void main() {
         fakeTaskRepo.store.values.any((t) => t.title == 'Clean windows'),
         isTrue,
       );
+    },
+  );
+
+  testWidgets(
+    'showTaskComposer: double-tapping Save persists the task only once',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final fakeTaskRepo = _BlockingTaskRepository();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            currentOwnerIdProvider.overrideWithValue('u1'),
+            taskRepositoryProvider.overrideWithValue(fakeTaskRepo),
+            occurrenceRepositoryProvider.overrideWithValue(
+              FakeOccurrenceRepository(),
+            ),
+            clockProvider.overrideWithValue(() => DateTime(2026, 6, 29, 9)),
+          ],
+          child: MaterialApp(
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: ElevatedButton(
+                  onPressed: () => showTaskComposer(context),
+                  child: const Text('Open'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).first, 'Clean windows');
+      await tester.pumpAndSettle();
+
+      // First tap starts the save; the blocking repo keeps it in-flight.
+      await tester.tap(find.text('Save task'));
+      await tester.pump();
+      // Second tap while the first write is still pending must be a no-op.
+      await tester.tap(find.text('Save task'));
+      await tester.pump();
+      expect(
+        fakeTaskRepo.upsertCalls,
+        1,
+        reason: 'the in-flight guard must suppress the second save',
+      );
+
+      // Let the first write finish.
+      fakeTaskRepo.release();
+      await tester.pumpAndSettle();
+
+      expect(fakeTaskRepo.store.length, 1);
+      expect(fakeTaskRepo.upsertCalls, 1);
     },
   );
 
