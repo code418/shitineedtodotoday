@@ -23,7 +23,7 @@ final clockProvider = Provider<DateTime Function()>((ref) => DateTime.now);
 
 /// The signed-in owner's uid, or null when signed out. Scopes all task data.
 final currentOwnerIdProvider = Provider<String?>(
-  (ref) => ref.watch(authStateChangesProvider).value?.uid,
+  (ref) => ref.watch(userChangesProvider).value?.uid,
 );
 
 /// Streams the owner's task definitions (empty when there's no owner yet).

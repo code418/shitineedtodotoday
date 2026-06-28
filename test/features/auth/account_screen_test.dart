@@ -16,7 +16,7 @@ class _FakeAuthRepository implements AuthRepository {
   bool signedOut = false;
 
   @override
-  Stream<User?> authStateChanges() => const Stream.empty();
+  Stream<User?> userChanges() => const Stream.empty();
 
   @override
   User? get currentUser => null;
