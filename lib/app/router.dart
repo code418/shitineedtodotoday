@@ -36,10 +36,14 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: Routes.today,
     redirect: (context, state) {
       final done = ref.read(settingsControllerProvider).onboardingComplete;
-      if (!done && state.matchedLocation == Routes.today) {
+      final atOnboarding = state.matchedLocation == Routes.onboarding;
+      // Until onboarding is complete, every entry point — including deep links
+      // and notification taps to e.g. /schedule or /task/:id — funnels through
+      // onboarding, not just a launch on the Today tab.
+      if (!done && !atOnboarding) {
         return Routes.onboarding;
       }
-      if (done && state.matchedLocation == Routes.onboarding) {
+      if (done && atOnboarding) {
         return Routes.today;
       }
       return null;
