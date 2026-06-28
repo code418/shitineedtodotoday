@@ -3,9 +3,37 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:snitd/core/strings/app_strings.dart';
 import 'package:snitd/features/settings/application/settings_providers.dart';
+import 'package:snitd/features/settings/domain/app_settings.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  test('AppSettings has value equality', () {
+    const a = AppSettings(dailyEnergyBudgetMinutes: 55);
+    const b = AppSettings(dailyEnergyBudgetMinutes: 55);
+    const c = AppSettings(dailyEnergyBudgetMinutes: 90);
+    expect(a, equals(b));
+    expect(a.hashCode, equals(b.hashCode));
+    expect(a, isNot(equals(c)));
+  });
+
+  test('writing an unchanged value does not notify listeners', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final container = ProviderContainer(
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+    );
+    addTearDown(container.dispose);
+
+    var notifications = 0;
+    container.listen(settingsControllerProvider, (_, _) => notifications++);
+    final notifier = container.read(settingsControllerProvider.notifier);
+
+    await notifier.setDailyEnergyBudget(90); // 55 -> 90: notifies
+    await notifier.setDailyEnergyBudget(90); // 90 -> 90: deduped, no notify
+
+    expect(notifications, 1);
+  });
 
   Future<ProviderContainer> makeContainer() async {
     SharedPreferences.setMockInitialValues({});

@@ -30,4 +30,23 @@ class AppSettings {
         dailyEnergyBudgetMinutes ?? this.dailyEnergyBudgetMinutes,
     onboardingComplete: onboardingComplete ?? this.onboardingComplete,
   );
+
+  // Value equality so the settings Notifier (and Riverpod's updateShouldNotify)
+  // can skip redundant rebuilds when a setter writes an unchanged value — e.g.
+  // the daily-pace slider re-emitting the same snapped division mid-drag.
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AppSettings &&
+          runtimeType == other.runtimeType &&
+          profanityEnabled == other.profanityEnabled &&
+          dailyEnergyBudgetMinutes == other.dailyEnergyBudgetMinutes &&
+          onboardingComplete == other.onboardingComplete;
+
+  @override
+  int get hashCode => Object.hash(
+    profanityEnabled,
+    dailyEnergyBudgetMinutes,
+    onboardingComplete,
+  );
 }
