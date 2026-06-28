@@ -28,9 +28,10 @@ class AppProgressMeter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.palette;
     final factor = max <= 0 ? 0.0 : (value / max).clamp(0.0, 1.0);
     final over = value > max;
-    final fill = over ? AppColors.reschedule : AppColors.brand;
+    final fill = over ? c.reschedule : c.brand;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -50,7 +51,7 @@ class AppProgressMeter extends StatelessWidget {
                       fontFamily: AppTypography.fontSans,
                       fontSize: AppTypography.sizeSm,
                       fontWeight: AppTypography.bold,
-                      color: AppColors.textSecondary,
+                      color: c.textSecondary,
                     ),
                   )
                 else
@@ -60,7 +61,7 @@ class AppProgressMeter extends StatelessWidget {
                     '${_fmt(value)}$unit / ${_fmt(max)}$unit',
                     style: AppTypography.mono(
                       size: AppTypography.sizeXs,
-                      color: over ? AppColors.coral600 : AppColors.textMuted,
+                      color: over ? c.reschedule : c.textMuted,
                     ),
                   ),
               ],
@@ -70,7 +71,7 @@ class AppProgressMeter extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadii.pill),
           child: Container(
             height: height,
-            color: AppColors.ink200,
+            color: c.borderDefault,
             child: Align(
               alignment: Alignment.centerLeft,
               child: LayoutBuilder(

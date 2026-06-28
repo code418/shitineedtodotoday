@@ -30,27 +30,28 @@ class _AppIconButtonState extends State<AppIconButton> {
   bool _pressed = false;
   bool _hovering = false;
 
-  ({Color fg, Color bg, Color hover}) get _spec => switch (widget.tone) {
-    AppIconButtonTone.normal => (
-      fg: AppColors.textSecondary,
-      bg: Colors.transparent,
-      hover: AppColors.ink100,
-    ),
-    AppIconButtonTone.brand => (
-      fg: AppColors.brand,
-      bg: AppColors.brandSoft,
-      hover: AppColors.brandSoftHover,
-    ),
-    AppIconButtonTone.onBrand => (
-      fg: AppColors.white,
-      bg: AppColors.white.withValues(alpha: 0.16),
-      hover: AppColors.white.withValues(alpha: 0.28),
-    ),
-  };
+  ({Color fg, Color bg, Color hover}) _spec(AppPalette c) =>
+      switch (widget.tone) {
+        AppIconButtonTone.normal => (
+          fg: c.textSecondary,
+          bg: Colors.transparent,
+          hover: c.surfaceSunken,
+        ),
+        AppIconButtonTone.brand => (
+          fg: c.brand,
+          bg: c.brandSoft,
+          hover: c.brandSoftHover,
+        ),
+        AppIconButtonTone.onBrand => (
+          fg: AppColors.white,
+          bg: AppColors.white.withValues(alpha: 0.16),
+          hover: AppColors.white.withValues(alpha: 0.28),
+        ),
+      };
 
   @override
   Widget build(BuildContext context) {
-    final spec = _spec;
+    final spec = _spec(context.palette);
     final enabled = widget.onPressed != null;
     final button = MouseRegion(
       onEnter: (_) => setState(() => _hovering = true),

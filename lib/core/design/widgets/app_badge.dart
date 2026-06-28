@@ -12,27 +12,27 @@ class AppBadge extends StatelessWidget {
   final AppBadgeTone? tone;
   final bool soft;
 
-  static const _toneColors = {
-    AppBadgeTone.done: AppColors.done,
-    AppBadgeTone.today: AppColors.today,
-    AppBadgeTone.reschedule: AppColors.reschedule,
-    AppBadgeTone.brand: AppColors.brand,
-  };
-
   @override
   Widget build(BuildContext context) {
-    final toneColor = tone == null ? null : _toneColors[tone];
+    final c = context.palette;
+    final toneColor = switch (tone) {
+      AppBadgeTone.done => c.done,
+      AppBadgeTone.today => c.today,
+      AppBadgeTone.reschedule => c.reschedule,
+      AppBadgeTone.brand => c.brand,
+      null => null,
+    };
     final Color background;
     final Color foreground;
     if (!soft) {
-      background = toneColor ?? AppColors.ink500;
+      background = toneColor ?? c.textMuted;
       foreground = AppColors.white;
     } else if (toneColor != null) {
-      background = Color.lerp(AppColors.white, toneColor, 0.14)!;
+      background = Color.lerp(c.surfaceCard, toneColor, 0.14)!;
       foreground = toneColor;
     } else {
-      background = AppColors.ink100;
-      foreground = AppColors.ink600;
+      background = c.surfaceSunken;
+      foreground = c.textSecondary;
     }
 
     return Container(

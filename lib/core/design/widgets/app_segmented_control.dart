@@ -25,12 +25,13 @@ class AppSegmentedControl<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.palette;
     final height = small ? 34.0 : 40.0;
     return Container(
       height: height,
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: AppColors.ink100,
+        color: c.surfaceSunken,
         borderRadius: BorderRadius.circular(AppRadii.pill),
       ),
       child: Row(
@@ -51,7 +52,7 @@ class AppSegmentedControl<T> extends StatelessWidget {
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: seg.value == value
-                        ? AppColors.surfaceCard
+                        ? c.surfaceCard
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(AppRadii.pill),
                     boxShadow: seg.value == value ? AppShadows.sm : const [],
@@ -64,9 +65,7 @@ class AppSegmentedControl<T> extends StatelessWidget {
                           ? AppTypography.sizeXs
                           : AppTypography.sizeSm,
                       fontWeight: AppTypography.bold,
-                      color: seg.value == value
-                          ? AppColors.textPrimary
-                          : AppColors.textMuted,
+                      color: seg.value == value ? c.textPrimary : c.textMuted,
                     ),
                   ),
                 ),

@@ -9,9 +9,9 @@ import '../domain/task_suggestion.dart';
 ///
 /// Themed days & rough daily budgets:
 ///   Mon Reset & Surfaces (~55m) · Tue Laundry & Bedrooms (~55m) ·
-///   Wed Kitchen & Bedding (~55m) · Thu Bathrooms & Mail (~45m) ·
+///   Wed Kitchen & Bedding (~55m) · Thu Bathrooms & Post (~45m) ·
 ///   Fri Living Room & Car (~55m) · Sat Groceries & Meals (~95m) ·
-///   Sun Trash & Prep (~40m)
+///   Sun Rubbish & Prep (~40m)
 const List<TaskSuggestion> kStarterCleaningPlan = [
   // ── Monday — Reset & Surfaces ─────────────────────────────────────────────
   TaskSuggestion(
@@ -37,7 +37,7 @@ const List<TaskSuggestion> kStarterCleaningPlan = [
   ),
   TaskSuggestion(
     key: 'mon-entryway-reset',
-    title: 'Entryway reset',
+    title: 'Hallway reset',
     category: 'Reset & Surfaces',
     weekday: DateTime.monday,
     estimatedEffortMinutes: 5,
@@ -81,7 +81,7 @@ const List<TaskSuggestion> kStarterCleaningPlan = [
   ),
   TaskSuggestion(
     key: 'tue-tidy-nightstands',
-    title: 'Tidy nightstands',
+    title: 'Tidy bedside tables',
     category: 'Laundry & Bedrooms',
     weekday: DateTime.tuesday,
     estimatedEffortMinutes: 5,
@@ -97,7 +97,7 @@ const List<TaskSuggestion> kStarterCleaningPlan = [
   // ── Wednesday — Kitchen & Bedding ─────────────────────────────────────────
   TaskSuggestion(
     key: 'wed-stovetop-microwave',
-    title: 'Clean stovetop & microwave',
+    title: 'Clean hob & microwave',
     category: 'Kitchen & Bedding',
     weekday: DateTime.wednesday,
     estimatedEffortMinutes: 10,
@@ -118,7 +118,7 @@ const List<TaskSuggestion> kStarterCleaningPlan = [
   ),
   TaskSuggestion(
     key: 'wed-organize-drawer',
-    title: 'Organize small area/drawer',
+    title: 'Organise small area/drawer',
     category: 'Kitchen & Bedding',
     weekday: DateTime.wednesday,
     estimatedEffortMinutes: 10,
@@ -131,46 +131,46 @@ const List<TaskSuggestion> kStarterCleaningPlan = [
     estimatedEffortMinutes: 10,
   ),
 
-  // ── Thursday — Bathrooms & Mail ───────────────────────────────────────────
+  // ── Thursday — Bathrooms & Post ───────────────────────────────────────────
   TaskSuggestion(
     key: 'thu-clean-toilets',
     title: 'Clean toilets',
-    category: 'Bathrooms & Mail',
+    category: 'Bathrooms & Post',
     weekday: DateTime.thursday,
     estimatedEffortMinutes: 5,
   ),
   TaskSuggestion(
     key: 'thu-sink-faucets',
-    title: 'Clean sink + faucets',
-    category: 'Bathrooms & Mail',
+    title: 'Clean sink + taps',
+    category: 'Bathrooms & Post',
     weekday: DateTime.thursday,
     estimatedEffortMinutes: 5,
   ),
   TaskSuggestion(
     key: 'thu-wipe-mirrors',
     title: 'Wipe mirrors',
-    category: 'Bathrooms & Mail',
+    category: 'Bathrooms & Post',
     weekday: DateTime.thursday,
     estimatedEffortMinutes: 5,
   ),
   TaskSuggestion(
     key: 'thu-scrub-shower-tubs',
-    title: 'Quick scrub shower/tubs',
-    category: 'Bathrooms & Mail',
+    title: 'Quick scrub shower/baths',
+    category: 'Bathrooms & Post',
     weekday: DateTime.thursday,
     estimatedEffortMinutes: 10,
   ),
   TaskSuggestion(
     key: 'thu-mop-bathroom-floor',
     title: 'Sweep/mop bathroom floor',
-    category: 'Bathrooms & Mail',
+    category: 'Bathrooms & Post',
     weekday: DateTime.thursday,
     estimatedEffortMinutes: 10,
   ),
   TaskSuggestion(
     key: 'thu-sort-mail-bills',
-    title: 'Sort mail/pay bills',
-    category: 'Bathrooms & Mail',
+    title: 'Sort post/pay bills',
+    category: 'Bathrooms & Post',
     weekday: DateTime.thursday,
     estimatedEffortMinutes: 10,
   ),
@@ -256,39 +256,39 @@ const List<TaskSuggestion> kStarterCleaningPlan = [
     estimatedEffortMinutes: 10,
   ),
 
-  // ── Sunday — Trash & Prep ─────────────────────────────────────────────────
+  // ── Sunday — Rubbish & Prep ───────────────────────────────────────────────
   TaskSuggestion(
     key: 'sun-clear-fridge',
     title: 'Clear out fridge',
-    category: 'Trash & Prep',
+    category: 'Rubbish & Prep',
     weekday: DateTime.sunday,
     estimatedEffortMinutes: 5,
   ),
   TaskSuggestion(
     key: 'sun-refresh-living-room',
     title: 'Refresh living room',
-    category: 'Trash & Prep',
+    category: 'Rubbish & Prep',
     weekday: DateTime.sunday,
     estimatedEffortMinutes: 10,
   ),
   TaskSuggestion(
     key: 'sun-prep-backpacks',
-    title: 'Prep backpacks for Monday',
-    category: 'Trash & Prep',
+    title: 'Prep school bags for Monday',
+    category: 'Rubbish & Prep',
     weekday: DateTime.sunday,
     estimatedEffortMinutes: 5,
   ),
   TaskSuggestion(
     key: 'sun-quick-sweep',
     title: 'Quick sweep/vacuum',
-    category: 'Trash & Prep',
+    category: 'Rubbish & Prep',
     weekday: DateTime.sunday,
     estimatedEffortMinutes: 10,
   ),
   TaskSuggestion(
     key: 'sun-empty-trash',
-    title: 'Empty trash/recycling',
-    category: 'Trash & Prep',
+    title: 'Empty rubbish/recycling',
+    category: 'Rubbish & Prep',
     weekday: DateTime.sunday,
     estimatedEffortMinutes: 10,
   ),

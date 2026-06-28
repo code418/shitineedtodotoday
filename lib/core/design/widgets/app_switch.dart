@@ -15,6 +15,7 @@ class AppSwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.palette;
     final enabled = onChanged != null;
     return Semantics(
       toggled: value,
@@ -30,7 +31,7 @@ class AppSwitch extends StatelessWidget {
             width: _w,
             height: _h,
             decoration: BoxDecoration(
-              color: value ? AppColors.brand : AppColors.ink300,
+              color: value ? c.brand : c.borderStrong,
               borderRadius: BorderRadius.circular(AppRadii.pill),
             ),
             child: AnimatedAlign(

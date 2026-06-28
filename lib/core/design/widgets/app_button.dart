@@ -53,32 +53,33 @@ class AppButton extends StatefulWidget {
     AppButtonSize.lg: _SizeSpec(54, 26, AppTypography.h3, 20, 10),
   };
 
-  static const _variants = {
-    AppButtonVariant.primary: _VariantSpec(
-      AppColors.brand,
-      AppColors.textOnBrand,
-      AppShadows.brand,
-      null,
-    ),
-    AppButtonVariant.tonal: _VariantSpec(
-      AppColors.brandSoft,
-      AppColors.textBrand,
-      [],
-      null,
-    ),
-    AppButtonVariant.ghost: _VariantSpec(
-      Colors.transparent,
-      AppColors.textSecondary,
-      [],
-      AppColors.borderDefault,
-    ),
-    AppButtonVariant.danger: _VariantSpec(
-      AppColors.error,
-      AppColors.white,
-      AppShadows.danger,
-      null,
-    ),
-  };
+  static _VariantSpec _variantSpec(AppButtonVariant variant, AppPalette c) =>
+      switch (variant) {
+        AppButtonVariant.primary => _VariantSpec(
+          c.brand,
+          AppColors.textOnBrand,
+          AppShadows.brand,
+          null,
+        ),
+        AppButtonVariant.tonal => _VariantSpec(
+          c.brandSoft,
+          c.textBrand,
+          const [],
+          null,
+        ),
+        AppButtonVariant.ghost => _VariantSpec(
+          Colors.transparent,
+          c.textSecondary,
+          const [],
+          c.borderDefault,
+        ),
+        AppButtonVariant.danger => _VariantSpec(
+          c.error,
+          AppColors.white,
+          AppShadows.danger,
+          null,
+        ),
+      };
 
   @override
   State<AppButton> createState() => _AppButtonState();
@@ -90,7 +91,7 @@ class _AppButtonState extends State<AppButton> {
   @override
   Widget build(BuildContext context) {
     final s = AppButton._sizes[widget.size]!;
-    final v = AppButton._variants[widget.variant]!;
+    final v = AppButton._variantSpec(widget.variant, context.palette);
     final enabled = widget.onPressed != null;
 
     final content = Row(

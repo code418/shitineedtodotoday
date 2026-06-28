@@ -33,7 +33,7 @@ class _AppCardState extends State<AppCard> {
       transform: Matrix4.translationValues(0, lifted ? -2 : 0, 0),
       padding: widget.padding ?? const EdgeInsets.all(AppSpacing.x5),
       decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
+        color: context.palette.surfaceCard,
         borderRadius: BorderRadius.circular(AppRadii.xl),
         boxShadow: lifted ? AppShadows.raised : AppShadows.card,
       ),

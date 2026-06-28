@@ -30,10 +30,11 @@ class AppTaskItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.palette;
     final container = Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
+        color: c.surfaceCard,
         borderRadius: BorderRadius.circular(AppRadii.lg),
         boxShadow: AppShadows.card,
       ),
@@ -57,11 +58,11 @@ class AppTaskItem extends StatelessWidget {
                     fontFamily: AppTypography.fontSans,
                     fontSize: AppTypography.title,
                     fontWeight: AppTypography.bold,
-                    color: AppColors.textPrimary,
+                    color: c.textPrimary,
                     decoration: done
                         ? TextDecoration.lineThrough
                         : TextDecoration.none,
-                    decorationColor: AppColors.ink300,
+                    decorationColor: c.textMuted,
                   ),
                 ),
                 if (category != null || movedFrom != null)
@@ -76,7 +77,7 @@ class AppTaskItem extends StatelessWidget {
                               fontFamily: AppTypography.fontSans,
                               fontSize: AppTypography.sizeXs,
                               fontWeight: AppTypography.semibold,
-                              color: AppColors.textMuted,
+                              color: c.textMuted,
                             ),
                           ),
                         if (category != null && movedFrom != null)

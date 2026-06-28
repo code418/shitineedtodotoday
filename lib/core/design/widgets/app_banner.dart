@@ -19,32 +19,32 @@ class AppBanner extends StatelessWidget {
   final IconData? icon;
   final Widget? action;
 
-  ({Color bg, Color fg, IconData icon}) get _spec => switch (tone) {
+  ({Color bg, Color fg, IconData icon}) _spec(AppPalette c) => switch (tone) {
     AppBannerTone.info => (
-      bg: AppColors.brandSoft,
-      fg: AppColors.textBrand,
+      bg: c.brandSoft,
+      fg: c.textBrand,
       icon: AppIcons.info,
     ),
     AppBannerTone.offline => (
-      bg: AppColors.ink100,
-      fg: AppColors.ink600,
+      bg: c.surfaceSunken,
+      fg: c.textSecondary,
       icon: AppIcons.cloudOff,
     ),
     AppBannerTone.gentle => (
-      bg: AppColors.rescheduleSoft,
-      fg: AppColors.coral600,
+      bg: c.rescheduleSoft,
+      fg: c.reschedule,
       icon: AppIcons.favorite,
     ),
     AppBannerTone.error => (
-      bg: Color.lerp(AppColors.white, AppColors.error, 0.14)!,
-      fg: AppColors.red600,
+      bg: Color.lerp(c.surfaceCard, c.error, 0.14)!,
+      fg: c.error,
       icon: AppIcons.error,
     ),
   };
 
   @override
   Widget build(BuildContext context) {
-    final spec = _spec;
+    final spec = _spec(context.palette);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(

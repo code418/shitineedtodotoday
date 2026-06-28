@@ -19,7 +19,8 @@ class AppCheckbox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fill = color ?? AppColors.done;
+    final c = context.palette;
+    final fill = color ?? c.done;
     final enabled = onChanged != null;
     return Semantics(
       checked: value,
@@ -37,9 +38,9 @@ class AppCheckbox extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: value ? fill : AppColors.white,
+              color: value ? fill : c.surfaceCard,
               border: Border.all(
-                color: value ? fill : AppColors.borderStrong,
+                color: value ? fill : c.borderStrong,
                 width: 2,
               ),
             ),

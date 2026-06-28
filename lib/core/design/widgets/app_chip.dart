@@ -23,17 +23,16 @@ class AppChip extends StatelessWidget {
   final bool selectable;
   final VoidCallback? onTap;
 
-  static const _fills = {
-    AppChipTone.neutral: (AppColors.ink100, AppColors.ink600),
-    AppChipTone.brand: (AppColors.brandSoft, AppColors.textBrand),
-    AppChipTone.today: (AppColors.todaySoft, AppColors.sun600),
-    AppChipTone.done: (AppColors.doneSoft, AppColors.green600),
-    AppChipTone.reschedule: (AppColors.rescheduleSoft, AppColors.coral600),
-  };
-
   @override
   Widget build(BuildContext context) {
-    final (bg, fg) = _fills[tone]!;
+    final c = context.palette;
+    final (Color bg, Color fg) = switch (tone) {
+      AppChipTone.neutral => (c.surfaceSunken, c.textSecondary),
+      AppChipTone.brand => (c.brandSoft, c.textBrand),
+      AppChipTone.today => (c.todaySoft, c.today),
+      AppChipTone.done => (c.doneSoft, c.done),
+      AppChipTone.reschedule => (c.rescheduleSoft, c.reschedule),
+    };
     final isFilled = selectable ? selected : true;
     final showBorder = selectable && !selected;
 
@@ -51,7 +50,7 @@ class AppChip extends StatelessWidget {
             color: isFilled ? bg : Colors.transparent,
             borderRadius: BorderRadius.circular(AppRadii.pill),
             border: Border.all(
-              color: showBorder ? AppColors.borderDefault : Colors.transparent,
+              color: showBorder ? c.borderDefault : Colors.transparent,
               width: 1.5,
             ),
           ),
@@ -59,11 +58,7 @@ class AppChip extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (icon != null) ...[
-                Icon(
-                  icon,
-                  size: 15,
-                  color: isFilled ? fg : AppColors.textMuted,
-                ),
+                Icon(icon, size: 15, color: isFilled ? fg : c.textMuted),
                 const SizedBox(width: 6),
               ],
               Text(
@@ -72,7 +67,7 @@ class AppChip extends StatelessWidget {
                   fontFamily: AppTypography.fontSans,
                   fontSize: AppTypography.sizeXs,
                   fontWeight: AppTypography.bold,
-                  color: isFilled ? fg : AppColors.textMuted,
+                  color: isFilled ? fg : c.textMuted,
                 ),
               ),
             ],
