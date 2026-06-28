@@ -183,6 +183,20 @@ test("occursOn: strict dayOfMonth clamps to last day of a short month", () => {
   assert.equal(occursOn(rec, feb27), false);
 });
 
+test("occursOn: strict dayOfMonth respects leap years and 30-day months", () => {
+  const rec29 = {runtimeType: "strict", dayOfMonth: 29};
+  // 2028 is a leap year → the 29th exists, so it lands on Feb 29 (not 28).
+  assert.equal(occursOn(rec29, new Date(Date.UTC(2028, 1, 29))), true);
+  assert.equal(occursOn(rec29, new Date(Date.UTC(2028, 1, 28))), false);
+  // 2027 is not a leap year → Feb has 28 days, so the 29th clamps to the 28th.
+  assert.equal(occursOn(rec29, new Date(Date.UTC(2027, 1, 28))), true);
+
+  // A 31st task clamps to the last day of a 30-day month (April).
+  const rec31 = {runtimeType: "strict", dayOfMonth: 31};
+  assert.equal(occursOn(rec31, new Date(Date.UTC(2026, 3, 30))), true);
+  assert.equal(occursOn(rec31, new Date(Date.UTC(2026, 3, 29))), false);
+});
+
 test("occursOn: flexible weekly fires only on the week's Monday", () => {
   // timesPerPeriod=1 → anchor at offset 0 of the ISO week = Monday.
   const rec = {runtimeType: "flexible", period: "week", timesPerPeriod: 1};
