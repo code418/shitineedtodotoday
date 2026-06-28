@@ -337,13 +337,18 @@ class _SuggestionCard extends ConsumerWidget {
   ) async {
     final task = ref.read(taskByIdProvider(suggestion.taskId));
     if (task == null) return;
-    await ref
-        .read(taskServiceProvider)
-        ?.updateTask(task.copyWith(recurrence: suggestion.suggestedRecurrence));
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(strings.suggestionApplied)));
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref
+          .read(taskServiceProvider)
+          ?.updateTask(
+            task.copyWith(recurrence: suggestion.suggestedRecurrence),
+          );
+    } catch (_) {
+      messenger.showSnackBar(SnackBar(content: Text(strings.actionFailed)));
+      return;
+    }
+    messenger.showSnackBar(SnackBar(content: Text(strings.suggestionApplied)));
   }
 }
 
