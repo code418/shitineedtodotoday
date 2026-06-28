@@ -133,13 +133,45 @@ class OccurrenceService {
 
   /// Un-tick a previously completed or skipped occurrence, returning it to
   /// pending so the user can re-do it.
-  Future<TaskOccurrence> reopen(TaskOccurrence occurrence) async {
+  ///
+  /// When [task] and its [history] are supplied, the task's learned estimate is
+  /// recomputed from the *remaining* actuals (this occurrence's recorded
+  /// duration no longer counts), undoing the bump [complete] applied — so a
+  /// mistaken or fat-fingered completion that is immediately un-ticked doesn't
+  /// leave the estimate stuck. With no other completions left there is nothing
+  /// to relearn from, so the estimate is left as-is.
+  Future<CompletionResult> reopen(
+    TaskOccurrence occurrence, {
+    Task? task,
+    Iterable<TaskOccurrence> history = const [],
+  }) async {
     final reopened = occurrence.copyWith(
       status: OccurrenceStatus.pending,
       completedAt: null,
       actualDurationMinutes: null,
     );
     await occurrences.upsert(ownerId, reopened);
-    return reopened;
+
+    Task? updatedTask;
+    if (task != null) {
+      final remaining = history.where((o) => o.id != occurrence.id);
+      final actuals = recentActualMinutes(remaining);
+      // Only relearn when actuals remain; otherwise keep the current estimate
+      // (there's no recorded duration left to derive a new one from).
+      if (actuals.isNotEmpty) {
+        final learned = learnedEstimateMinutes(
+          actuals,
+          fallback: task.estimatedEffortMinutes,
+        );
+        if (learned != task.estimatedEffortMinutes) {
+          updatedTask = task.copyWith(
+            estimatedEffortMinutes: learned,
+            updatedAt: now(),
+          );
+          await tasks.upsert(updatedTask);
+        }
+      }
+    }
+    return CompletionResult(occurrence: reopened, updatedTask: updatedTask);
   }
 }

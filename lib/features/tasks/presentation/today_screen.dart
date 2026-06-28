@@ -8,6 +8,7 @@ import '../../../core/firebase/firebase_providers.dart';
 import '../../../core/util/date_labels.dart';
 import '../../schedule/application/schedule_providers.dart';
 import '../../settings/application/settings_providers.dart';
+import '../application/occurrence_service.dart';
 import '../application/tasks_providers.dart';
 import '../domain/scheduling/task_occurrence.dart';
 import '../domain/task_suggestion.dart';
@@ -152,14 +153,25 @@ class TodayScreen extends ConsumerWidget {
                                     task: task,
                                   );
                                 } else if (!next) {
-                                  ref
-                                      .read(occurrenceServiceProvider)
-                                      ?.reopen(occ)
+                                  final svc = ref.read(
+                                    occurrenceServiceProvider,
+                                  );
+                                  if (svc == null) return;
+                                  // Pass the task + its history so reopening
+                                  // also reverts any estimate the completion
+                                  // learned from this occurrence's duration.
+                                  final history = ref.read(
+                                    occurrencesForTaskProvider(occ.taskId),
+                                  );
+                                  svc
+                                      .reopen(occ, task: task, history: history)
                                       .catchError((Object _) {
                                         if (context.mounted) {
                                           _snack(context, strings.actionFailed);
                                         }
-                                        return occ;
+                                        return CompletionResult(
+                                          occurrence: occ,
+                                        );
                                       });
                                 }
                               },

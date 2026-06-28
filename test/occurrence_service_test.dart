@@ -153,7 +153,8 @@ void main() {
       );
       occRepo.store[done.id] = done;
 
-      final reopened = await service.reopen(done);
+      final result = await service.reopen(done);
+      final reopened = result.occurrence;
 
       expect(reopened.status, OccurrenceStatus.pending);
       expect(reopened.completedAt, isNull);
@@ -161,6 +162,71 @@ void main() {
       expect(occRepo.store[done.id]!.status, OccurrenceStatus.pending);
     },
   );
+
+  test(
+    'reopen re-bases the estimate down from the remaining actuals',
+    () async {
+      // Prior completions averaged ~10m, then a 120m fat-finger pushed it up.
+      final prior = [
+        TaskOccurrence(
+          id: 't1_2026-06-15',
+          taskId: 't1',
+          scheduledDate: DateTime(2026, 6, 15),
+          status: OccurrenceStatus.done,
+          completedAt: DateTime(2026, 6, 15, 10),
+          actualDurationMinutes: 10,
+        ),
+        TaskOccurrence(
+          id: 't1_2026-06-22',
+          taskId: 't1',
+          scheduledDate: DateTime(2026, 6, 22),
+          status: OccurrenceStatus.done,
+          completedAt: DateTime(2026, 6, 22, 10),
+          actualDurationMinutes: 10,
+        ),
+      ];
+      final fatFinger = TaskOccurrence(
+        id: 't1_2026-06-29',
+        taskId: 't1',
+        scheduledDate: _monday,
+        status: OccurrenceStatus.done,
+        completedAt: clock,
+        actualDurationMinutes: 120,
+      );
+      // Task estimate currently reflects the inflated mean.
+      final task = _task(estimate: 45);
+
+      final result = await service.reopen(
+        fatFinger,
+        task: task,
+        history: [...prior, fatFinger],
+      );
+
+      // Estimate relearns from the remaining 10/10 actuals → back to ~10m.
+      expect(result.updatedTask, isNotNull);
+      expect(result.updatedTask!.estimatedEffortMinutes, 10);
+      expect(result.updatedTask!.updatedAt, clock);
+      expect(taskRepo.store['t1']!.estimatedEffortMinutes, 10);
+    },
+  );
+
+  test('reopen leaves the estimate untouched when no actuals remain', () async {
+    final only = TaskOccurrence(
+      id: 't1_2026-06-29',
+      taskId: 't1',
+      scheduledDate: _monday,
+      status: OccurrenceStatus.done,
+      completedAt: clock,
+      actualDurationMinutes: 120,
+    );
+    final task = _task(estimate: 120);
+
+    final result = await service.reopen(only, task: task, history: [only]);
+
+    // Nothing left to relearn from → estimate unchanged, no task write.
+    expect(result.updatedTask, isNull);
+    expect(taskRepo.store.containsKey('t1'), isFalse);
+  });
 
   // ---------------------------------------------------------------------------
   // rebalanceOpen — overwhelm reset
