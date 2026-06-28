@@ -69,6 +69,69 @@ void main() {
     });
   });
 
+  group('nudgeFallsInQuietHours', () {
+    test('true when the nudge time sits inside a wrapping quiet window', () {
+      // Quiet 21:00→07:00; nudge 06:30 is inside it → server would suppress.
+      const prefs = NotificationPrefs(
+        dailyNudgeTime: '06:30',
+        quietHoursStart: '21:00',
+        quietHoursEnd: '07:00',
+      );
+      expect(nudgeFallsInQuietHours(prefs), isTrue);
+      // And the dispatcher logic agrees it would be suppressed at that time.
+      expect(
+        shouldSendDailyNudge(
+          prefs: prefs,
+          nowMinute: 6 * 60 + 30,
+          hasOpenTasks: true,
+        ),
+        isFalse,
+      );
+    });
+
+    test('false when the nudge time is outside quiet hours', () {
+      const prefs = NotificationPrefs(
+        dailyNudgeTime: '08:00',
+        quietHoursStart: '21:00',
+        quietHoursEnd: '07:00',
+      );
+      expect(nudgeFallsInQuietHours(prefs), isFalse);
+    });
+
+    test('false when quiet hours are disabled', () {
+      const prefs = NotificationPrefs(
+        dailyNudgeTime: '06:30',
+        quietHoursEnabled: false,
+        quietHoursStart: '21:00',
+        quietHoursEnd: '07:00',
+      );
+      expect(nudgeFallsInQuietHours(prefs), isFalse);
+    });
+
+    test('false when the daily nudge is disabled', () {
+      const prefs = NotificationPrefs(
+        dailyNudgeEnabled: false,
+        dailyNudgeTime: '06:30',
+        quietHoursStart: '21:00',
+        quietHoursEnd: '07:00',
+      );
+      expect(nudgeFallsInQuietHours(prefs), isFalse);
+    });
+
+    test(
+      'false when the quiet-end boundary equals the nudge time (exclusive)',
+      () {
+        // Window end is exclusive, so a nudge exactly at 07:00 is allowed.
+        const prefs = NotificationPrefs(
+          dailyNudgeTime: '07:00',
+          quietHoursStart: '21:00',
+          quietHoursEnd: '07:00',
+        );
+        expect(nudgeFallsInQuietHours(prefs), isFalse);
+      },
+    );
+  });
+
   group('shouldSendDailyNudge', () {
     const prefs = NotificationPrefs(
       dailyNudgeEnabled: true,

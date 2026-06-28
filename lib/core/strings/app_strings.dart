@@ -94,6 +94,7 @@ class AppStrings {
     required this.reminderTimeLabel,
     required this.quietHoursTitle,
     required this.quietHoursSubtitle,
+    required this.nudgeInQuietHoursWarning,
     required this.quietStartLabel,
     required this.quietEndLabel,
     required this.previewHeading,
@@ -265,6 +266,7 @@ class AppStrings {
   final String reminderTimeLabel;
   final String quietHoursTitle;
   final String quietHoursSubtitle;
+  final String nudgeInQuietHoursWarning;
   final String quietStartLabel;
   final String quietEndLabel;
   final String previewHeading;
@@ -432,6 +434,9 @@ class AppStrings {
     reminderTimeLabel: 'Remind me at',
     quietHoursTitle: 'Quiet hours',
     quietHoursSubtitle: "We won't nudge you during these hours.",
+    nudgeInQuietHoursWarning:
+        'Your reminder time is inside quiet hours, so it '
+        "won't be sent. Pick a time outside quiet hours.",
     quietStartLabel: 'From',
     quietEndLabel: 'Until',
     previewHeading: 'Preview',
@@ -591,6 +596,9 @@ class AppStrings {
     reminderTimeLabel: 'Nudge me at',
     quietHoursTitle: 'Quiet hours',
     quietHoursSubtitle: "We won't bother you during these hours.",
+    nudgeInQuietHoursWarning:
+        "Your nudge time is inside quiet hours, so it won't "
+        'be sent. Pick a time outside quiet hours.',
     quietStartLabel: 'From',
     quietEndLabel: 'Until',
     previewHeading: 'Preview',

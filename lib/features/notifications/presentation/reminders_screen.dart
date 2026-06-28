@@ -154,6 +154,16 @@ class RemindersScreen extends ConsumerWidget {
             ),
           ),
 
+          // Warn when the chosen nudge time sits inside quiet hours: the server
+          // would silently suppress it, so the user would never get a nudge.
+          if (nudgeFallsInQuietHours(prefs)) ...[
+            const SizedBox(height: AppSpacing.x4),
+            AppBanner(
+              message: strings.nudgeInQuietHoursWarning,
+              tone: AppBannerTone.gentle,
+            ),
+          ],
+
           const SizedBox(height: AppSpacing.x6),
 
           // ── Preview ────────────────────────────────────────────────────────

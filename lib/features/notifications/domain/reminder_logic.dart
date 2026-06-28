@@ -30,6 +30,24 @@ bool isWithinQuietHours({
   return nowMinute >= startMinute || nowMinute < endMinute;
 }
 
+/// Whether the configured daily-nudge time itself falls inside the active
+/// quiet-hours window — in which case [shouldSendDailyNudge] always suppresses
+/// the nudge, so the user would never receive one. The UI uses this to warn
+/// them instead of silently never sending. Returns false when either toggle is
+/// off or any time string is malformed.
+bool nudgeFallsInQuietHours(NotificationPrefs prefs) {
+  if (!prefs.dailyNudgeEnabled || !prefs.quietHoursEnabled) return false;
+  final nudge = minuteOfDay(prefs.dailyNudgeTime);
+  final start = minuteOfDay(prefs.quietHoursStart);
+  final end = minuteOfDay(prefs.quietHoursEnd);
+  if (nudge == null || start == null || end == null) return false;
+  return isWithinQuietHours(
+    nowMinute: nudge,
+    startMinute: start,
+    endMinute: end,
+  );
+}
+
 /// Whether the gentle daily nudge should be sent at [nowMinute] (minutes since
 /// local midnight). [toleranceMinutes] widens the firing window so a scheduler
 /// that ticks every N minutes can still catch the nudge time.
