@@ -8,9 +8,10 @@ import {
   RecurrenceJson,
   localDateOnly,
   minuteOfDayInZone,
+  nudgeTimingAllows,
+  occurrenceIdFor,
   occursOn,
   prefsFromDoc,
-  shouldSendDailyNudge,
 } from "./reminder";
 
 // Run all functions in London (europe-west2) — the region closest to our
@@ -97,24 +98,41 @@ export const sendDueReminders = onSchedule(
       ]);
 
       const prefs = prefsFromDoc(prefsSnap.data());
-      // Only nudge when a task's recurrence actually falls on today — weekly
-      // tasks should not fire every day.
-      // Note: a further refinement could exclude tasks already done/skipped
-      // today; out of scope here.
-      const hasOpenTasks = tasksSnap.docs.some((t) =>
-        occursOn((t.get("recurrence") ?? {}) as RecurrenceJson, todayLocal),
-      );
 
+      // Cheap gate first: only the few users whose nudge is actually due this
+      // tick proceed to the per-task occurrence reads below.
       if (
-        !shouldSendDailyNudge({
+        !nudgeTimingAllows({
           prefs,
           nowMinute,
-          hasOpenTasks,
           toleranceMinutes: TICK_TOLERANCE_MINUTES,
         })
       ) {
         return {recipients: 0, pushed: 0};
       }
+
+      // Tasks whose recurrence actually lands on today — weekly tasks should
+      // not fire every day.
+      const tasksToday = tasksSnap.docs.filter((t) =>
+        occursOn((t.get("recurrence") ?? {}) as RecurrenceJson, todayLocal),
+      );
+      if (tasksToday.length === 0) return {recipients: 0, pushed: 0};
+
+      // Don't nudge if everything due today is already done or skipped. Look up
+      // each task's deterministic occurrence doc by id (index-free GET); a
+      // missing doc means the task is untouched, so still outstanding.
+      const occSnaps = await Promise.all(
+        tasksToday.map((t) =>
+          db.doc(
+            `users/${uid}/occurrences/${occurrenceIdFor(t.id, todayLocal)}`,
+          ).get(),
+        ),
+      );
+      const hasOutstanding = occSnaps.some((snap) => {
+        const status = snap.get("status");
+        return status !== "done" && status !== "skipped";
+      });
+      if (!hasOutstanding) return {recipients: 0, pushed: 0};
 
       const result = await messaging.sendEachForMulticast({
         tokens,

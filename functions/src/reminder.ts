@@ -65,17 +65,20 @@ export function isWithinQuietHours(
   return nowMinute >= startMinute || nowMinute < endMinute;
 }
 
-/** Whether the daily nudge should fire now. Mirrors the Dart implementation. */
-export function shouldSendDailyNudge(args: {
+/**
+ * Whether the nudge's *timing* allows firing now — enabled, inside the
+ * [nudge, nudge+tolerance] window, and outside quiet hours. Independent of
+ * whether there's anything to do, so the dispatcher can apply this cheap gate
+ * before doing any per-task occurrence reads.
+ */
+export function nudgeTimingAllows(args: {
   prefs: NotificationPrefs;
   nowMinute: number;
-  hasOpenTasks: boolean;
   toleranceMinutes?: number;
 }): boolean {
-  const {prefs, nowMinute, hasOpenTasks} = args;
+  const {prefs, nowMinute} = args;
   const tolerance = args.toleranceMinutes ?? 0;
   if (!prefs.dailyNudgeEnabled) return false;
-  if (!hasOpenTasks) return false;
 
   const nudge = minuteOfDay(prefs.dailyNudgeTime);
   if (nudge === null) return false;
@@ -94,6 +97,30 @@ export function shouldSendDailyNudge(args: {
     }
   }
   return true;
+}
+
+/** Whether the daily nudge should fire now. Mirrors the Dart implementation. */
+export function shouldSendDailyNudge(args: {
+  prefs: NotificationPrefs;
+  nowMinute: number;
+  hasOpenTasks: boolean;
+  toleranceMinutes?: number;
+}): boolean {
+  if (!args.hasOpenTasks) return false;
+  return nudgeTimingAllows(args);
+}
+
+/**
+ * Deterministic occurrence document id, mirroring the Dart `occurrenceId`
+ * (`{taskId}_yyyy-MM-dd`). [day] must be a date-only UTC Date. Lets the
+ * dispatcher look up "is this task already handled today?" with an index-free
+ * GET by id rather than a query.
+ */
+export function occurrenceIdFor(taskId: string, day: Date): string {
+  const y = day.getUTCFullYear().toString().padStart(4, "0");
+  const m = (day.getUTCMonth() + 1).toString().padStart(2, "0");
+  const d = day.getUTCDate().toString().padStart(2, "0");
+  return `${taskId}_${y}-${m}-${d}`;
 }
 
 /** Minutes since local midnight for [date] rendered in [timeZone]. */

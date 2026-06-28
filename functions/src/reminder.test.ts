@@ -6,6 +6,8 @@ import {
   isWithinQuietHours,
   minuteOfDay,
   minuteOfDayInZone,
+  nudgeTimingAllows,
+  occurrenceIdFor,
   occursOn,
   prefsFromDoc,
   shouldSendDailyNudge,
@@ -206,4 +208,47 @@ test("occursOn: seasonal summer fires on 1 June only", () => {
   assert.equal(occursOn(rec, jun1), true);
   assert.equal(occursOn(rec, jun2), false);
   assert.equal(occursOn(rec, sep1), false);
+});
+
+test("nudgeTimingAllows: true in window, ignores whether there are tasks", () => {
+  // 08:00 nudge, now 08:00, outside default quiet hours (21:00-07:00).
+  assert.equal(
+    nudgeTimingAllows({prefs: defaultPrefs, nowMinute: 8 * 60}),
+    true,
+  );
+});
+
+test("nudgeTimingAllows: false when disabled, outside window, or quiet", () => {
+  assert.equal(
+    nudgeTimingAllows({
+      prefs: {...defaultPrefs, dailyNudgeEnabled: false},
+      nowMinute: 8 * 60,
+    }),
+    false,
+  );
+  // Outside the [nudge, nudge+tolerance] window.
+  assert.equal(
+    nudgeTimingAllows({prefs: defaultPrefs, nowMinute: 10 * 60}),
+    false,
+  );
+  // Nudge time inside quiet hours is suppressed.
+  assert.equal(
+    nudgeTimingAllows({
+      prefs: {...defaultPrefs, dailyNudgeTime: "22:00"},
+      nowMinute: 22 * 60,
+    }),
+    false,
+  );
+});
+
+test("occurrenceIdFor: matches the Dart {taskId}_yyyy-MM-dd format", () => {
+  assert.equal(
+    occurrenceIdFor("t1", new Date(Date.UTC(2026, 5, 29))),
+    "t1_2026-06-29",
+  );
+  // Single-digit month/day are zero-padded.
+  assert.equal(
+    occurrenceIdFor("abc", new Date(Date.UTC(2026, 0, 5))),
+    "abc_2026-01-05",
+  );
 });
