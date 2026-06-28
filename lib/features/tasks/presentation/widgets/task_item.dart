@@ -89,7 +89,7 @@ class AppTaskItem extends StatelessWidget {
                               Icon(
                                 AppIcons.eventRepeat,
                                 size: 14,
-                                color: AppColors.coral600,
+                                color: c.reschedule,
                               ),
                               const SizedBox(width: 3),
                               Text(
@@ -98,7 +98,7 @@ class AppTaskItem extends StatelessWidget {
                                   fontFamily: AppTypography.fontSans,
                                   fontSize: AppTypography.sizeXs,
                                   fontWeight: AppTypography.semibold,
-                                  color: AppColors.coral600,
+                                  color: c.reschedule,
                                 ),
                               ),
                             ],
