@@ -38,6 +38,7 @@ class _LogDurationSheet extends ConsumerStatefulWidget {
 
 class _LogDurationSheetState extends ConsumerState<_LogDurationSheet> {
   late int _minutes;
+  bool _submitting = false;
 
   @override
   void initState() {
@@ -46,6 +47,8 @@ class _LogDurationSheetState extends ConsumerState<_LogDurationSheet> {
   }
 
   Future<void> _onLog() async {
+    // Guard against a rapid double-tap completing (and writing) twice.
+    if (_submitting) return;
     final strings = ref.read(appStringsProvider);
     final svc = ref.read(occurrenceServiceProvider);
     if (svc == null) {
@@ -56,6 +59,7 @@ class _LogDurationSheetState extends ConsumerState<_LogDurationSheet> {
     }
 
     final history = ref.read(occurrencesForTaskProvider(widget.task.id));
+    setState(() => _submitting = true);
     final CompletionResult result;
     try {
       result = await svc.complete(
@@ -67,6 +71,7 @@ class _LogDurationSheetState extends ConsumerState<_LogDurationSheet> {
     } catch (_) {
       // Keep the sheet open so the user can retry logging the duration.
       if (!mounted) return;
+      setState(() => _submitting = false);
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(strings.actionFailed)));
@@ -155,7 +160,7 @@ class _LogDurationSheetState extends ConsumerState<_LogDurationSheet> {
               label: strings.durationSave,
               block: true,
               pill: true,
-              onPressed: _onLog,
+              onPressed: _submitting ? null : _onLog,
             ),
             const SizedBox(height: AppSpacing.x2),
           ],
