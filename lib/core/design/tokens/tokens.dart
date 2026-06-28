@@ -1,6 +1,7 @@
 export 'app_colors.dart';
 export 'app_icons.dart';
 export 'app_motion.dart';
+export 'app_palette.dart';
 export 'app_shadows.dart';
 export 'app_spacing.dart';
 export 'app_typography.dart';

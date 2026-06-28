@@ -58,6 +58,7 @@ class AppTheme {
     return ThemeData(
       colorScheme: scheme,
       useMaterial3: true,
+      extensions: [isLight ? AppPalette.light : AppPalette.dark],
       scaffoldBackgroundColor: background,
       textTheme: AppTypography.textTheme(scheme.brightness),
       fontFamily: AppTypography.fontSans,
