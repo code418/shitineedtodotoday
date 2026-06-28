@@ -172,14 +172,14 @@ class _StatCell extends StatelessWidget {
                 style: AppTypography.mono(
                   size: AppTypography.h2,
                   weight: AppTypography.bold,
-                  color: AppColors.textPrimary,
+                  color: context.palette.textPrimary,
                 ),
               )
             else
               Text(value, style: theme.textTheme.headlineMedium),
             if (icon != null) ...[
               const SizedBox(width: 4),
-              Icon(icon, size: 18, color: AppColors.today),
+              Icon(icon, size: 18, color: context.palette.today),
             ],
           ],
         ),
@@ -199,7 +199,7 @@ class _StatCell extends StatelessWidget {
 class _Divider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(width: 1, height: 40, color: AppColors.borderSubtle);
+    return Container(width: 1, height: 40, color: context.palette.borderSubtle);
   }
 }
 
@@ -266,7 +266,9 @@ class _BucketBar extends StatelessWidget {
           width: 18,
           height: barH,
           decoration: BoxDecoration(
-            color: bucket.doneCount > 0 ? AppColors.brand : AppColors.ink100,
+            color: bucket.doneCount > 0
+                ? context.palette.brand
+                : context.palette.surfaceSunken,
             borderRadius: const BorderRadius.vertical(
               top: Radius.circular(AppRadii.xs),
             ),

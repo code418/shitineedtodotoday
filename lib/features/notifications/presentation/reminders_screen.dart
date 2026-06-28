@@ -59,7 +59,7 @@ class RemindersScreen extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    Icon(AppIcons.notifications, color: AppColors.brand),
+                    Icon(AppIcons.notifications, color: context.palette.brand),
                     const SizedBox(width: AppSpacing.x4),
                     Expanded(
                       child: Column(
@@ -106,7 +106,7 @@ class RemindersScreen extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    Icon(AppIcons.bedtime, color: AppColors.brand),
+                    Icon(AppIcons.bedtime, color: context.palette.brand),
                     const SizedBox(width: AppSpacing.x4),
                     Expanded(
                       child: Column(

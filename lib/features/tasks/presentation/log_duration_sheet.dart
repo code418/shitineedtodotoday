@@ -118,7 +118,7 @@ class _LogDurationSheetState extends ConsumerState<_LogDurationSheet> {
             Text(
               strings.durationSubtitle,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: AppColors.textMuted,
+                color: context.palette.textMuted,
               ),
             ),
             const SizedBox(height: AppSpacing.x4),

@@ -40,7 +40,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     return InputDecoration(
       hintText: hint,
       filled: true,
-      fillColor: AppColors.surfaceSunken,
+      fillColor: context.palette.surfaceSunken,
       border: border,
       enabledBorder: border,
       focusedBorder: border,
@@ -206,7 +206,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                         Text(
                           strings.signedInAs,
                           style: theme.textTheme.labelMedium?.copyWith(
-                            color: AppColors.textMuted,
+                            color: context.palette.textMuted,
                           ),
                         ),
                         const SizedBox(height: 2),

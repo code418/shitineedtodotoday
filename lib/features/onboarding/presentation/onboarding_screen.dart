@@ -118,7 +118,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       fontFamily: AppTypography.fontSans,
                       fontSize: AppTypography.sizeSm,
                       fontWeight: AppTypography.medium,
-                      color: AppColors.textMuted,
+                      color: context.palette.textMuted,
                     ),
                   ),
                 ),
@@ -209,7 +209,7 @@ class _WelcomePage extends StatelessWidget {
           Text(
             strings.welcomeBody,
             style: theme.textTheme.bodyLarge?.copyWith(
-              color: AppColors.textSecondary,
+              color: context.palette.textSecondary,
             ),
             textAlign: TextAlign.center,
           ),
@@ -251,7 +251,7 @@ class _PacePage extends StatelessWidget {
           Text(
             strings.paceStepBody,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: AppColors.textSecondary,
+              color: context.palette.textSecondary,
             ),
           ),
           const SizedBox(height: AppSpacing.x8),
@@ -265,8 +265,8 @@ class _PacePage extends StatelessWidget {
             max: 180,
             divisions: 33,
             onChanged: onChanged,
-            activeColor: AppColors.brand,
-            inactiveColor: AppColors.brandSoft,
+            activeColor: context.palette.brand,
+            inactiveColor: context.palette.brandSoft,
           ),
           const SizedBox(height: AppSpacing.x2),
           Row(
@@ -275,13 +275,13 @@ class _PacePage extends StatelessWidget {
               Text(
                 '15m',
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppColors.textMuted,
+                  color: context.palette.textMuted,
                 ),
               ),
               Text(
                 '3h',
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppColors.textMuted,
+                  color: context.palette.textMuted,
                 ),
               ),
             ],
@@ -325,7 +325,7 @@ class _PickPage extends StatelessWidget {
         Text(
           strings.pickStepBody,
           style: theme.textTheme.bodyMedium?.copyWith(
-            color: AppColors.textSecondary,
+            color: context.palette.textSecondary,
           ),
         ),
         const SizedBox(height: AppSpacing.x4),
@@ -373,10 +373,12 @@ class _CategoryCard extends StatelessWidget {
             width: 28,
             height: 28,
             decoration: BoxDecoration(
-              color: selected ? AppColors.brand : Colors.transparent,
+              color: selected ? context.palette.brand : Colors.transparent,
               shape: BoxShape.circle,
               border: Border.all(
-                color: selected ? AppColors.brand : AppColors.ink300,
+                color: selected
+                    ? context.palette.brand
+                    : context.palette.borderStrong,
                 width: 1.5,
               ),
             ),
@@ -396,7 +398,7 @@ class _CategoryCard extends StatelessWidget {
                 Text(
                   weekday,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: AppColors.textMuted,
+                    color: context.palette.textMuted,
                   ),
                 ),
               ],
@@ -456,7 +458,9 @@ class _BottomBar extends StatelessWidget {
                   width: i == page ? 20 : 8,
                   height: 8,
                   decoration: BoxDecoration(
-                    color: i == page ? AppColors.brand : AppColors.ink200,
+                    color: i == page
+                        ? context.palette.brand
+                        : context.palette.borderDefault,
                     borderRadius: BorderRadius.circular(AppRadii.pill),
                   ),
                 ),

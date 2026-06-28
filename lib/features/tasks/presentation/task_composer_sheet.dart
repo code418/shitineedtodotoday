@@ -246,7 +246,7 @@ class _TaskComposerSheetState extends ConsumerState<_TaskComposerSheet> {
               decoration: InputDecoration(
                 hintText: strings.composerTitleHint,
                 filled: true,
-                fillColor: AppColors.surfaceSunken,
+                fillColor: context.palette.surfaceSunken,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppRadii.md),
                   borderSide: BorderSide.none,
@@ -275,7 +275,7 @@ class _TaskComposerSheetState extends ConsumerState<_TaskComposerSheet> {
               decoration: InputDecoration(
                 hintText: strings.composerCategoryHint,
                 filled: true,
-                fillColor: AppColors.surfaceSunken,
+                fillColor: context.palette.surfaceSunken,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppRadii.md),
                   borderSide: BorderSide.none,

@@ -173,7 +173,7 @@ class TodayScreen extends ConsumerWidget {
                                   right: AppSpacing.x5,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.rescheduleSoft,
+                                  color: context.palette.rescheduleSoft,
                                   borderRadius: BorderRadius.circular(
                                     AppRadii.lg,
                                   ),
@@ -183,7 +183,7 @@ class TodayScreen extends ConsumerWidget {
                                   children: [
                                     Icon(
                                       AppIcons.eventRepeat,
-                                      color: AppColors.coral600,
+                                      color: context.palette.reschedule,
                                     ),
                                     const SizedBox(width: AppSpacing.x2),
                                     Text(
@@ -192,7 +192,7 @@ class TodayScreen extends ConsumerWidget {
                                         fontFamily: AppTypography.fontSans,
                                         fontSize: AppTypography.sizeSm,
                                         fontWeight: AppTypography.semibold,
-                                        color: AppColors.coral600,
+                                        color: context.palette.reschedule,
                                       ),
                                     ),
                                   ],
@@ -322,7 +322,11 @@ class _SuggestionGroup extends ConsumerWidget {
                 },
                 child: Row(
                   children: [
-                    Icon(AppIcons.addCircle, size: 20, color: AppColors.brand),
+                    Icon(
+                      AppIcons.addCircle,
+                      size: 20,
+                      color: context.palette.brand,
+                    ),
                     const SizedBox(width: AppSpacing.x3),
                     Expanded(
                       child: Text(

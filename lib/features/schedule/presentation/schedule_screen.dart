@@ -32,7 +32,7 @@ class ScheduleScreen extends ConsumerWidget {
               strings.scheduleDragHint,
               style: Theme.of(
                 context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
+              ).textTheme.bodySmall?.copyWith(color: context.palette.textMuted),
             ),
           ),
           // One section per day.
@@ -80,10 +80,14 @@ class _DaySection extends ConsumerWidget {
         return AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           decoration: BoxDecoration(
-            color: isHovering ? AppColors.brandSoft : AppColors.surfaceCard,
+            color: isHovering
+                ? context.palette.brandSoft
+                : context.palette.surfaceCard,
             borderRadius: BorderRadius.circular(AppRadii.xl),
             border: Border.all(
-              color: isHovering ? AppColors.brand : AppColors.borderDefault,
+              color: isHovering
+                  ? context.palette.brand
+                  : context.palette.borderDefault,
               width: isHovering ? 2 : 1,
             ),
           ),
@@ -112,9 +116,9 @@ class _DaySection extends ConsumerWidget {
               if (day.occurrences.isEmpty)
                 Text(
                   strings.scheduleEmptyDay,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: AppColors.textMuted),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: context.palette.textMuted,
+                  ),
                 )
               else
                 for (final occ in day.occurrences)
@@ -157,14 +161,14 @@ class _OccurrenceRow extends ConsumerWidget {
             vertical: AppSpacing.x3,
           ),
           decoration: BoxDecoration(
-            color: AppColors.surfaceCard,
+            color: context.palette.surfaceCard,
             borderRadius: BorderRadius.circular(AppRadii.md),
           ),
           child: Text(
             title,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: AppColors.textPrimary),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: context.palette.textPrimary,
+            ),
           ),
         ),
       ),
@@ -198,7 +202,7 @@ class _RowContent extends StatelessWidget {
             child: Text(
               title,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: done ? AppColors.textMuted : null,
+                color: done ? context.palette.textMuted : null,
                 decoration: done ? TextDecoration.lineThrough : null,
               ),
             ),
@@ -209,7 +213,7 @@ class _RowContent extends StatelessWidget {
           Icon(
             done ? AppIcons.check : AppIcons.dragHandle,
             size: 18,
-            color: done ? AppColors.brand : AppColors.textMuted,
+            color: done ? context.palette.brand : context.palette.textMuted,
           ),
         ],
       ),

@@ -79,9 +79,9 @@ class _MembersCard extends StatelessWidget {
           if (household.members.isEmpty)
             Text(
               strings.householdEmpty,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: AppColors.textMuted),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: context.palette.textMuted,
+              ),
             )
           else
             Wrap(
@@ -300,9 +300,9 @@ class _TurnsCard extends StatelessWidget {
             const SizedBox(height: AppSpacing.x3),
             Text(
               strings.householdEmpty,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: AppColors.textMuted),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: context.palette.textMuted,
+              ),
             ),
           ],
         ],
@@ -372,7 +372,7 @@ class _TurnRow extends StatelessWidget {
             Expanded(
               child: Text(title, style: Theme.of(context).textTheme.bodyMedium),
             ),
-            Icon(AppIcons.edit, size: 16, color: AppColors.textMuted),
+            Icon(AppIcons.edit, size: 16, color: context.palette.textMuted),
           ],
         ),
       ),

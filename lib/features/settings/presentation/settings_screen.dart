@@ -59,7 +59,7 @@ class SettingsScreen extends ConsumerWidget {
           AppCard(
             child: Row(
               children: [
-                Icon(AppIcons.mood, color: AppColors.brand),
+                Icon(AppIcons.mood, color: context.palette.brand),
                 const SizedBox(width: AppSpacing.x4),
                 Expanded(
                   child: Column(
@@ -93,7 +93,7 @@ class SettingsScreen extends ConsumerWidget {
             interactive: true,
             child: Row(
               children: [
-                Icon(AppIcons.group, color: AppColors.brand),
+                Icon(AppIcons.group, color: context.palette.brand),
                 const SizedBox(width: AppSpacing.x4),
                 Expanded(
                   child: Text(
@@ -101,7 +101,7 @@ class SettingsScreen extends ConsumerWidget {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
-                Icon(AppIcons.expandMore, color: AppColors.textMuted),
+                Icon(AppIcons.expandMore, color: context.palette.textMuted),
               ],
             ),
           ),
@@ -111,7 +111,7 @@ class SettingsScreen extends ConsumerWidget {
             interactive: true,
             child: Row(
               children: [
-                Icon(AppIcons.person, color: AppColors.brand),
+                Icon(AppIcons.person, color: context.palette.brand),
                 const SizedBox(width: AppSpacing.x4),
                 Expanded(
                   child: Text(
@@ -119,7 +119,7 @@ class SettingsScreen extends ConsumerWidget {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
-                Icon(AppIcons.expandMore, color: AppColors.textMuted),
+                Icon(AppIcons.expandMore, color: context.palette.textMuted),
               ],
             ),
           ),
@@ -129,7 +129,7 @@ class SettingsScreen extends ConsumerWidget {
             interactive: true,
             child: Row(
               children: [
-                Icon(AppIcons.notifications, color: AppColors.brand),
+                Icon(AppIcons.notifications, color: context.palette.brand),
                 const SizedBox(width: AppSpacing.x4),
                 Expanded(
                   child: Text(
@@ -137,7 +137,7 @@ class SettingsScreen extends ConsumerWidget {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
-                Icon(AppIcons.expandMore, color: AppColors.textMuted),
+                Icon(AppIcons.expandMore, color: context.palette.textMuted),
               ],
             ),
           ),
@@ -148,10 +148,13 @@ class SettingsScreen extends ConsumerWidget {
               interactive: true,
               child: Row(
                 children: [
-                  Icon(AppIcons.checklist, color: AppColors.textSecondary),
+                  Icon(
+                    AppIcons.checklist,
+                    color: context.palette.textSecondary,
+                  ),
                   const SizedBox(width: AppSpacing.x4),
                   const Expanded(child: Text('Design gallery (debug)')),
-                  Icon(AppIcons.expandMore, color: AppColors.textMuted),
+                  Icon(AppIcons.expandMore, color: context.palette.textMuted),
                 ],
               ),
             ),

@@ -109,7 +109,7 @@ class TaskDetailScreen extends ConsumerWidget {
                     Text(
                       strings.estimateLabel,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: AppColors.textMuted,
+                        color: context.palette.textMuted,
                       ),
                     ),
                     const SizedBox(width: AppSpacing.x2),
@@ -264,7 +264,10 @@ class _EffortChart extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: Container(height: 1.5, color: AppColors.ink300),
+                  child: Container(
+                    height: 1.5,
+                    color: context.palette.borderStrong,
+                  ),
                 ),
                 const SizedBox(width: 4),
                 Text(estimateLabel, style: AppTypography.mono(size: 10)),
@@ -312,7 +315,9 @@ class _Bar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final h = (actual / maxVal) * maxBarHeight;
-    final color = actual > estimate ? AppColors.coral400 : AppColors.brand;
+    final color = actual > estimate
+        ? context.palette.reschedule
+        : context.palette.brand;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
