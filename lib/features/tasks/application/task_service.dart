@@ -67,8 +67,12 @@ class TaskService {
   }
 
   /// Delete a task and cascade-remove its occurrences so none are orphaned.
+  ///
+  /// Occurrences are removed first: if that partially fails, the task simply
+  /// remains and the delete can be retried — far better than deleting the task
+  /// up front and orphaning its occurrences when the cascade fails.
   Future<void> deleteTask(String taskId) async {
-    await repository.delete(ownerId, taskId);
     await occurrences.deleteForTask(ownerId, taskId);
+    await repository.delete(ownerId, taskId);
   }
 }

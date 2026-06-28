@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:snitd/features/tasks/application/task_service.dart';
+import 'package:snitd/features/tasks/data/occurrence_repository.dart';
 import 'package:snitd/features/tasks/data/task_repository.dart';
 import 'package:snitd/features/tasks/domain/scheduling/recurrence.dart';
 import 'package:snitd/features/tasks/domain/scheduling/task_occurrence.dart';
@@ -7,6 +8,23 @@ import 'package:snitd/features/tasks/domain/task.dart';
 import 'package:snitd/features/tasks/domain/task_suggestion.dart';
 
 import 'occurrence_service_test.dart' show FakeOccurrenceRepository;
+
+/// An occurrence repo whose cascade delete fails — to prove ordering.
+class _CascadeThrowsOccurrenceRepository implements OccurrenceRepository {
+  @override
+  Stream<List<TaskOccurrence>> watchOccurrences(String ownerId) =>
+      Stream.value(const <TaskOccurrence>[]);
+
+  @override
+  Future<void> upsert(String ownerId, TaskOccurrence occurrence) async {}
+
+  @override
+  Future<void> delete(String ownerId, String occurrenceId) async {}
+
+  @override
+  Future<void> deleteForTask(String ownerId, String taskId) async =>
+      throw Exception('cascade failed');
+}
 
 class FakeTaskRepository implements TaskRepository {
   final Map<String, Task> store = {};
@@ -126,4 +144,26 @@ void main() {
       reason: 'the task\'s occurrences are cascaded; others remain',
     );
   });
+
+  test(
+    'deleteTask removes occurrences before the task (cascade-first)',
+    () async {
+      final created = await service.addTask(
+        title: 'Bins',
+        recurrence: const Recurrence.flexible(),
+      );
+
+      final svc = TaskService(
+        repository: repo,
+        occurrences: _CascadeThrowsOccurrenceRepository(),
+        ownerId: 'u1',
+        now: () => clock,
+      );
+
+      await expectLater(svc.deleteTask(created.id), throwsException);
+      // Occurrences are removed first, so a failed cascade leaves the task
+      // intact (retryable) rather than deleting it and orphaning its occurrences.
+      expect(repo.store.containsKey(created.id), isTrue);
+    },
+  );
 }

@@ -62,13 +62,21 @@ class FirestoreOccurrenceRepository implements OccurrenceRepository {
     final matching = await _ref(
       ownerId,
     ).where('taskId', isEqualTo: taskId).get();
-    if (matching.docs.isEmpty) return;
-    final batch = _firestore.batch();
-    for (final doc in matching.docs) {
-      batch.delete(doc.reference);
+    final docs = matching.docs;
+    if (docs.isEmpty) return;
+    // A long-lived daily task can accrue hundreds of occurrences; Firestore
+    // rejects a batch with more than 500 writes, so commit in chunks.
+    for (var i = 0; i < docs.length; i += _batchLimit) {
+      final batch = _firestore.batch();
+      for (final doc in docs.skip(i).take(_batchLimit)) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
     }
-    await batch.commit();
   }
+
+  /// Firestore's maximum number of writes in a single batched commit.
+  static const _batchLimit = 500;
 }
 
 final occurrenceRepositoryProvider = Provider<OccurrenceRepository>(
