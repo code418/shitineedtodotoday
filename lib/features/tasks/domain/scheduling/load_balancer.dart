@@ -56,6 +56,11 @@ List<TaskOccurrence> rebalance({
       load[day] = (load[day] ?? 0) + minutes;
 
   bool isMovable(TaskOccurrence o) {
+    // Done/skipped occurrences are settled — never move one (it would flip a
+    // completed task back to rescheduled/open, silently undoing it). The live
+    // caller already passes only open occurrences; this keeps the primitive
+    // correct for any future reuse.
+    if (!o.isOpen) return false;
     // Pinned occurrences were deliberately placed by the user (a drag); leave
     // them fixed even though their recurrence is flexible.
     if (o.pinned) return false;

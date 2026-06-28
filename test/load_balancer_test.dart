@@ -197,5 +197,36 @@ void main() {
       loads.sort();
       expect(loads, [60, 120]); // one day doubles up; nothing is dropped
     });
+
+    test('never moves a done occurrence, even off an over-budget day', () {
+      final tasks = [
+        _task(
+          'fixed',
+          minutes: 50,
+          recurrence: const Recurrence.strict(weekdays: [DateTime.monday]),
+        ),
+        _task('done', minutes: 30), // flexible — would otherwise be movable
+      ];
+      // Monday is already at budget from the fixed task; a flexible *open*
+      // occurrence here would be pushed to Tuesday. A done one must not be.
+      final fixedOcc = _occ('fixed', on: monday);
+      final doneOcc = _occ('done', on: monday).copyWith(
+        status: OccurrenceStatus.done,
+        completedAt: DateTime(2026, 6, 29, 10),
+        actualDurationMinutes: 30,
+      );
+
+      final result = rebalance(
+        occurrences: [fixedOcc, doneOcc],
+        tasks: tasks,
+        from: monday,
+        horizonDays: 7,
+        dailyBudgetMinutes: 50,
+      );
+
+      final outDone = result.firstWhere((o) => o.taskId == 'done');
+      expect(outDone.scheduledDate, monday, reason: 'done must stay put');
+      expect(outDone.status, OccurrenceStatus.done, reason: 'and stays done');
+    });
   });
 }
