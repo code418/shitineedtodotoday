@@ -34,6 +34,7 @@ class HouseholdScreen extends ConsumerWidget {
             strings: strings,
             household: household,
             controller: controller,
+            tasks: ref.watch(tasksProvider).value ?? const [],
           ),
           const SizedBox(height: AppSpacing.x4),
 
@@ -59,11 +60,13 @@ class _MembersCard extends StatelessWidget {
     required this.strings,
     required this.household,
     required this.controller,
+    required this.tasks,
   });
 
   final AppStrings strings;
   final Household household;
   final HouseholdController? controller;
+  final List<Task> tasks;
 
   @override
   Widget build(BuildContext context) {
@@ -97,7 +100,11 @@ class _MembersCard extends StatelessWidget {
                     onRemove: () async {
                       final messenger = ScaffoldMessenger.of(context);
                       try {
-                        await controller?.removeMember(household, m.id);
+                        await controller?.removeMember(
+                          household,
+                          m.id,
+                          tasks: tasks,
+                        );
                       } catch (_) {
                         messenger.showSnackBar(
                           SnackBar(content: Text(strings.actionFailed)),
