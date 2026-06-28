@@ -23,19 +23,24 @@ class SettingsController extends Notifier<AppSettings> {
   @override
   AppSettings build() => ref.watch(settingsRepositoryProvider).load();
 
+  // Each setter updates state FIRST so the UI responds instantly, then persists.
+  // Persisting first gates the state change (and any bound control, like the
+  // budget slider's thumb) behind an async disk write, which feels laggy and,
+  // for a dragged slider, janky. A failed write self-heals on the next launch.
+
   Future<void> setProfanityEnabled(bool value) async {
-    await ref.read(settingsRepositoryProvider).setProfanityEnabled(value);
     state = state.copyWith(profanityEnabled: value);
+    await ref.read(settingsRepositoryProvider).setProfanityEnabled(value);
   }
 
   Future<void> setDailyEnergyBudget(int minutes) async {
-    await ref.read(settingsRepositoryProvider).setDailyEnergyBudget(minutes);
     state = state.copyWith(dailyEnergyBudgetMinutes: minutes);
+    await ref.read(settingsRepositoryProvider).setDailyEnergyBudget(minutes);
   }
 
   Future<void> setOnboardingComplete(bool value) async {
-    await ref.read(settingsRepositoryProvider).setOnboardingComplete(value);
     state = state.copyWith(onboardingComplete: value);
+    await ref.read(settingsRepositoryProvider).setOnboardingComplete(value);
   }
 }
 

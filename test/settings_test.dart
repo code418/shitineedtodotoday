@@ -81,6 +81,30 @@ void main() {
   );
 
   test(
+    'setters update state synchronously, before persistence resolves',
+    () async {
+      final container = await makeContainer();
+      final notifier = container.read(settingsControllerProvider.notifier);
+
+      // Fire the setter but do NOT await it yet: the state must already reflect
+      // the new value so a bound control (e.g. the budget slider) responds
+      // instantly rather than waiting on the disk write.
+      final pending = notifier.setDailyEnergyBudget(120);
+      expect(container.read(dailyEnergyBudgetProvider), 120);
+
+      await pending;
+      // And it still persists.
+      expect(
+        container
+            .read(settingsRepositoryProvider)
+            .load()
+            .dailyEnergyBudgetMinutes,
+        120,
+      );
+    },
+  );
+
+  test(
     'daily energy budget defaults to 55 and setDailyEnergyBudget persists',
     () async {
       final container = await makeContainer();
