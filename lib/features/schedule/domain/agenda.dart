@@ -1,4 +1,5 @@
-import '../../tasks/domain/scheduling/forgiving_scheduler.dart' show dateOnly;
+import '../../tasks/domain/scheduling/forgiving_scheduler.dart'
+    show addDays, dateOnly;
 import '../../tasks/domain/scheduling/scheduler.dart';
 import '../../tasks/domain/scheduling/task_occurrence.dart';
 import '../../tasks/domain/task.dart';
@@ -14,7 +15,7 @@ class AgendaDay {
 /// Monday of the week containing [date].
 DateTime weekStartFor(DateTime date) {
   final d = dateOnly(date);
-  return d.subtract(Duration(days: d.weekday - 1));
+  return addDays(d, -(d.weekday - 1));
 }
 
 /// The 7 days from [weekStart], each with that day's checklist (via the
@@ -34,7 +35,7 @@ List<AgendaDay> buildWeekAgenda({
   return [
     for (var i = 0; i < 7; i++)
       () {
-        final day = start.add(Duration(days: i));
+        final day = addDays(start, i);
         final dayOccurrences = scheduler.buildToday(
           tasks: tasks,
           today: day,

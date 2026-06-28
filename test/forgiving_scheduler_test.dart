@@ -385,4 +385,21 @@ void main() {
       expect(list.single.id, 'o-mon');
     });
   });
+
+  group('addDays', () {
+    test('adds and subtracts calendar days at local midnight', () {
+      expect(addDays(DateTime(2026, 6, 29), 1), DateTime(2026, 6, 30));
+      expect(addDays(DateTime(2026, 6, 29), -6), DateTime(2026, 6, 23));
+      // Time component is normalised away to local midnight.
+      expect(addDays(DateTime(2026, 6, 29, 14, 30), 1), DateTime(2026, 6, 30));
+    });
+
+    test('rolls across month and year boundaries', () {
+      expect(addDays(DateTime(2026, 3, 1), -1), DateTime(2026, 2, 28));
+      expect(addDays(DateTime(2026, 1, 1), -1), DateTime(2025, 12, 31));
+      expect(addDays(DateTime(2026, 12, 31), 1), DateTime(2027));
+      // 2028 is a leap year — 29 Feb exists.
+      expect(addDays(DateTime(2028, 2, 28), 1), DateTime(2028, 2, 29));
+    });
+  });
 }

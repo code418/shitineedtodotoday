@@ -6,6 +6,16 @@ import 'task_occurrence.dart';
 /// Strips a [DateTime] to its local calendar day (midnight).
 DateTime dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
+/// Adds [days] calendar days to [day] via the date constructor.
+///
+/// DST-safe: `Duration(days:)` shifts a fixed 24h, so across a daylight-saving
+/// transition it lands at 23:00/01:00 on the wrong calendar day, which then
+/// fails exact-equality and map-key comparisons against local-midnight dates.
+/// The constructor normalises to local midnight on the correct calendar day
+/// (and rolls month/year boundaries).
+DateTime addDays(DateTime day, int days) =>
+    DateTime(day.year, day.month, day.day + days);
+
 /// Deterministic id for the occurrence of [taskId] on [day] — lets us
 /// regenerate the same checklist idempotently and dedupe against persisted
 /// occurrences.
@@ -126,7 +136,7 @@ class ForgivingScheduler implements Scheduler {
     if (recurrence is FlexibleRecurrence) {
       // Slide forward a day, never into the past; clamp at the window end so an
       // overdue task settles on its last allowed day rather than stacking.
-      final slid = dateOnly(missed.scheduledDate).add(const Duration(days: 1));
+      final slid = addDays(dateOnly(missed.scheduledDate), 1);
       var candidate = slid.isAfter(today) ? slid : today;
       final end = missed.windowEnd;
       if (end != null && candidate.isAfter(dateOnly(end))) {
@@ -137,11 +147,8 @@ class ForgivingScheduler implements Scheduler {
       // Strict: roll forward to the next matching day strictly after today,
       // so we don't stack a duplicate on a day that already has this task.
       next =
-          _nextStrictOnOrAfter(
-            recurrence,
-            today.add(const Duration(days: 1)),
-          ) ??
-          today.add(const Duration(days: 1));
+          _nextStrictOnOrAfter(recurrence, addDays(today, 1)) ??
+          addDays(today, 1);
     }
 
     return missed.copyWith(
@@ -175,11 +182,13 @@ class ForgivingScheduler implements Scheduler {
   bool _flexibleOccursOn(FlexibleRecurrence r, DateTime day) {
     if (r.season != null) return _isSeasonStart(r.season!, day);
     final (start, end) = _periodBounds(r.period, day);
-    final lengthDays = end.difference(start).inDays + 1;
+    // Round hours/24 rather than inDays: a span between two local midnights that
+    // crosses a DST change is 23h or 25h short/long, which would truncate.
+    final lengthDays = (end.difference(start).inHours / 24).round() + 1;
     final times = r.timesPerPeriod.clamp(1, lengthDays);
     for (var i = 0; i < times; i++) {
       final offset = (i * lengthDays / times).floor();
-      if (start.add(Duration(days: offset)) == day) return true;
+      if (addDays(start, offset) == day) return true;
     }
     return false;
   }
@@ -193,7 +202,7 @@ class ForgivingScheduler implements Scheduler {
     }
     final (start, end) = _periodBounds(recurrence.period, day);
     if (recurrence.windowDays > 0) {
-      final capped = day.add(Duration(days: recurrence.windowDays));
+      final capped = addDays(day, recurrence.windowDays);
       return (day, capped.isBefore(end) ? capped : end);
     }
     return (day, end);
@@ -206,7 +215,7 @@ class ForgivingScheduler implements Scheduler {
     // any future one-off date within range.
     for (var i = 0; i < 366; i++) {
       if (_occursOn(recurrence, cursor)) return cursor;
-      cursor = cursor.add(const Duration(days: 1));
+      cursor = addDays(cursor, 1);
     }
     return null;
   }
@@ -219,8 +228,8 @@ class ForgivingScheduler implements Scheduler {
       case FrequencyPeriod.day:
         return (day, day);
       case FrequencyPeriod.week:
-        final start = day.subtract(Duration(days: day.weekday - 1)); // Monday
-        return (start, start.add(const Duration(days: 6)));
+        final start = addDays(day, -(day.weekday - 1)); // Monday
+        return (start, addDays(start, 6));
       case FrequencyPeriod.month:
         final start = DateTime(day.year, day.month);
         final end = DateTime(

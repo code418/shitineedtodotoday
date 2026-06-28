@@ -1,5 +1,5 @@
 import '../task.dart';
-import 'forgiving_scheduler.dart' show dateOnly;
+import 'forgiving_scheduler.dart' show addDays, dateOnly;
 import 'recurrence.dart';
 import 'task_occurrence.dart';
 
@@ -44,7 +44,7 @@ List<TaskOccurrence> rebalance({
   required int dailyBudgetMinutes,
 }) {
   final start = dateOnly(from);
-  final lastDay = start.add(Duration(days: horizonDays - 1));
+  final lastDay = addDays(start, horizonDays - 1);
   final tasksById = {for (final t in tasks) t.id: t};
   final estimateByTaskId = {
     for (final t in tasks) t.id: t.estimatedEffortMinutes,
@@ -148,11 +148,7 @@ List<DateTime> _candidateDays(
     return [dateOnly(occurrence.scheduledDate)];
   }
   final days = <DateTime>[];
-  for (
-    var day = windowStart;
-    !day.isAfter(windowEnd);
-    day = day.add(const Duration(days: 1))
-  ) {
+  for (var day = windowStart; !day.isAfter(windowEnd); day = addDays(day, 1)) {
     days.add(day);
   }
   return days;
