@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:snitd/core/strings/app_strings.dart';
 import 'package:snitd/features/notifications/data/notification_prefs_repository.dart';
 import 'package:snitd/features/notifications/domain/notification_prefs.dart';
 import 'package:snitd/features/notifications/presentation/reminders_screen.dart';
@@ -83,5 +84,37 @@ void main() {
 
     expect(fakeRepo.saved, isNotNull);
     expect(fakeRepo.saved!.dailyNudgeEnabled, isFalse);
+  });
+
+  testWidgets('preview shows clean push copy even with profanity mode on', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final fakeRepo = _FakeNotificationPrefsRepository();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          currentOwnerIdProvider.overrideWithValue('u1'),
+          notificationPrefsRepositoryProvider.overrideWithValue(fakeRepo),
+          todayChecklistProvider.overrideWithValue(const <TaskOccurrence>[]),
+          // Profanity mode ON — in-app chrome goes profane, but the push (and
+          // its preview) must stay clean.
+          appStringsProvider.overrideWithValue(AppStrings.profane),
+        ],
+        child: const MaterialApp(home: RemindersScreen()),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // The preview mirrors the always-clean OS notification copy...
+    expect(find.text('Stuff I Need To Do Today'), findsOneWidget);
+    expect(find.text('Nothing on today. Enjoy the breather.'), findsOneWidget);
+    // ...never the profane register the server never sends.
+    expect(find.text('Shit I Need To Do Today'), findsNothing);
+    expect(find.text('Sweet F.A. today. Enjoy the breather.'), findsNothing);
   });
 }

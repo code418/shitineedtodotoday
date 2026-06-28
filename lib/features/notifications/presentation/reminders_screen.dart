@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design/design.dart';
+import '../../../core/strings/app_strings.dart';
 import '../../settings/application/settings_providers.dart';
 import '../../tasks/application/tasks_providers.dart';
 import '../application/notification_providers.dart';
@@ -34,6 +35,10 @@ class RemindersScreen extends ConsumerWidget {
     final prefsAsync = ref.watch(notificationPrefsProvider);
     final prefs = prefsAsync.value ?? NotificationPrefs.defaults;
     final controller = ref.watch(notificationPrefsControllerProvider);
+    // The push (and the OS notification) is always sent in the clean register,
+    // regardless of the in-app profanity toggle, so the preview must mirror the
+    // clean copy — not the profanity-aware `strings`.
+    const pushStrings = AppStrings.clean;
 
     void save(NotificationPrefs p) => controller?.update(p);
 
@@ -158,11 +163,11 @@ class RemindersScreen extends ConsumerWidget {
           ),
           const SizedBox(height: AppSpacing.x3),
           _LockScreenCard(
-            appTitle: strings.appTitle,
+            appTitle: pushStrings.appTitle,
             nudgeTime: prefs.dailyNudgeTime,
             body: openCount > 0
-                ? strings.nudgeBodyHasTasks
-                : strings.nudgeBodyClear,
+                ? pushStrings.nudgeBodyHasTasks
+                : pushStrings.nudgeBodyClear,
           ),
 
           const SizedBox(height: AppSpacing.x4),
@@ -185,6 +190,8 @@ class RemindersScreen extends ConsumerWidget {
 
   void _showTestNudge(BuildContext context, WidgetRef ref) {
     final strings = ref.read(appStringsProvider);
+    // Push copy is always clean (see build); the preview must match.
+    const pushStrings = AppStrings.clean;
     final prefs =
         ref.read(notificationPrefsProvider).value ?? NotificationPrefs.defaults;
     final openCount = ref
@@ -224,11 +231,11 @@ class RemindersScreen extends ConsumerWidget {
               child: GestureDetector(
                 onTap: () => Navigator.of(ctx).pop(),
                 child: _LockScreenCard(
-                  appTitle: strings.appTitle,
+                  appTitle: pushStrings.appTitle,
                   nudgeTime: prefs.dailyNudgeTime,
                   body: openCount > 0
-                      ? strings.nudgeBodyHasTasks
-                      : strings.nudgeBodyClear,
+                      ? pushStrings.nudgeBodyHasTasks
+                      : pushStrings.nudgeBodyClear,
                 ),
               ),
             ),
