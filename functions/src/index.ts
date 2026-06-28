@@ -30,6 +30,9 @@ const TICK_TOLERANCE_MINUTES = 14;
 // enough to stay well within Cloud Functions memory and Firestore quota limits.
 const CHUNK = 25;
 
+// FCM's sendEachForMulticast accepts at most 500 tokens per call.
+const MAX_MULTICAST_TOKENS = 500;
+
 /**
  * Reminder dispatcher.
  *
@@ -134,41 +137,55 @@ export const sendDueReminders = onSchedule(
       });
       if (!hasOutstanding) return {recipients: 0, pushed: 0};
 
-      const result = await messaging.sendEachForMulticast({
-        tokens,
-        notification: {
-          title: "Stuff I Need To Do Today",
-          body: "You've got things lined up for today — open when you're ready.",
-        },
-      });
-
-      // Prune tokens the device no longer accepts so we don't keep retrying.
+      // sendEachForMulticast rejects when handed more than 500 tokens, so send
+      // in chunks (a device that reinstalls can accrue stale tokens over time).
+      const notification = {
+        title: "Stuff I Need To Do Today",
+        body: "You've got things lined up for today — open when you're ready.",
+      };
       const stale: string[] = [];
-      result.responses.forEach((r, i) => {
-        const code = r.error?.code ?? "";
-        if (
-          !r.success &&
-          (code.includes("registration-token-not-registered") ||
-            code.includes("invalid-argument"))
-        ) {
-          stale.push(tokens[i]);
-        }
-      });
+      let pushed = 0;
+      for (let t = 0; t < tokens.length; t += MAX_MULTICAST_TOKENS) {
+        const batch = tokens.slice(t, t + MAX_MULTICAST_TOKENS);
+        const result = await messaging.sendEachForMulticast({
+          tokens: batch,
+          notification,
+        });
+        pushed += result.successCount;
+        // Prune tokens the device no longer accepts so we don't keep retrying.
+        result.responses.forEach((r, i) => {
+          const code = r.error?.code ?? "";
+          if (
+            !r.success &&
+            (code.includes("registration-token-not-registered") ||
+              code.includes("invalid-argument"))
+          ) {
+            stale.push(batch[i]);
+          }
+        });
+      }
       await Promise.all(
         stale.map((t) =>
           db.doc(`users/${uid}/tokens/${t}`).delete().catch(() => undefined),
         ),
       );
 
-      return {recipients: 1, pushed: result.successCount};
+      return {recipients: 1, pushed};
     }
 
     // Process users in bounded-concurrency chunks to avoid timeout at scale.
+    // Each user is isolated: one user's transient Firestore/FCM error must not
+    // reject the whole batch and skip everyone else's reminder this tick.
     const entries = [...tokensByUser.entries()];
     for (let i = 0; i < entries.length; i += CHUNK) {
       const slice = entries.slice(i, i + CHUNK);
       const results = await Promise.all(
-        slice.map(([uid, tokens]) => processUser(uid, tokens)),
+        slice.map(([uid, tokens]) =>
+          processUser(uid, tokens).catch((err) => {
+            logger.error(`processUser failed for uid=${uid}`, err);
+            return {recipients: 0, pushed: 0};
+          }),
+        ),
       );
       for (const r of results) {
         recipients += r.recipients;
