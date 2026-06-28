@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design/design.dart';
 import '../../../features/settings/application/settings_providers.dart';
+import '../../notifications/application/push_registrar.dart';
+import '../../tasks/application/tasks_providers.dart';
 import '../data/auth_repository.dart';
 import '../domain/account_validation.dart';
 
@@ -95,6 +97,17 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       ),
     );
     if (confirmed != true) return;
+    // Detach this device from the current owner first, so the dispatcher stops
+    // pushing their reminders here once we've signed out. Best-effort — token
+    // cleanup must never block sign-out.
+    final ownerId = ref.read(currentOwnerIdProvider);
+    if (ownerId != null) {
+      try {
+        await ref.read(pushRegistrarProvider).unregister(ownerId);
+      } catch (_) {
+        // Ignore; sign out regardless.
+      }
+    }
     await ref.read(authRepositoryProvider).signOut();
   }
 

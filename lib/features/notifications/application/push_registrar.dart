@@ -37,6 +37,20 @@ class PushRegistrar {
     );
   }
 
+  /// Detach this device from [ownerId]: stop listening for refreshes and remove
+  /// the current token from that owner so the dispatcher stops pushing their
+  /// reminders here. Call on sign-out, before switching owners — otherwise the
+  /// signed-out account keeps this device registered and its nudges keep
+  /// arriving. The FCM token itself stays valid for the next owner to claim.
+  Future<void> unregister(String ownerId) async {
+    await _subscription?.cancel();
+    _subscription = null;
+    final token = await messaging.getToken();
+    if (token != null) {
+      await tokens.remove(ownerId, token);
+    }
+  }
+
   Future<void> dispose() async {
     await _subscription?.cancel();
     _subscription = null;

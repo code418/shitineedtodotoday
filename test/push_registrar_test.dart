@@ -76,6 +76,43 @@ void main() {
     await registrar.dispose();
   });
 
+  test('unregister removes the current token from the owner', () async {
+    final messaging = FakePushMessaging('tok-1');
+    final repo = FakePushTokenRepository();
+    final registrar = PushRegistrar(
+      messaging: messaging,
+      tokens: repo,
+      platform: 'android',
+    );
+
+    await registrar.registerFor('u1');
+    await registrar.unregister('u1');
+
+    expect(repo.removed, hasLength(1));
+    expect(repo.removed.single.owner, 'u1');
+    expect(repo.removed.single.token, 'tok-1');
+
+    // Refreshes after unregister must not re-register (subscription cancelled).
+    messaging.emitRefresh('tok-2');
+    await Future<void>.delayed(Duration.zero);
+    expect(repo.registered.map((r) => r.token), ['tok-1']);
+  });
+
+  test('unregister is a no-op when there is no token', () async {
+    final messaging = FakePushMessaging(null);
+    final repo = FakePushTokenRepository();
+    final registrar = PushRegistrar(
+      messaging: messaging,
+      tokens: repo,
+      platform: 'android',
+    );
+
+    await registrar.registerFor('u1');
+    await registrar.unregister('u1');
+
+    expect(repo.removed, isEmpty);
+  });
+
   test('re-registers when the token refreshes', () async {
     final messaging = FakePushMessaging('tok-1');
     final repo = FakePushTokenRepository();
