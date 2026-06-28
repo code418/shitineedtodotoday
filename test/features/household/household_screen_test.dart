@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:snitd/core/strings/app_strings.dart';
 import 'package:snitd/features/household/data/household_repository.dart';
 import 'package:snitd/features/household/domain/household.dart';
 import 'package:snitd/features/household/presentation/household_screen.dart';
@@ -29,6 +30,16 @@ class _FakeHouseholdRepository implements HouseholdRepository {
     current = household;
     saved.add(household);
   }
+}
+
+/// A household repo whose writes fail — simulates an offline/permission error.
+class _ThrowingHouseholdRepository implements HouseholdRepository {
+  @override
+  Stream<Household> watch(String ownerId) => Stream.value(Household.empty);
+
+  @override
+  Future<void> save(String ownerId, Household household) async =>
+      throw Exception('save failed');
 }
 
 class _FakeTaskRepository implements TaskRepository {
@@ -64,7 +75,7 @@ class _FakeOccurrenceRepository implements OccurrenceRepository {
 
 Future<ProviderContainer> _buildScreen(
   WidgetTester tester,
-  _FakeHouseholdRepository fakeHousehold,
+  HouseholdRepository fakeHousehold,
 ) async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
@@ -144,4 +155,19 @@ void main() {
       expect(fakeHousehold.saved.last.members.first.name, 'Charlie');
     },
   );
+
+  testWidgets('a failed add shows a gentle error snackbar', (tester) async {
+    await _buildScreen(tester, _ThrowingHouseholdRepository());
+
+    await tester.tap(find.text('Add someone'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'Charlie');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Add someone').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text(AppStrings.clean.actionFailed), findsOneWidget);
+  });
 }

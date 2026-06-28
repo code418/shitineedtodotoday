@@ -94,7 +94,16 @@ class _MembersCard extends StatelessWidget {
                   _MemberTile(
                     name: m.name,
                     canRemove: true,
-                    onRemove: () => controller?.removeMember(household, m.id),
+                    onRemove: () async {
+                      final messenger = ScaffoldMessenger.of(context);
+                      try {
+                        await controller?.removeMember(household, m.id);
+                      } catch (_) {
+                        messenger.showSnackBar(
+                          SnackBar(content: Text(strings.actionFailed)),
+                        );
+                      }
+                    },
                   ),
               ],
             ),
@@ -116,7 +125,9 @@ class _MembersCard extends StatelessWidget {
       isScrollControlled: true,
       builder: (ctx) => _AddMemberSheet(
         strings: strings,
-        onAdd: (name) => controller?.addMember(household, name),
+        onAdd: (name) async {
+          await controller?.addMember(household, name);
+        },
       ),
     );
   }
@@ -163,7 +174,7 @@ class _AddMemberSheet extends StatefulWidget {
   const _AddMemberSheet({required this.strings, required this.onAdd});
 
   final AppStrings strings;
-  final void Function(String name) onAdd;
+  final Future<void> Function(String name) onAdd;
 
   @override
   State<_AddMemberSheet> createState() => _AddMemberSheetState();
@@ -211,11 +222,18 @@ class _AddMemberSheetState extends State<_AddMemberSheet> {
     );
   }
 
-  void _submit(BuildContext context) {
+  Future<void> _submit(BuildContext context) async {
     final name = _controller.text.trim();
     if (name.isEmpty) return;
-    widget.onAdd(name);
+    final messenger = ScaffoldMessenger.of(context);
     Navigator.of(context).pop();
+    try {
+      await widget.onAdd(name);
+    } catch (_) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(widget.strings.actionFailed)),
+      );
+    }
   }
 }
 
@@ -417,12 +435,18 @@ class _ReassignSheet extends StatelessWidget {
               leading: AppAvatar(name: label, size: 36),
               title: Text(label),
               selected: task.assigneeId == id,
-              onTap: () {
+              onTap: () async {
+                final messenger = ScaffoldMessenger.of(context);
                 final taskService = ref.read(taskServiceProvider);
-                if (taskService != null) {
-                  taskService.updateTask(task.copyWith(assigneeId: id));
-                }
                 Navigator.of(context).pop();
+                if (taskService == null) return;
+                try {
+                  await taskService.updateTask(task.copyWith(assigneeId: id));
+                } catch (_) {
+                  messenger.showSnackBar(
+                    SnackBar(content: Text(strings.actionFailed)),
+                  );
+                }
               },
             ),
         ],
