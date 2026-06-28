@@ -66,6 +66,35 @@ void main() {
       );
     });
 
+    test('day-of-month respects leap years and 30-day months', () {
+      final task29 = _task(const Recurrence.strict(dayOfMonth: 29));
+      // 2028 is a leap year → the 29th exists, so it lands on Feb 29 (not 28).
+      expect(
+        scheduler.buildToday(tasks: [task29], today: DateTime(2028, 2, 29)),
+        hasLength(1),
+      );
+      expect(
+        scheduler.buildToday(tasks: [task29], today: DateTime(2028, 2, 28)),
+        isEmpty,
+      );
+      // 2027 is not a leap year → Feb has 28 days, so the 29th clamps to the 28th.
+      expect(
+        scheduler.buildToday(tasks: [task29], today: DateTime(2027, 2, 28)),
+        hasLength(1),
+      );
+
+      // A 31st task clamps to the last day of a 30-day month (April).
+      final task31 = _task(const Recurrence.strict(dayOfMonth: 31));
+      expect(
+        scheduler.buildToday(tasks: [task31], today: DateTime(2026, 4, 30)),
+        hasLength(1),
+      );
+      expect(
+        scheduler.buildToday(tasks: [task31], today: DateTime(2026, 4, 29)),
+        isEmpty,
+      );
+    });
+
     test('exactDate produces a single one-off occurrence', () {
       final task = _task(Recurrence.strict(exactDate: DateTime(2026, 12, 25)));
       expect(
