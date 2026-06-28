@@ -155,6 +155,7 @@ class AppStrings {
     required this.scheduleDragHint,
     required this.scheduleEmptyDay,
     required this.movedToDay,
+    required this.alreadyOnThatDay,
     required this.todayLabelShort,
 
     // Bottom nav
@@ -328,6 +329,7 @@ class AppStrings {
   final String scheduleDragHint;
   final String scheduleEmptyDay;
   final String movedToDay;
+  final String alreadyOnThatDay;
   final String todayLabelShort;
 
   // Bottom nav
@@ -488,6 +490,7 @@ class AppStrings {
     scheduleDragHint: 'Press and hold a task, then drag it to another day.',
     scheduleEmptyDay: 'Nothing here',
     movedToDay: 'Moved to',
+    alreadyOnThatDay: 'That task is already on that day',
     todayLabelShort: 'Today',
     navToday: 'Today',
     navSchedule: 'Schedule',
@@ -646,6 +649,7 @@ class AppStrings {
     scheduleDragHint: 'Press and hold a task, then drag it to another day.',
     scheduleEmptyDay: 'Nothing here',
     movedToDay: 'Moved to',
+    alreadyOnThatDay: 'That task is already on that day',
     todayLabelShort: 'Today',
     navToday: 'Today',
     navSchedule: 'Schedule',

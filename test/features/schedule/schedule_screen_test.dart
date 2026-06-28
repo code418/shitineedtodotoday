@@ -40,6 +40,21 @@ class _ThrowingOccurrenceRepository implements OccurrenceRepository {
   Future<void> deleteForTask(String ownerId, String taskId) async {}
 }
 
+/// Records upserts so a test can assert a blocked drag wrote nothing.
+class _RecordingOccurrenceRepository implements OccurrenceRepository {
+  int upserts = 0;
+  @override
+  Stream<List<TaskOccurrence>> watchOccurrences(String ownerId) =>
+      Stream.value(const <TaskOccurrence>[]);
+  @override
+  Future<void> upsert(String ownerId, TaskOccurrence occurrence) async =>
+      upserts++;
+  @override
+  Future<void> delete(String ownerId, String occurrenceId) async {}
+  @override
+  Future<void> deleteForTask(String ownerId, String taskId) async {}
+}
+
 void main() {
   testWidgets(
     'done occurrences render non-draggable; open ones stay draggable',
@@ -95,6 +110,62 @@ void main() {
       expect(find.byType(LongPressDraggable<TaskOccurrence>), findsOneWidget);
       // The done row shows a check marker rather than a drag handle.
       expect(find.byIcon(AppIcons.check), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'dragging a task onto a day it already occupies is blocked, not duplicated',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final occRepo = _RecordingOccurrenceRepository();
+
+      // A strict task on Mon AND Tue — so both this week's Monday and Tuesday
+      // already materialise an occurrence for it.
+      final task = Task(
+        id: 'mt',
+        ownerId: 'u1',
+        title: 'Bins',
+        recurrence: const Recurrence.strict(
+          weekdays: [DateTime.monday, DateTime.tuesday],
+        ),
+        estimatedEffortMinutes: 15,
+        createdAt: DateTime(2026),
+        updatedAt: DateTime(2026),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            currentOwnerIdProvider.overrideWithValue('u1'),
+            clockProvider.overrideWithValue(() => DateTime(2026, 6, 29, 9)),
+            tasksProvider.overrideWith((ref) => Stream.value([task])),
+            occurrencesProvider.overrideWith(
+              (ref) => Stream.value(const <TaskOccurrence>[]),
+            ),
+            taskRepositoryProvider.overrideWithValue(
+              _StubTaskRepository([task]),
+            ),
+            occurrenceRepositoryProvider.overrideWithValue(occRepo),
+          ],
+          child: const MaterialApp(home: ScheduleScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Drag Monday's occurrence onto Tuesday — which already has 'Bins'.
+      final from = tester.getCenter(find.text('Bins').first);
+      final to = tester.getCenter(find.text('Tue 30'));
+      final gesture = await tester.startGesture(from);
+      await tester.pump(const Duration(milliseconds: 500));
+      await gesture.moveTo(to);
+      await tester.pump();
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      expect(find.text(AppStrings.clean.alreadyOnThatDay), findsOneWidget);
+      expect(occRepo.upserts, 0, reason: 'the blocked drop must not write');
     },
   );
 

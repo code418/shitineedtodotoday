@@ -61,9 +61,17 @@ class _DaySection extends ConsumerWidget {
       onAcceptWithDetails: (details) async {
         final occ = details.data;
         if (dateOnly(occ.scheduledDate) == dateOnly(day.date)) return;
+        final messenger = ScaffoldMessenger.of(context);
+        // Don't stack two occurrences of the same task on one day: that would
+        // render the chore twice and let it be completed (and counted) twice.
+        if (day.occurrences.any((o) => o.taskId == occ.taskId)) {
+          messenger.showSnackBar(
+            SnackBar(content: Text(strings.alreadyOnThatDay)),
+          );
+          return;
+        }
         final svc = ref.read(occurrenceServiceProvider);
         if (svc == null) return;
-        final messenger = ScaffoldMessenger.of(context);
         try {
           await svc.moveTo(occ, day.date);
           messenger.showSnackBar(
