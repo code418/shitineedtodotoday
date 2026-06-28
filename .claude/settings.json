@@ -21,7 +21,7 @@
       "Bash(awk '/^void main\\\\\\(\\\\\\)/{found=1} found{print NR\": \"$0}' test/cross_language_sync_test.dart)",
       "mcp__plugin_firebase_firebase__developerknowledge_answer_query",
       "Bash(gh run *)",
-      "mcp__plugin_firebase_firebase__firestore_list_collections", 
+      "mcp__plugin_firebase_firebase__firestore_list_collections",
       "Bash(flutter pub:*)",
       "Bash(flutter analyze:*)",
       "Bash(flutter build:*)",
@@ -118,7 +118,10 @@
       "Bash(gcloud storage *)",
       "Bash(gsutil ls *)",
       "mcp__plugin_firebase_firebase__storage_get_object_download_url",
-      "mcp__plugin_firebase_firebase__firebase_get_sdk_config"
+      "mcp__plugin_firebase_firebase__firebase_get_sdk_config",
+      "Bash(apt-cache search *)",
+      "Bash(apt-cache policy *)",
+      "Bash(sudo -n true)"
     ]
   },
   "enabledPlugins": {

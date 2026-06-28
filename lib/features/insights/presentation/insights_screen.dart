@@ -336,14 +336,16 @@ class _SuggestionCard extends ConsumerWidget {
     AppStrings strings,
   ) async {
     final task = ref.read(taskByIdProvider(suggestion.taskId));
-    if (task == null) return;
+    final service = ref.read(taskServiceProvider);
+    // Null-check the service explicitly: `?.updateTask(...)` would short-circuit
+    // to null when there's no owner, and `await null` doesn't throw — so the
+    // catch wouldn't fire and we'd show a false "applied" with nothing written.
+    if (task == null || service == null) return;
     final messenger = ScaffoldMessenger.of(context);
     try {
-      await ref
-          .read(taskServiceProvider)
-          ?.updateTask(
-            task.copyWith(recurrence: suggestion.suggestedRecurrence),
-          );
+      await service.updateTask(
+        task.copyWith(recurrence: suggestion.suggestedRecurrence),
+      );
     } catch (_) {
       messenger.showSnackBar(SnackBar(content: Text(strings.actionFailed)));
       return;

@@ -112,4 +112,69 @@ void main() {
     expect(find.text(AppStrings.clean.actionFailed), findsOneWidget);
     expect(find.text(AppStrings.clean.suggestionApplied), findsNothing);
   });
+
+  testWidgets(
+    'apply-suggestion shows no false success when there is no owner',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+
+      final task = Task(
+        id: 't1',
+        ownerId: 'u1',
+        title: 'Vacuum the lounge',
+        recurrence: const Recurrence.strict(weekdays: [DateTime.monday]),
+        estimatedEffortMinutes: 15,
+        createdAt: DateTime(2026),
+        updatedAt: DateTime(2026),
+      );
+      final occ = TaskOccurrence(
+        id: 't1_2026-06-29',
+        taskId: 't1',
+        scheduledDate: DateTime(2026, 6, 29),
+      );
+      const summary = InsightsSummary(
+        completedCount: 1,
+        skippedCount: 3,
+        completionRate: 0.25,
+        streakDays: 0,
+        totalMinutes: 10,
+        buckets: [],
+        slips: [TaskSlip('t1', 3)],
+        suggestion: AdaptiveSuggestion(
+          taskId: 't1',
+          suggestedRecurrence: Recurrence.flexible(
+            period: FrequencyPeriod.week,
+          ),
+        ),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            // No signed-in owner → taskServiceProvider is null.
+            currentOwnerIdProvider.overrideWithValue(null),
+            occurrencesProvider.overrideWith((ref) => Stream.value([occ])),
+            tasksProvider.overrideWith((ref) => Stream.value([task])),
+            insightsSummaryProvider(
+              InsightsPeriod.week,
+            ).overrideWithValue(summary),
+          ],
+          child: const MaterialApp(home: InsightsScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Make it flexible'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Make it flexible'));
+      await tester.pumpAndSettle();
+
+      // Nothing was written (no owner), so neither a success nor an error toast
+      // appears — a no-op, not a false "applied".
+      expect(find.text(AppStrings.clean.suggestionApplied), findsNothing);
+      expect(find.text(AppStrings.clean.actionFailed), findsNothing);
+    },
+  );
 }
