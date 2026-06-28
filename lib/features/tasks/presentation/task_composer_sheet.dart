@@ -134,22 +134,31 @@ class _TaskComposerSheetState extends ConsumerState<_TaskComposerSheet> {
     final recurrence = _buildRecurrence();
     final isNew = widget.existing == null;
 
-    if (isNew) {
-      await svc.addTask(
-        title: title,
-        recurrence: recurrence,
-        category: category.isEmpty ? null : category,
-        estimatedEffortMinutes: _effort,
-      );
-    } else {
-      await svc.updateTask(
-        widget.existing!.copyWith(
+    try {
+      if (isNew) {
+        await svc.addTask(
           title: title,
-          category: category.isEmpty ? null : category,
           recurrence: recurrence,
+          category: category.isEmpty ? null : category,
           estimatedEffortMinutes: _effort,
-        ),
-      );
+        );
+      } else {
+        await svc.updateTask(
+          widget.existing!.copyWith(
+            title: title,
+            category: category.isEmpty ? null : category,
+            recurrence: recurrence,
+            estimatedEffortMinutes: _effort,
+          ),
+        );
+      }
+    } catch (_) {
+      // Keep the sheet open so the user can retry without re-entering details.
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(strings.actionFailed)));
+      return;
     }
 
     if (!mounted) return;

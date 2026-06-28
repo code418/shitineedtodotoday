@@ -213,7 +213,16 @@ class TaskDetailScreen extends ConsumerWidget {
       ),
     );
     if (confirmed != true) return;
-    await ref.read(taskServiceProvider)?.deleteTask(taskId);
+    try {
+      await ref.read(taskServiceProvider)?.deleteTask(taskId);
+    } catch (_) {
+      // Stay on the detail screen so the task isn't silently left in place.
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(strings.actionFailed)));
+      return;
+    }
     if (!context.mounted) return;
     Navigator.of(context).pop();
     ScaffoldMessenger.of(

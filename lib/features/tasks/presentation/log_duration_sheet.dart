@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design/design.dart';
 import '../../settings/application/settings_providers.dart';
+import '../application/occurrence_service.dart';
 import '../application/tasks_providers.dart';
 import '../domain/effort_learning.dart';
 import '../domain/scheduling/task_occurrence.dart';
@@ -55,12 +56,22 @@ class _LogDurationSheetState extends ConsumerState<_LogDurationSheet> {
     }
 
     final history = ref.read(occurrencesForTaskProvider(widget.task.id));
-    final result = await svc.complete(
-      occurrence: widget.occurrence,
-      task: widget.task,
-      actualMinutes: _minutes,
-      history: history,
-    );
+    final CompletionResult result;
+    try {
+      result = await svc.complete(
+        occurrence: widget.occurrence,
+        task: widget.task,
+        actualMinutes: _minutes,
+        history: history,
+      );
+    } catch (_) {
+      // Keep the sheet open so the user can retry logging the duration.
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(strings.actionFailed)));
+      return;
+    }
 
     if (!mounted) return;
     final messenger = ScaffoldMessenger.of(context);
