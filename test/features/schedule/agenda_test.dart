@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:snitd/features/schedule/domain/agenda.dart';
 import 'package:snitd/features/tasks/domain/scheduling/forgiving_scheduler.dart';
 import 'package:snitd/features/tasks/domain/scheduling/recurrence.dart';
+import 'package:snitd/features/tasks/domain/scheduling/task_occurrence.dart';
 import 'package:snitd/features/tasks/domain/task.dart';
 
 Task _task({required String id, required Recurrence recurrence}) => Task(
@@ -95,6 +96,31 @@ void main() {
           reason: 'day $i should have no occurrences for a Monday-only task',
         );
       }
+    });
+
+    test('drops orphan occurrences but keeps occurrences for live tasks', () {
+      final liveTask = _task(
+        id: 'live',
+        recurrence: const Recurrence.strict(weekdays: [DateTime.monday]),
+      );
+      // An occurrence whose task has been deleted — buildToday would otherwise
+      // carry it as a same-day existing occurrence and the agenda would render
+      // a row labelled by the raw taskId.
+      final orphan = TaskOccurrence(
+        id: 'ghost_2026-06-29',
+        taskId: 'ghost',
+        scheduledDate: DateTime(2026, 6, 29), // Monday slot
+      );
+      final agenda = buildWeekAgenda(
+        scheduler: scheduler,
+        tasks: [liveTask],
+        existing: [orphan],
+        weekStart: weekStart,
+      );
+
+      // Monday holds only the live task's occurrence; the orphan is filtered.
+      expect(agenda[0].occurrences, hasLength(1));
+      expect(agenda[0].occurrences.first.taskId, 'live');
     });
 
     test('flexible-weekly task appears on the week-start (Monday) slot', () {

@@ -26,17 +26,26 @@ List<AgendaDay> buildWeekAgenda({
   required DateTime weekStart,
 }) {
   final start = dateOnly(weekStart);
+  // Defensively drop occurrences whose task no longer exists, mirroring
+  // todayChecklistProvider — a deleted task should cascade its occurrences,
+  // but a transient orphan (e.g. streams updating out of step) must never
+  // render as a row labelled by its raw taskId.
+  final taskIds = {for (final t in tasks) t.id};
   return [
     for (var i = 0; i < 7; i++)
       () {
         final day = start.add(Duration(days: i));
+        final dayOccurrences = scheduler.buildToday(
+          tasks: tasks,
+          today: day,
+          existing: existing,
+        );
         return AgendaDay(
           date: day,
-          occurrences: scheduler.buildToday(
-            tasks: tasks,
-            today: day,
-            existing: existing,
-          ),
+          occurrences: [
+            for (final occ in dayOccurrences)
+              if (taskIds.contains(occ.taskId)) occ,
+          ],
         );
       }(),
   ];
