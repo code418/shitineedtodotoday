@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/firebase/firebase_providers.dart';
+import '../../../core/util/firestore_decode.dart';
 import '../domain/scheduling/task_occurrence.dart';
 
 /// Reads and writes [TaskOccurrence]s — the concrete daily-checklist items
@@ -41,11 +42,11 @@ class FirestoreOccurrenceRepository implements OccurrenceRepository {
         .orderBy('scheduledDate', descending: true)
         .snapshots()
         .map(
-          (snapshot) => snapshot.docs
-              .map(
-                (doc) => TaskOccurrence.fromJson({...doc.data(), 'id': doc.id}),
-              )
-              .toList(),
+          (snapshot) => decodeDocs(
+            [for (final doc in snapshot.docs) (doc.id, doc.data())],
+            TaskOccurrence.fromJson,
+            label: 'occurrence',
+          ),
         );
   }
 

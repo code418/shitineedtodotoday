@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/firebase/firebase_providers.dart';
+import '../../../core/util/firestore_decode.dart';
 import '../domain/task.dart';
 
 /// Reads and writes [Task] definitions.
@@ -38,9 +39,11 @@ class FirestoreTaskRepository implements TaskRepository {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map(
-          (snapshot) => snapshot.docs
-              .map((doc) => Task.fromJson({...doc.data(), 'id': doc.id}))
-              .toList(),
+          (snapshot) => decodeDocs(
+            [for (final doc in snapshot.docs) (doc.id, doc.data())],
+            Task.fromJson,
+            label: 'task',
+          ),
         );
   }
 
