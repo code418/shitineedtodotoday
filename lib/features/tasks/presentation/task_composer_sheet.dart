@@ -386,10 +386,18 @@ class _TaskComposerSheetState extends ConsumerState<_TaskComposerSheet> {
                     : _formatDate(_exactDate!),
                 onPressed: () async {
                   final now = ref.read(clockProvider)();
+                  final firstDate = DateTime(now.year, now.month, now.day);
+                  // When editing a one-off whose date has already passed,
+                  // _exactDate is before firstDate — clamp it so showDatePicker's
+                  // (initialDate >= firstDate) assertion can't fire.
+                  final initialDate =
+                      (_exactDate != null && !_exactDate!.isBefore(firstDate))
+                      ? _exactDate!
+                      : firstDate;
                   final picked = await showDatePicker(
                     context: context,
-                    initialDate: _exactDate ?? now,
-                    firstDate: DateTime(now.year, now.month, now.day),
+                    initialDate: initialDate,
+                    firstDate: firstDate,
                     lastDate: DateTime(now.year + 5),
                   );
                   if (picked != null) setState(() => _exactDate = picked);
