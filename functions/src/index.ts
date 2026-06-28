@@ -54,18 +54,40 @@ export const sendDueReminders = onSchedule(
     // Today's LOCAL calendar day as a date-only UTC Date (DST-safe).
     const todayLocal = localDateOnly(now, TIME_ZONE);
 
-    const users = await db.collection("users").get();
+    // Enumerate users via their registered device tokens. We can't list the
+    // `users` collection directly: those parent docs are never written (the app
+    // only ever creates subcollections), so `collection('users').get()` returns
+    // nothing. A collectionGroup over `tokens` finds exactly the users who can
+    // receive a push — with their tokens already in hand.
+    const tokenDocs = await db.collectionGroup("tokens").get();
+    const tokensByUser = new Map<string, string[]>();
+    for (const doc of tokenDocs.docs) {
+      const uid = doc.ref.parent.parent?.id;
+      if (!uid) continue;
+      const token = (doc.get("token") as string | undefined) ?? doc.id;
+      if (!token) continue;
+      const existing = tokensByUser.get(uid);
+      if (existing) {
+        existing.push(token);
+      } else {
+        tokensByUser.set(uid, [token]);
+      }
+    }
+
     let pushed = 0;
     let recipients = 0;
 
     /**
      * Process a single user: read prefs + active tasks in parallel, evaluate
      * recurrence to decide if there's genuinely something to do today, send a
-     * push if the nudge should fire, and prune any stale tokens.
+     * push to their [tokens] if the nudge should fire, and prune stale tokens.
      */
     async function processUser(
       uid: string,
+      tokens: string[],
     ): Promise<{recipients: number; pushed: number}> {
+      if (tokens.length === 0) return {recipients: 0, pushed: 0};
+
       const [prefsSnap, tasksSnap] = await Promise.all([
         db.doc(`users/${uid}/meta/notifications`).get(),
         db
@@ -93,12 +115,6 @@ export const sendDueReminders = onSchedule(
       ) {
         return {recipients: 0, pushed: 0};
       }
-
-      const tokensSnap = await db.collection(`users/${uid}/tokens`).get();
-      const tokens = tokensSnap.docs
-        .map((d) => (d.get("token") as string | undefined) ?? d.id)
-        .filter((t): t is string => Boolean(t));
-      if (tokens.length === 0) return {recipients: 0, pushed: 0};
 
       const result = await messaging.sendEachForMulticast({
         tokens,
@@ -130,9 +146,12 @@ export const sendDueReminders = onSchedule(
     }
 
     // Process users in bounded-concurrency chunks to avoid timeout at scale.
-    for (let i = 0; i < users.docs.length; i += CHUNK) {
-      const slice = users.docs.slice(i, i + CHUNK);
-      const results = await Promise.all(slice.map((d) => processUser(d.id)));
+    const entries = [...tokensByUser.entries()];
+    for (let i = 0; i < entries.length; i += CHUNK) {
+      const slice = entries.slice(i, i + CHUNK);
+      const results = await Promise.all(
+        slice.map(([uid, tokens]) => processUser(uid, tokens)),
+      );
       for (const r of results) {
         recipients += r.recipients;
         pushed += r.pushed;
