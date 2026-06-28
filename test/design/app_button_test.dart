@@ -32,4 +32,30 @@ void main() {
     await tester.tap(find.byType(AppButton));
     expect(taps, 0);
   });
+
+  testWidgets('whole button area is tappable, not just the label', (
+    tester,
+  ) async {
+    var taps = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: AppButton(
+              label: 'Save',
+              block: true,
+              onPressed: () => taps++,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final rect = tester.getRect(find.byType(AppButton));
+    // Tap near the left edge — empty space on a full-width block button, well
+    // away from the centred label.
+    await tester.tapAt(Offset(rect.left + 4, rect.center.dy));
+    await tester.pumpAndSettle();
+    expect(taps, 1);
+  });
 }

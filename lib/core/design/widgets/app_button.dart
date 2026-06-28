@@ -125,6 +125,11 @@ class _AppButtonState extends State<AppButton> {
       child: Opacity(
         opacity: enabled ? 1 : 0.45,
         child: GestureDetector(
+          // Make the whole button rect tappable, not just the painted label —
+          // a BoxDecoration container defers hit-testing to its child, so
+          // without this the horizontal padding (and a block button's empty
+          // width) are dead zones.
+          behavior: HitTestBehavior.opaque,
           onTapDown: enabled ? (_) => setState(() => _pressed = true) : null,
           onTapUp: enabled ? (_) => setState(() => _pressed = false) : null,
           onTapCancel: enabled ? () => setState(() => _pressed = false) : null,
