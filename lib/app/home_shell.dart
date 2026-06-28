@@ -11,14 +11,18 @@ import '../features/tasks/presentation/today_screen.dart';
 /// The root shell that hosts the four bottom-nav tabs:
 /// Today · Schedule · Insights · You.
 class HomeShell extends ConsumerStatefulWidget {
-  const HomeShell({super.key});
+  const HomeShell({super.key, this.initialTab = 0});
+
+  /// Which tab to open on first build (0 = Today … 3 = You). Lets deep links /
+  /// notification taps to `/schedule` or `/insights` land on the right tab.
+  final int initialTab;
 
   @override
   ConsumerState<HomeShell> createState() => _HomeShellState();
 }
 
 class _HomeShellState extends ConsumerState<HomeShell> {
-  int _index = 0;
+  late int _index = widget.initialTab.clamp(0, 3);
 
   @override
   Widget build(BuildContext context) {

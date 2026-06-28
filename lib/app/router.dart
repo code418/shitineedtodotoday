@@ -34,6 +34,9 @@ abstract final class Routes {
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: Routes.today,
+    // Any unmatched route (a stale deep link, a typo'd path) degrades to the
+    // shell instead of go_router's raw error page.
+    errorBuilder: (context, state) => const HomeShell(),
     redirect: (context, state) {
       final done = ref.read(settingsControllerProvider).onboardingComplete;
       final atOnboarding = state.matchedLocation == Routes.onboarding;
@@ -52,6 +55,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.today,
         builder: (context, state) => const HomeShell(),
+      ),
+      // Schedule and Insights are tabs inside the shell; these routes let a
+      // deep link / notification tap open the shell on the matching tab.
+      GoRoute(
+        path: Routes.schedule,
+        builder: (context, state) => const HomeShell(initialTab: 1),
+      ),
+      GoRoute(
+        path: Routes.insights,
+        builder: (context, state) => const HomeShell(initialTab: 2),
       ),
       GoRoute(
         path: Routes.onboarding,
