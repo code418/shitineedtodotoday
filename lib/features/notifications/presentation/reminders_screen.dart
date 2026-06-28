@@ -40,7 +40,22 @@ class RemindersScreen extends ConsumerWidget {
     // clean copy — not the profanity-aware `strings`.
     const pushStrings = AppStrings.clean;
 
-    void save(NotificationPrefs p) => controller?.update(p);
+    // Persist a pref change, surfacing failures instead of dropping them: a
+    // null controller (no signed-in owner) or a rejected write would otherwise
+    // silently no-op while the switch snapped back, leaving the user unsure.
+    void save(NotificationPrefs p) {
+      final messenger = ScaffoldMessenger.of(context);
+      final ctrl = controller;
+      if (ctrl == null) {
+        messenger.showSnackBar(
+          SnackBar(content: Text(strings.firebaseNotConfigured)),
+        );
+        return;
+      }
+      ctrl.update(p).catchError((Object _) {
+        messenger.showSnackBar(SnackBar(content: Text(strings.actionFailed)));
+      });
+    }
 
     final openCount = ref
         .watch(todayChecklistProvider)

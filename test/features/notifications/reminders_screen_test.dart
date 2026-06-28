@@ -26,6 +26,18 @@ class _FakeNotificationPrefsRepository implements NotificationPrefsRepository {
   }
 }
 
+/// A prefs repo whose writes fail — simulates an offline/permission error.
+class _ThrowingNotificationPrefsRepository
+    implements NotificationPrefsRepository {
+  @override
+  Stream<NotificationPrefs> watch(String ownerId) =>
+      Stream.value(NotificationPrefs.defaults);
+
+  @override
+  Future<void> save(String ownerId, NotificationPrefs prefs) async =>
+      throw Exception('save failed');
+}
+
 // ── Tests ────────────────────────────────────────────────────────────────────
 
 void main() {
@@ -84,6 +96,62 @@ void main() {
 
     expect(fakeRepo.saved, isNotNull);
     expect(fakeRepo.saved!.dailyNudgeEnabled, isFalse);
+  });
+
+  testWidgets('a failed pref write surfaces a gentle error', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          currentOwnerIdProvider.overrideWithValue('u1'),
+          notificationPrefsRepositoryProvider.overrideWithValue(
+            _ThrowingNotificationPrefsRepository(),
+          ),
+          todayChecklistProvider.overrideWithValue(const <TaskOccurrence>[]),
+        ],
+        child: const MaterialApp(home: RemindersScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final switches = find.byWidgetPredicate(
+      (w) => w.runtimeType.toString() == 'AppSwitch',
+    );
+    await tester.tap(switches.first);
+    await tester.pumpAndSettle();
+
+    expect(find.text(AppStrings.clean.actionFailed), findsOneWidget);
+  });
+
+  testWidgets('toggling with no signed-in owner shows not-configured', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          // No owner → notificationPrefsControllerProvider is null.
+          currentOwnerIdProvider.overrideWithValue(null),
+          todayChecklistProvider.overrideWithValue(const <TaskOccurrence>[]),
+        ],
+        child: const MaterialApp(home: RemindersScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final switches = find.byWidgetPredicate(
+      (w) => w.runtimeType.toString() == 'AppSwitch',
+    );
+    await tester.tap(switches.first);
+    await tester.pumpAndSettle();
+
+    expect(find.text(AppStrings.clean.firebaseNotConfigured), findsOneWidget);
   });
 
   testWidgets('preview shows clean push copy even with profanity mode on', (
