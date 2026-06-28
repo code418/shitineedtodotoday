@@ -243,7 +243,14 @@ class _TurnsCard extends StatelessWidget {
       for (final o in checklist)
         o.taskId: ref.watch(taskByIdProvider(o.taskId))?.assigneeId,
     };
-    final groups = assignmentsByMember(checklist, assigneeByTaskId);
+    // Ids that have their own bucket below; anything else (e.g. a task still
+    // assigned to a removed member) folds into the visible "anyone" bucket.
+    final knownIds = {_youId, for (final m in household.members) m.id};
+    final groups = assignmentsByMember(
+      checklist,
+      assigneeByTaskId,
+      knownAssigneeIds: knownIds,
+    );
 
     // Render order: you → members → anyone (null key).
     final buckets = <(String?, String)>[

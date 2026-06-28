@@ -59,4 +59,31 @@ void main() {
     // assigneeByTaskId['unknown'] == null (key absent -> null)
     expect(result[null], isNotEmpty);
   });
+
+  test('folds tasks assigned to removed members into the null bucket', () {
+    final occurrences = [occ('t1'), occ('t2'), occ('t3')];
+    final assignees = <String, String?>{
+      't1': 'you',
+      't2': 'ghost', // a member who has since been removed
+      't3': 'alice',
+    };
+
+    final result = assignmentsByMember(
+      occurrences,
+      assignees,
+      knownAssigneeIds: {'you', 'alice'},
+    );
+
+    expect(result['you']?.map((o) => o.taskId).toList(), ['t1']);
+    expect(result['alice']?.map((o) => o.taskId).toList(), ['t3']);
+    // 'ghost' is unknown → t2 stays visible in the "anyone" bucket.
+    expect(result[null]?.map((o) => o.taskId).toList(), ['t2']);
+    expect(result.containsKey('ghost'), isFalse);
+  });
+
+  test('keeps every assignee bucketed when knownAssigneeIds is omitted', () {
+    final result = assignmentsByMember([occ('t1')], {'t1': 'ghost'});
+    // Back-compat: without a known-id set, unknown ids keep their own bucket.
+    expect(result['ghost']?.length, 1);
+  });
 }
