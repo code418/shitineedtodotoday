@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -30,17 +32,43 @@ class SettingsController extends Notifier<AppSettings> {
 
   Future<void> setProfanityEnabled(bool value) async {
     state = state.copyWith(profanityEnabled: value);
-    await ref.read(settingsRepositoryProvider).setProfanityEnabled(value);
+    await _persist(
+      () => ref.read(settingsRepositoryProvider).setProfanityEnabled(value),
+      'profanity setting',
+    );
   }
 
   Future<void> setDailyEnergyBudget(int minutes) async {
     state = state.copyWith(dailyEnergyBudgetMinutes: minutes);
-    await ref.read(settingsRepositoryProvider).setDailyEnergyBudget(minutes);
+    await _persist(
+      () => ref.read(settingsRepositoryProvider).setDailyEnergyBudget(minutes),
+      'daily energy budget',
+    );
   }
 
   Future<void> setOnboardingComplete(bool value) async {
     state = state.copyWith(onboardingComplete: value);
-    await ref.read(settingsRepositoryProvider).setOnboardingComplete(value);
+    await _persist(
+      () => ref.read(settingsRepositoryProvider).setOnboardingComplete(value),
+      'onboarding-complete flag',
+    );
+  }
+
+  /// Runs a local settings write, swallowing (and logging) any failure. The
+  /// optimistic state update already happened and self-heals on next launch, so
+  /// a benign SharedPreferences error must NOT bubble up as an unhandled async
+  /// error — `main.dart`'s onError would otherwise report it as a fatal crash.
+  Future<void> _persist(Future<void> Function() write, String what) async {
+    try {
+      await write();
+    } catch (e, st) {
+      developer.log(
+        'Failed to persist $what',
+        name: 'snitd',
+        error: e,
+        stackTrace: st,
+      );
+    }
   }
 }
 

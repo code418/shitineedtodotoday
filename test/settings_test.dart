@@ -3,7 +3,22 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:snitd/core/strings/app_strings.dart';
 import 'package:snitd/features/settings/application/settings_providers.dart';
+import 'package:snitd/features/settings/data/settings_repository.dart';
 import 'package:snitd/features/settings/domain/app_settings.dart';
+
+/// A repository whose writes throw — simulates a disk/platform failure.
+class _ThrowingSettingsRepository extends SettingsRepository {
+  _ThrowingSettingsRepository(super.prefs);
+  @override
+  Future<void> setProfanityEnabled(bool value) async =>
+      throw Exception('disk full');
+  @override
+  Future<void> setDailyEnergyBudget(int minutes) async =>
+      throw Exception('disk full');
+  @override
+  Future<void> setOnboardingComplete(bool value) async =>
+      throw Exception('disk full');
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -105,6 +120,36 @@ void main() {
         container.read(settingsRepositoryProvider).load().onboardingComplete,
         isTrue,
       );
+    },
+  );
+
+  test(
+    'a failed local write is swallowed, not surfaced as an unhandled error',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          settingsRepositoryProvider.overrideWithValue(
+            _ThrowingSettingsRepository(prefs),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final notifier = container.read(settingsControllerProvider.notifier);
+
+      // The write throws, but the setter must complete normally (not rethrow,
+      // which would become a fatal unhandled async error) and still apply the
+      // optimistic state change.
+      await notifier.setProfanityEnabled(true);
+      expect(
+        container.read(settingsControllerProvider).profanityEnabled,
+        isTrue,
+      );
+
+      await notifier.setDailyEnergyBudget(120);
+      expect(container.read(dailyEnergyBudgetProvider), 120);
     },
   );
 
