@@ -63,13 +63,16 @@ class _DaySection extends ConsumerWidget {
         if (dateOnly(occ.scheduledDate) == dateOnly(day.date)) return;
         final svc = ref.read(occurrenceServiceProvider);
         if (svc == null) return;
-        await svc.moveTo(occ, day.date);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+        final messenger = ScaffoldMessenger.of(context);
+        try {
+          await svc.moveTo(occ, day.date);
+          messenger.showSnackBar(
             SnackBar(
               content: Text('${strings.movedToDay} ${weekdayLong(day.date)}'),
             ),
           );
+        } catch (_) {
+          messenger.showSnackBar(SnackBar(content: Text(strings.actionFailed)));
         }
       },
       builder: (context, candidateData, rejectedData) {

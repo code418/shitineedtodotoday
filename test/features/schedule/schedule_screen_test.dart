@@ -3,12 +3,42 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:snitd/core/design/tokens/app_icons.dart';
+import 'package:snitd/core/strings/app_strings.dart';
 import 'package:snitd/features/schedule/presentation/schedule_screen.dart';
 import 'package:snitd/features/settings/application/settings_providers.dart';
 import 'package:snitd/features/tasks/application/tasks_providers.dart';
+import 'package:snitd/features/tasks/data/occurrence_repository.dart';
+import 'package:snitd/features/tasks/data/task_repository.dart';
 import 'package:snitd/features/tasks/domain/scheduling/recurrence.dart';
 import 'package:snitd/features/tasks/domain/scheduling/task_occurrence.dart';
 import 'package:snitd/features/tasks/domain/task.dart';
+
+/// Task repo with one flexible task; occurrence repo whose writes fail.
+class _StubTaskRepository implements TaskRepository {
+  _StubTaskRepository(this._tasks);
+  final List<Task> _tasks;
+  @override
+  Stream<List<Task>> watchTasks(String ownerId) => Stream.value(_tasks);
+  @override
+  Future<void> upsert(Task task) async {}
+  @override
+  Future<void> delete(String ownerId, String taskId) async {}
+  @override
+  String newId(String ownerId) => 'x';
+}
+
+class _ThrowingOccurrenceRepository implements OccurrenceRepository {
+  @override
+  Stream<List<TaskOccurrence>> watchOccurrences(String ownerId) =>
+      Stream.value(const <TaskOccurrence>[]);
+  @override
+  Future<void> upsert(String ownerId, TaskOccurrence occurrence) async =>
+      throw Exception('write failed');
+  @override
+  Future<void> delete(String ownerId, String occurrenceId) async {}
+  @override
+  Future<void> deleteForTask(String ownerId, String taskId) async {}
+}
 
 void main() {
   testWidgets(
@@ -67,4 +97,54 @@ void main() {
       expect(find.byIcon(AppIcons.check), findsOneWidget);
     },
   );
+
+  testWidgets('a failed drag-reschedule shows a gentle error snackbar', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+
+    // A flexible-weekly task anchors on Monday (open, draggable).
+    final task = Task(
+      id: 'f1',
+      ownerId: 'u1',
+      title: 'Flexy',
+      recurrence: const Recurrence.flexible(period: FrequencyPeriod.week),
+      estimatedEffortMinutes: 15,
+      createdAt: DateTime(2026),
+      updatedAt: DateTime(2026),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          currentOwnerIdProvider.overrideWithValue('u1'),
+          clockProvider.overrideWithValue(() => DateTime(2026, 6, 29, 9)),
+          tasksProvider.overrideWith((ref) => Stream.value([task])),
+          occurrencesProvider.overrideWith(
+            (ref) => Stream.value(const <TaskOccurrence>[]),
+          ),
+          taskRepositoryProvider.overrideWithValue(_StubTaskRepository([task])),
+          occurrenceRepositoryProvider.overrideWithValue(
+            _ThrowingOccurrenceRepository(),
+          ),
+        ],
+        child: const MaterialApp(home: ScheduleScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Long-press-drag the Monday occurrence onto Tuesday's section.
+    final from = tester.getCenter(find.text('Flexy'));
+    final to = tester.getCenter(find.text('Tue 30'));
+    final gesture = await tester.startGesture(from);
+    await tester.pump(const Duration(milliseconds: 500)); // exceed long-press
+    await gesture.moveTo(to);
+    await tester.pump();
+    await gesture.up();
+    await tester.pumpAndSettle();
+
+    expect(find.text(AppStrings.clean.actionFailed), findsOneWidget);
+  });
 }
