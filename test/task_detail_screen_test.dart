@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:snitd/core/design/design.dart';
+import 'package:snitd/core/strings/app_strings.dart';
 import 'package:snitd/features/settings/application/settings_providers.dart';
 import 'package:snitd/features/tasks/application/tasks_providers.dart';
 import 'package:snitd/features/tasks/data/occurrence_repository.dart';
@@ -113,6 +115,55 @@ void main() {
 
     expect(find.text('This task is no longer here.'), findsOneWidget);
   });
+
+  testWidgets(
+    'delete with no signed-in owner does not claim success or remove the task',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final fakeTaskRepo = FakeTaskRepository();
+      final fakeOccRepo = FakeOccurrenceRepository();
+
+      final task = Task(
+        id: 't1',
+        ownerId: 'u1',
+        title: 'Vacuum the lounge',
+        recurrence: const Recurrence.strict(weekdays: [DateTime.monday]),
+        estimatedEffortMinutes: 15,
+        createdAt: _clock,
+        updatedAt: _clock,
+      );
+      fakeTaskRepo.store['t1'] = task;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            // Task still loads (owner present for the streams)…
+            currentOwnerIdProvider.overrideWithValue('u1'),
+            taskRepositoryProvider.overrideWithValue(fakeTaskRepo),
+            occurrenceRepositoryProvider.overrideWithValue(fakeOccRepo),
+            clockProvider.overrideWithValue(() => _clock),
+            // …but the service is gone (e.g. signed out mid-session).
+            taskServiceProvider.overrideWithValue(null),
+          ],
+          child: const MaterialApp(home: TaskDetailScreen(taskId: 't1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(AppIcons.delete));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(AppStrings.clean.deleteConfirm).last);
+      await tester.pumpAndSettle();
+
+      // The task is still there, and the user is told it couldn't be done —
+      // not falsely told it was removed.
+      expect(fakeTaskRepo.store.containsKey('t1'), isTrue);
+      expect(find.text(AppStrings.clean.taskDeleted), findsNothing);
+      expect(find.text(AppStrings.clean.firebaseNotConfigured), findsOneWidget);
+    },
+  );
 }
 
 final _clock = DateTime(2026, 6, 29, 9);

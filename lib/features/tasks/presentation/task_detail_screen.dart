@@ -213,8 +213,17 @@ class TaskDetailScreen extends ConsumerWidget {
       ),
     );
     if (confirmed != true) return;
+    final svc = ref.read(taskServiceProvider);
+    if (svc == null) {
+      // No signed-in owner: don't pop + claim "deleted" when nothing happened.
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(strings.firebaseNotConfigured)));
+      return;
+    }
     try {
-      await ref.read(taskServiceProvider)?.deleteTask(taskId);
+      await svc.deleteTask(taskId);
     } catch (_) {
       // Stay on the detail screen so the task isn't silently left in place.
       if (!context.mounted) return;
