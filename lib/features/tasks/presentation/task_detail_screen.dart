@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design/design.dart';
 import '../../../core/strings/app_strings.dart';
+import '../../../core/util/date_labels.dart';
 import '../../settings/application/settings_providers.dart';
 import '../application/tasks_providers.dart';
 import '../domain/effort_learning.dart';
@@ -12,27 +13,8 @@ import '../domain/scheduling/recurrence_description.dart';
 import '../domain/scheduling/task_occurrence.dart';
 import 'task_composer_sheet.dart';
 
-const _wkdayShort = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const _monthShort = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
-];
-
-String _formatDate(DateTime d) {
-  final wd = _wkdayShort[d.weekday - 1];
-  final mon = _monthShort[d.month - 1];
-  return '$wd ${d.day} $mon';
-}
+String _formatDate(DateTime d) =>
+    '${weekdayShort(d)} ${d.day} ${monthShort(d)}';
 
 /// Task detail / history screen.
 class TaskDetailScreen extends ConsumerWidget {

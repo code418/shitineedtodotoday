@@ -5,19 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router.dart';
 import '../../../core/design/design.dart';
 import '../../../core/strings/app_strings.dart';
+import '../../../core/util/date_labels.dart';
 import '../../settings/application/settings_providers.dart';
 import '../../tasks/application/tasks_providers.dart';
 import '../../tasks/domain/task_suggestion.dart';
-
-const _weekdayNames = [
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-  'Sunday',
-];
 
 /// First-run onboarding wizard: Welcome → pace → pick starters → Today.
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -355,7 +346,7 @@ class _CategoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final weekday = _weekdayNames[suggestions.first.weekday - 1];
+    final weekday = kWeekdayNamesLong[suggestions.first.weekday - 1];
 
     return AppCard(
       onTap: onToggle,

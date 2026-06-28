@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router.dart';
 import '../../../core/design/design.dart';
 import '../../../core/firebase/firebase_providers.dart';
+import '../../../core/util/date_labels.dart';
 import '../../schedule/application/schedule_providers.dart';
 import '../../settings/application/settings_providers.dart';
 import '../application/tasks_providers.dart';
@@ -13,16 +14,6 @@ import '../domain/task_suggestion.dart';
 import 'log_duration_sheet.dart';
 import 'task_composer_sheet.dart';
 import 'widgets/task_item.dart';
-
-const _weekdayNames = [
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-  'Sunday',
-];
 
 /// Shows a brief snackbar — used for action feedback and gentle errors.
 void _snack(BuildContext context, String message) {
@@ -148,7 +139,7 @@ class TodayScreen extends ConsumerWidget {
                               movedFrom:
                                   (occ.status == OccurrenceStatus.rescheduled &&
                                       occ.originalDate != null)
-                                  ? _weekdayNames[occ.originalDate!.weekday - 1]
+                                  ? weekdayLong(occ.originalDate!)
                                   : null,
                               onTap: () => context.push(
                                 Routes.taskDetailPath(occ.taskId),
@@ -296,7 +287,7 @@ class _SuggestionGroup extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final weekday = _weekdayNames[suggestions.first.weekday - 1];
+    final weekday = kWeekdayNamesLong[suggestions.first.weekday - 1];
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

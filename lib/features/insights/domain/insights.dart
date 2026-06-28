@@ -1,3 +1,4 @@
+import '../../../core/util/date_labels.dart';
 import '../../tasks/domain/scheduling/forgiving_scheduler.dart' show dateOnly;
 import '../../tasks/domain/scheduling/recurrence.dart';
 import '../../tasks/domain/scheduling/task_occurrence.dart';
@@ -118,7 +119,7 @@ InsightsSummary computeInsights({
       // 7 daily buckets labelled by weekday short name.
       buckets = List.generate(7, (i) {
         final day = windowStart.add(Duration(days: i));
-        final label = _weekdayShort[day.weekday - 1];
+        final label = kWeekdayNamesShort[day.weekday - 1];
         final doneCount = inWindow
             .where(
               (o) =>
@@ -157,7 +158,7 @@ InsightsSummary computeInsights({
         final monthStart = DateTime(year, month);
         // Last day of month: first day of next month minus one day.
         final monthEnd = DateTime(year, month + 1, 0);
-        final label = _monthShort[month - 1];
+        final label = kMonthNamesShort[month - 1];
         final doneCount = inWindow.where((o) {
           final d = dateOnly(o.scheduledDate);
           return o.status == OccurrenceStatus.done &&
@@ -212,19 +213,3 @@ InsightsSummary computeInsights({
     suggestion: suggestion,
   );
 }
-
-const _weekdayShort = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const _monthShort = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
-];

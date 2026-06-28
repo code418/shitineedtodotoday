@@ -1,29 +1,5 @@
+import '../../../../core/util/date_labels.dart';
 import 'recurrence.dart';
-
-const _months = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
-];
-
-const _weekdays = [
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-  'Sunday',
-];
 
 String _ordinal(int n) {
   if (n >= 11 && n <= 13) return '${n}th';
@@ -43,10 +19,7 @@ String describeRecurrence(Recurrence r) {
   switch (r) {
     case StrictRecurrence(:final exactDate, :final dayOfMonth, :final weekdays):
       if (exactDate != null) {
-        final d = exactDate.day;
-        final mon = _months[exactDate.month - 1];
-        final yyyy = exactDate.year;
-        return 'One-off on $d $mon $yyyy';
+        return 'One-off on ${dayMonthYear(exactDate)}';
       }
       if (dayOfMonth != null) {
         return 'The ${_ordinal(dayOfMonth)} of each month';
@@ -55,7 +28,7 @@ String describeRecurrence(Recurrence r) {
       // All 7 weekdays?
       final sorted = List<int>.from(weekdays)..sort();
       if (sorted.length == 7) return 'Every day';
-      final names = sorted.map((w) => _weekdays[w - 1]).toList();
+      final names = sorted.map((w) => kWeekdayNamesLong[w - 1]).toList();
       if (names.length == 1) return 'Every ${names.first}';
       final last = names.last;
       final rest = names.sublist(0, names.length - 1);

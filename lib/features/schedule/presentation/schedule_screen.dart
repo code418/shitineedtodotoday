@@ -2,30 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design/design.dart';
+import '../../../core/util/date_labels.dart';
 import '../../settings/application/settings_providers.dart';
 import '../../tasks/application/tasks_providers.dart';
 import '../../tasks/domain/scheduling/forgiving_scheduler.dart' show dateOnly;
 import '../../tasks/domain/scheduling/task_occurrence.dart';
 import '../application/schedule_providers.dart';
 import '../domain/agenda.dart';
-
-/// Full weekday names used in the move snackbar.
-const _weekdayNames = [
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-  'Sunday',
-];
-
-/// Short weekday names (Mon–Sun) for day section headers.
-const _weekdayShort = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-String _weekdayName(DateTime date) => _weekdayNames[date.weekday - 1];
-
-String _weekdayShortName(DateTime date) => _weekdayShort[date.weekday - 1];
 
 /// The week-agenda screen: seven day columns the user can drag tasks between.
 class ScheduleScreen extends ConsumerWidget {
@@ -84,7 +67,7 @@ class _DaySection extends ConsumerWidget {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('${strings.movedToDay} ${_weekdayName(day.date)}'),
+              content: Text('${strings.movedToDay} ${weekdayLong(day.date)}'),
             ),
           );
         }
@@ -109,7 +92,7 @@ class _DaySection extends ConsumerWidget {
               Row(
                 children: [
                   Text(
-                    '${_weekdayShortName(day.date)} ${day.date.day}',
+                    '${weekdayShort(day.date)} ${day.date.day}',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   if (isToday) ...[

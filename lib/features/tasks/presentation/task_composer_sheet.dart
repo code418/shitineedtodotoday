@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design/design.dart';
 import '../../../core/strings/app_strings.dart';
+import '../../../core/util/date_labels.dart';
 import '../../settings/application/settings_providers.dart';
 import '../application/tasks_providers.dart';
 import '../domain/scheduling/recurrence.dart';
@@ -10,7 +11,6 @@ import '../domain/task.dart';
 
 enum _RecurrencePreset { weekdays, weekly, monthly, everyday, seasonal, oneOff }
 
-const _weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const _seasonLabels = ['Spring', 'Summer', 'Autumn', 'Winter'];
 
 /// Shows the add/edit task modal bottom sheet.
@@ -179,8 +179,7 @@ class _TaskComposerSheetState extends ConsumerState<_TaskComposerSheet> {
     };
   }
 
-  String _formatDate(DateTime d) =>
-      '${d.day} ${const ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.month]} ${d.year}';
+  String _formatDate(DateTime d) => dayMonthYear(d);
 
   String _presetLabel(_RecurrencePreset preset, AppStrings strings) {
     return switch (preset) {
@@ -334,7 +333,7 @@ class _TaskComposerSheetState extends ConsumerState<_TaskComposerSheet> {
                 children: [
                   for (int i = 0; i < 7; i++)
                     AppChip(
-                      label: _weekdayLabels[i],
+                      label: kWeekdayNamesShort[i],
                       selectable: true,
                       selected: _selectedWeekdays.contains(i + 1),
                       onTap: () => setState(() {
