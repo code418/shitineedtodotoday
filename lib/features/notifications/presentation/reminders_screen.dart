@@ -308,8 +308,11 @@ class _LockScreenCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.x4),
       decoration: BoxDecoration(
+        // Always-dark "lock screen" mock. A subtle border delineates it from
+        // the page in dark mode, where the page is also dark ink.
         color: AppColors.ink900,
         borderRadius: BorderRadius.circular(AppRadii.xl),
+        border: Border.all(color: context.palette.borderDefault),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
