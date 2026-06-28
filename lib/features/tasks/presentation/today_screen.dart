@@ -24,6 +24,12 @@ const _weekdayNames = [
   'Sunday',
 ];
 
+/// Shows a brief snackbar — used for action feedback and gentle errors.
+void _snack(BuildContext context, String message) {
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+}
+
 /// The home screen: today's checklist + the add-task FAB.
 class TodayScreen extends ConsumerWidget {
   const TodayScreen({super.key});
@@ -98,16 +104,21 @@ class TodayScreen extends ConsumerWidget {
                                   for (final d in week)
                                     ...d.occurrences.where((o) => o.isOpen),
                                 ];
-                                await svc.rebalanceOpen(
-                                  open: open,
-                                  tasks:
-                                      ref.read(tasksProvider).value ?? const [],
-                                  dailyBudgetMinutes: budget,
-                                );
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text(strings.spreadDone)),
+                                try {
+                                  await svc.rebalanceOpen(
+                                    open: open,
+                                    tasks:
+                                        ref.read(tasksProvider).value ??
+                                        const [],
+                                    dailyBudgetMinutes: budget,
                                   );
+                                  if (context.mounted) {
+                                    _snack(context, strings.spreadDone);
+                                  }
+                                } catch (_) {
+                                  if (context.mounted) {
+                                    _snack(context, strings.actionFailed);
+                                  }
                                 }
                               },
                             ),
@@ -152,7 +163,13 @@ class TodayScreen extends ConsumerWidget {
                                 } else if (!next) {
                                   ref
                                       .read(occurrenceServiceProvider)
-                                      ?.reopen(occ);
+                                      ?.reopen(occ)
+                                      .catchError((Object _) {
+                                        if (context.mounted) {
+                                          _snack(context, strings.actionFailed);
+                                        }
+                                        return occ;
+                                      });
                                 }
                               },
                             );
@@ -193,15 +210,18 @@ class TodayScreen extends ConsumerWidget {
                               confirmDismiss: (_) async {
                                 final svc = ref.read(occurrenceServiceProvider);
                                 if (svc == null) return false;
-                                await svc.skip(occ);
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(strings.taskSkipped),
-                                    ),
-                                  );
+                                try {
+                                  await svc.skip(occ);
+                                  if (context.mounted) {
+                                    _snack(context, strings.taskSkipped);
+                                  }
+                                  return true;
+                                } catch (_) {
+                                  if (context.mounted) {
+                                    _snack(context, strings.actionFailed);
+                                  }
+                                  return false;
                                 }
-                                return true;
                               },
                               child: item,
                             );
@@ -295,26 +315,19 @@ class _SuggestionGroup extends ConsumerWidget {
               padding: const EdgeInsets.only(bottom: AppSpacing.x2),
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onTap: () {
+                onTap: () async {
+                  final strings = ref.read(appStringsProvider);
                   final svc = ref.read(taskServiceProvider);
                   if (svc == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          ref.read(appStringsProvider).firebaseNotConfigured,
-                        ),
-                      ),
-                    );
+                    _snack(context, strings.firebaseNotConfigured);
                     return;
                   }
-                  svc.addFromSuggestion(suggestion).then((_) {
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(ref.read(appStringsProvider).taskAdded),
-                      ),
-                    );
-                  });
+                  try {
+                    await svc.addFromSuggestion(suggestion);
+                    if (context.mounted) _snack(context, strings.taskAdded);
+                  } catch (_) {
+                    if (context.mounted) _snack(context, strings.actionFailed);
+                  }
                 },
                 child: Row(
                   children: [

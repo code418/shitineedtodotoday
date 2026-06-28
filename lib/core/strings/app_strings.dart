@@ -40,6 +40,7 @@ class AppStrings {
     required this.pickADay,
     required this.titleRequired,
     required this.taskAdded,
+    required this.actionFailed,
     required this.durationPrompt,
     required this.durationSubtitle,
     required this.durationSave,
@@ -205,6 +206,9 @@ class AppStrings {
   final String pickADay;
   final String titleRequired;
   final String taskAdded;
+
+  /// Shown when a save/sync action fails (e.g. offline write error).
+  final String actionFailed;
 
   // Duration / effort logging
   final String durationPrompt;
@@ -372,6 +376,7 @@ class AppStrings {
     pickADay: 'Pick at least one day',
     titleRequired: 'Give it a name first',
     taskAdded: 'Added to your list',
+    actionFailed: "Couldn't save that — please try again.",
     durationPrompt: 'How long did it take?',
     durationSubtitle: 'A rough number is fine — it helps us plan better.',
     durationSave: 'Log it',
@@ -530,6 +535,7 @@ class AppStrings {
     pickADay: 'Pick at least one day',
     titleRequired: 'Give it a name first',
     taskAdded: 'On the list',
+    actionFailed: "Couldn't save that — give it another go.",
     durationPrompt: 'How long did that take?',
     durationSubtitle: "A rough number's fine — helps us plan your shit better.",
     durationSave: 'Log it',
