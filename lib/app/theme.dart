@@ -100,6 +100,18 @@ class AppTheme {
           ),
         ),
       ),
+      // Clean, brand-tinted sliders: the daily-pace / effort sliders use many
+      // divisions, whose default tick marks render as cluttered dots — hide them
+      // and the value label for a calm continuous track.
+      sliderTheme: SliderThemeData(
+        trackHeight: 4,
+        activeTrackColor: scheme.primary,
+        inactiveTrackColor: scheme.primary.withValues(alpha: 0.20),
+        thumbColor: scheme.primary,
+        overlayColor: scheme.primary.withValues(alpha: 0.12),
+        tickMarkShape: SliderTickMarkShape.noTickMark,
+        showValueIndicator: ShowValueIndicator.never,
+      ),
       splashFactory: InkRipple.splashFactory,
     );
   }
