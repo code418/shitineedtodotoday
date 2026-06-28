@@ -84,21 +84,28 @@ lib/
       domain/scheduling/    # THE CORE:
         recurrence.dart     #   sealed Recurrence: StrictRecurrence | FlexibleRecurrence
         task_occurrence.dart#   TaskOccurrence (+ status, actualDurationMinutes)
-        scheduler.dart      #   Scheduler interface + PlaceholderScheduler
+        scheduler.dart      #   Scheduler interface
+        forgiving_scheduler.dart # ForgivingScheduler — the live engine
+        load_balancer.dart  #   energy-budget spread / rebalance
       data/                 # FirestoreTaskRepository (users/{uid}/tasks/{id})
       application/          # schedulerProvider, todayChecklistProvider
-      presentation/         # today_screen.dart (placeholder checklist)
-functions/src/index.ts      # scheduled reminder dispatcher (FCM) — placeholder
+      presentation/         # today_screen.dart (daily checklist)
+functions/src/index.ts      # scheduled reminder dispatcher (FCM)
 firestore.rules             # owner-only: a user only touches users/{their uid}/**
 ```
 
-### Where to implement the next milestone (P1)
-- The real engine replaces `PlaceholderScheduler` in `scheduler.dart`; every
-  consumer reads it through `schedulerProvider`, so nothing else changes.
-- `todayChecklistProvider` (`tasks_providers.dart`) currently passes empty
-  lists — wire it to the owner's tasks + persisted occurrences.
-- Firestore mapping for `Task` currently uses `toJson`/`fromJson`; `DateTime`
-  fields will need Firestore `Timestamp` handling when persistence goes live.
+### Implemented, and where the next milestone goes
+P1–P5 are live:
+- `ForgivingScheduler` (+ `load_balancer.dart`) is the engine behind
+  `schedulerProvider`; swap implementations there and nothing else changes.
+- `todayChecklistProvider` (`tasks_providers.dart`) builds the checklist from the
+  owner's tasks + persisted occurrences, carrying overdue work forward.
+- `Task`/`TaskOccurrence` persist via `toJson`/`fromJson` as **ISO-8601 strings**
+  (no Firestore `Timestamp`s), so the Dart client and the Cloud Function agree on
+  shape; day maths uses `addDays`/`dateOnly` to stay DST-safe.
+
+The remaining milestone is **P6** (multi-surface / accessibility) — see
+`docs/ROADMAP.md`.
 
 ## Conventions
 
