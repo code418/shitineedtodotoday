@@ -49,6 +49,16 @@ class InsightsSummary {
   final AdaptiveSuggestion? suggestion;
 }
 
+/// Adds [days] calendar days to [day] via the date constructor.
+///
+/// DST-safe: `Duration(days:)` arithmetic shifts by a fixed 24h, so across a
+/// daylight-saving transition it lands at 23:00/01:00 on the wrong calendar
+/// day — which then never matches the local-midnight `dateOnly(scheduledDate)`
+/// values the buckets/streak compare against. The constructor normalises to
+/// local midnight on the correct calendar day.
+DateTime _addDays(DateTime day, int days) =>
+    DateTime(day.year, day.month, day.day + days);
+
 /// Pure analytics function — takes a fixed [now] and makes no Firebase/clock
 /// calls of its own.
 InsightsSummary computeInsights({
@@ -64,8 +74,8 @@ InsightsSummary computeInsights({
   //   month — 28 days (4 × 7-day buckets); subtract 27 so window = [today-27, today]
   //   year  — 12 calendar months; start on the 1st of the month 11 months ago
   final windowStart = switch (period) {
-    InsightsPeriod.week => today.subtract(const Duration(days: 6)),
-    InsightsPeriod.month => today.subtract(const Duration(days: 27)),
+    InsightsPeriod.week => _addDays(today, -6),
+    InsightsPeriod.month => _addDays(today, -27),
     InsightsPeriod.year => () {
       var m = today.month - 11;
       var y = today.year;
@@ -109,7 +119,7 @@ InsightsSummary computeInsights({
   var cursor = today;
   while (doneDays.contains(cursor)) {
     streakDays++;
-    cursor = cursor.subtract(const Duration(days: 1));
+    cursor = _addDays(cursor, -1);
   }
 
   // Buckets (oldest → newest).
@@ -118,7 +128,7 @@ InsightsSummary computeInsights({
     case InsightsPeriod.week:
       // 7 daily buckets labelled by weekday short name.
       buckets = List.generate(7, (i) {
-        final day = windowStart.add(Duration(days: i));
+        final day = _addDays(windowStart, i);
         final label = kWeekdayNamesShort[day.weekday - 1];
         final doneCount = inWindow
             .where(
@@ -133,8 +143,8 @@ InsightsSummary computeInsights({
     case InsightsPeriod.month:
       // 4 buckets of 7 days (most recent 28 days); W1 = oldest, W4 = most recent.
       buckets = List.generate(4, (i) {
-        final bucketStart = today.subtract(Duration(days: 27 - i * 7));
-        final bucketEnd = today.subtract(Duration(days: 21 - i * 7));
+        final bucketStart = _addDays(today, -(27 - i * 7));
+        final bucketEnd = _addDays(today, -(21 - i * 7));
         final doneCount = inWindow.where((o) {
           final d = dateOnly(o.scheduledDate);
           return o.status == OccurrenceStatus.done &&

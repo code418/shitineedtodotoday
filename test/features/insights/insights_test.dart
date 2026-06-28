@@ -215,6 +215,31 @@ void main() {
       expect(s.completedCount, 1);
     });
 
+    test('month window crossing a month boundary tiles correctly', () {
+      // now = 10 Mar 2026 → windowStart = 11 Feb 2026 (day offset normalises
+      // back across the month boundary). Verifies the calendar-based day math.
+      final now = DateTime(2026, 3, 10);
+      final atStart = _occ(
+        taskId: 't1',
+        scheduledDate: DateTime(2026, 2, 11), // windowStart, inclusive
+      );
+      final justBefore = _occ(
+        taskId: 't2',
+        scheduledDate: DateTime(2026, 2, 10), // one day before window
+      );
+      final s = computeInsights(
+        occurrences: [atStart, justBefore],
+        tasks: const [],
+        now: now,
+        period: InsightsPeriod.month,
+      );
+      expect(s.completedCount, 1, reason: 'only the windowStart day is in');
+      // Every done occurrence in window lands in exactly one bucket, so the
+      // bucket total equals completedCount (no day falls through a seam).
+      final bucketTotal = s.buckets.fold<int>(0, (sum, b) => sum + b.doneCount);
+      expect(bucketTotal, s.completedCount);
+    });
+
     // ── week buckets ────────────────────────────────────────────────────────
 
     test('week buckets have length 7 and counts land on the right weekday', () {
