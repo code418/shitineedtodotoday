@@ -30,6 +30,24 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     super.dispose();
   }
 
+  /// Shared decoration for the email/password fields: a filled, borderless,
+  /// rounded "sunken" input with an optional [errorText].
+  InputDecoration _fieldDecoration(String hint, String? errorText) {
+    final border = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(AppRadii.md),
+      borderSide: BorderSide.none,
+    );
+    return InputDecoration(
+      hintText: hint,
+      filled: true,
+      fillColor: AppColors.surfaceSunken,
+      border: border,
+      enabledBorder: border,
+      focusedBorder: border,
+      errorText: errorText,
+    );
+  }
+
   Future<void> _upgrade() async {
     final strings = ref.read(appStringsProvider);
     final emailErr = validateEmail(_emailCtrl.text);
@@ -154,24 +172,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               controller: _emailCtrl,
               keyboardType: TextInputType.emailAddress,
               autocorrect: false,
-              decoration: InputDecoration(
-                hintText: 'you@example.com',
-                filled: true,
-                fillColor: AppColors.surfaceSunken,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppRadii.md),
-                  borderSide: BorderSide.none,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppRadii.md),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppRadii.md),
-                  borderSide: BorderSide.none,
-                ),
-                errorText: _emailError,
-              ),
+              decoration: _fieldDecoration('you@example.com', _emailError),
             ),
             const SizedBox(height: AppSpacing.x4),
 
@@ -181,24 +182,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             TextField(
               controller: _passwordCtrl,
               obscureText: true,
-              decoration: InputDecoration(
-                hintText: '••••••••',
-                filled: true,
-                fillColor: AppColors.surfaceSunken,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppRadii.md),
-                  borderSide: BorderSide.none,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppRadii.md),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppRadii.md),
-                  borderSide: BorderSide.none,
-                ),
-                errorText: _passwordError,
-              ),
+              decoration: _fieldDecoration('••••••••', _passwordError),
             ),
             const SizedBox(height: AppSpacing.x5),
 
