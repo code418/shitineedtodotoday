@@ -77,7 +77,9 @@ class _AppIconButtonState extends State<AppIconButton> {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: _hovering ? spec.hover : spec.bg,
+              // Only show the hover background when actually interactive — a
+              // disabled button must not signal hover affordance.
+              color: (enabled && _hovering) ? spec.hover : spec.bg,
             ),
             child: Opacity(
               opacity: enabled ? 1 : 0.5,
