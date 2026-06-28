@@ -97,6 +97,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       ),
     );
     if (confirmed != true) return;
+    final auth = ref.read(authRepositoryProvider);
     // Detach this device from the current owner first, so the dispatcher stops
     // pushing their reminders here once we've signed out. Best-effort — token
     // cleanup must never block sign-out.
@@ -108,7 +109,17 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         // Ignore; sign out regardless.
       }
     }
-    await ref.read(authRepositoryProvider).signOut();
+    await auth.signOut();
+    // Anonymous-first: immediately re-establish a fresh anonymous session so the
+    // app stays usable. Without an owner the user can't add tasks and the
+    // upgrade form breaks, and there's no sign-in screen to recover — they'd be
+    // stuck until the next app launch re-creates an anonymous user.
+    try {
+      final fresh = await auth.ensureSignedIn();
+      await ref.read(pushRegistrarProvider).registerFor(fresh.uid);
+    } catch (_) {
+      // Best-effort; a failed re-sign-in self-heals on the next app launch.
+    }
   }
 
   @override
