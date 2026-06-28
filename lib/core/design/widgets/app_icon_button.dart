@@ -56,6 +56,10 @@ class _AppIconButtonState extends State<AppIconButton> {
       onEnter: (_) => setState(() => _hovering = true),
       onExit: (_) => setState(() => _hovering = false),
       child: GestureDetector(
+        // Tap the whole circular target, not just the centred icon glyph — a
+        // BoxDecoration container defers hit-testing to its child, which would
+        // otherwise shrink the touch target to the icon (~half the size).
+        behavior: HitTestBehavior.opaque,
         onTapDown: enabled ? (_) => setState(() => _pressed = true) : null,
         onTapUp: enabled ? (_) => setState(() => _pressed = false) : null,
         onTapCancel: enabled ? () => setState(() => _pressed = false) : null,

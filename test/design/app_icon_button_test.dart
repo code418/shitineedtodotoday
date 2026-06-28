@@ -21,4 +21,29 @@ void main() {
     await tester.tap(find.byType(AppIconButton));
     expect(taps, 1);
   });
+
+  testWidgets('whole circular target is tappable, not just the icon glyph', (
+    tester,
+  ) async {
+    var taps = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: AppIconButton(
+              icon: AppIcons.settings,
+              tooltip: 'Settings',
+              onPressed: () => taps++,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final rect = tester.getRect(find.byType(AppIconButton));
+    // Tap near the edge of the 44px target — outside the ~22px centred icon.
+    await tester.tapAt(Offset(rect.left + 3, rect.center.dy));
+    await tester.pumpAndSettle();
+    expect(taps, 1);
+  });
 }
