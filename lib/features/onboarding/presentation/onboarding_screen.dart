@@ -26,6 +26,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   late Set<String> _selectedCategories;
   bool _initialized = false;
 
+  /// Guards against a double-tap on Get started / Skip seeding the whole
+  /// starter routine twice (each addFromSuggestion mints a fresh task id).
+  bool _finishing = false;
+
   @override
   void dispose() {
     _pageController.dispose();
@@ -49,10 +53,19 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Future<void> _finish({required bool addSelected}) async {
+    if (_finishing) return;
+    _finishing = true;
     final strings = ref.read(appStringsProvider);
+    // Capture the messenger before navigating away: context.go swaps this route
+    // out, so resolving the messenger off the onboarding context afterwards is
+    // fragile. The app-level messenger survives the route change.
+    final messenger = ScaffoldMessenger.of(context);
     final svc = ref.read(taskServiceProvider);
 
-    var seedFailed = false;
+    // The user asked to seed starters but there's no signed-in owner yet
+    // (anon sign-in still in flight or failed offline), so we can't write —
+    // treat it as a seed failure rather than claiming success.
+    var seedFailed = addSelected && svc == null;
     if (addSelected && svc != null) {
       final grouped = ref.read(starterSuggestionsByCategoryProvider);
       try {
@@ -79,13 +92,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     if (!mounted) return;
     context.go(Routes.today);
     if (seedFailed) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(strings.actionFailed)));
+      messenger.showSnackBar(SnackBar(content: Text(strings.actionFailed)));
     } else if (addSelected) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(strings.onboardingAdded)));
+      messenger.showSnackBar(SnackBar(content: Text(strings.onboardingAdded)));
     }
   }
 

@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:snitd/core/strings/app_strings.dart';
 import 'package:snitd/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:snitd/features/settings/application/settings_providers.dart';
 import 'package:snitd/features/tasks/application/tasks_providers.dart';
 import 'package:snitd/features/tasks/data/occurrence_repository.dart';
+import 'package:snitd/features/tasks/data/starter_tasks.dart';
 import 'package:snitd/features/tasks/data/task_repository.dart';
 import 'package:snitd/features/tasks/domain/scheduling/task_occurrence.dart';
 import 'package:snitd/features/tasks/domain/task.dart';
@@ -168,6 +170,108 @@ void main() {
     // No tasks added, but flag is set.
     expect(fakeRepo.store, isEmpty);
     expect(prefs.getBool('onboarding_complete'), isTrue);
+  });
+
+  testWidgets(
+    'no owner: tapping Get started does not claim success and seeds nothing',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final fakeRepo = _FakeTaskRepository();
+
+      final router = GoRouter(
+        initialLocation: '/onboarding',
+        routes: [
+          GoRoute(
+            path: '/onboarding',
+            builder: (c, s) => const OnboardingScreen(),
+          ),
+          // The destination needs a Scaffold for the ScaffoldMessenger to be
+          // able to render the post-navigation snackbar (as Routes.today does).
+          GoRoute(path: '/', builder: (c, s) => const Scaffold()),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            // No signed-in owner → taskServiceProvider is null.
+            currentOwnerIdProvider.overrideWithValue(null),
+            taskRepositoryProvider.overrideWithValue(fakeRepo),
+            occurrenceRepositoryProvider.overrideWithValue(
+              _FakeOccurrenceRepository(),
+            ),
+            clockProvider.overrideWithValue(() => DateTime(2026, 6, 29, 9)),
+          ],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Get started'));
+      await tester.pumpAndSettle();
+
+      // Nothing was written, and the user is NOT told "Added!".
+      expect(fakeRepo.store, isEmpty);
+      expect(find.text(AppStrings.clean.onboardingAdded), findsNothing);
+      // They're still let through (not trapped) with a gentle error.
+      expect(prefs.getBool('onboarding_complete'), isTrue);
+      expect(find.text(AppStrings.clean.actionFailed), findsOneWidget);
+    },
+  );
+
+  testWidgets('double-tapping Get started seeds the starter routine only once', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final fakeRepo = _FakeTaskRepository();
+
+    final router = GoRouter(
+      initialLocation: '/onboarding',
+      routes: [
+        GoRoute(
+          path: '/onboarding',
+          builder: (c, s) => const OnboardingScreen(),
+        ),
+        GoRoute(path: '/', builder: (c, s) => const SizedBox()),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          currentOwnerIdProvider.overrideWithValue('u1'),
+          taskRepositoryProvider.overrideWithValue(fakeRepo),
+          occurrenceRepositoryProvider.overrideWithValue(
+            _FakeOccurrenceRepository(),
+          ),
+          clockProvider.overrideWithValue(() => DateTime(2026, 6, 29, 9)),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Next'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Next'));
+    await tester.pumpAndSettle();
+
+    // Two rapid taps before the first _finish completes.
+    await tester.tap(find.text('Get started'), warnIfMissed: false);
+    await tester.tap(find.text('Get started'), warnIfMissed: false);
+    await tester.pumpAndSettle();
+
+    // The starter catalogue has a fixed size; a double-tap must not double it.
+    final expected = kStarterCleaningPlan.length;
+    expect(fakeRepo.store.length, expected);
   });
 
   testWidgets('a failed starter-task seed still completes onboarding', (
