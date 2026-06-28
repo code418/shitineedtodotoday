@@ -51,6 +51,11 @@ abstract class TaskOccurrence with _$TaskOccurrence {
     /// How long the user reported it actually took. Feeds effort learning so
     /// future scheduling can be more realistic.
     int? actualDurationMinutes,
+
+    /// Set when the user has *deliberately* placed this occurrence on a day
+    /// (e.g. dragged it on the agenda). The load balancer leaves pinned
+    /// occurrences where they are rather than spreading them.
+    @Default(false) bool pinned,
   }) = _TaskOccurrence;
 
   factory TaskOccurrence.fromJson(Map<String, dynamic> json) =>

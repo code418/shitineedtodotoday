@@ -56,6 +56,9 @@ List<TaskOccurrence> rebalance({
       load[day] = (load[day] ?? 0) + minutes;
 
   bool isMovable(TaskOccurrence o) {
+    // Pinned occurrences were deliberately placed by the user (a drag); leave
+    // them fixed even though their recurrence is flexible.
+    if (o.pinned) return false;
     final task = tasksById[o.taskId];
     return task != null && task.recurrence is FlexibleRecurrence;
   }

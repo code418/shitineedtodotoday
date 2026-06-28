@@ -370,8 +370,11 @@ void main() {
         expect(moved.status, OccurrenceStatus.rescheduled);
         // originalDate is preserved from Monday.
         expect(moved.originalDate, monday);
+        // Pinned so a later rebalance leaves it on the chosen day.
+        expect(moved.pinned, isTrue);
         // Persisted.
         expect(occRepo.store[moved.id]!.scheduledDate, DateTime(2026, 7, 2));
+        expect(occRepo.store[moved.id]!.pinned, isTrue);
       },
     );
 

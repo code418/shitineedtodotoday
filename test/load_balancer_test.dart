@@ -150,6 +150,29 @@ void main() {
       expect(_loadOn(result, est, monday), 0);
     });
 
+    test('does not move a pinned occurrence', () {
+      final tasks = [_task('a', minutes: 30), _task('pinned', minutes: 30)];
+      final wed = monday.add(const Duration(days: 2));
+      final occ = [
+        _occ('a', on: monday),
+        _occ('pinned', on: wed).copyWith(pinned: true),
+      ];
+
+      final result = rebalance(
+        occurrences: occ,
+        tasks: tasks,
+        from: monday,
+        horizonDays: 7,
+        dailyBudgetMinutes: 60,
+      );
+
+      // Without the pin, 'pinned' would pack onto Monday (room under budget);
+      // pinned, it stays on the day the user chose.
+      final pinned = result.firstWhere((o) => o.taskId == 'pinned');
+      expect(pinned.scheduledDate, wed);
+      expect(pinned.status, OccurrenceStatus.pending, reason: 'untouched');
+    });
+
     test('over capacity still spreads to the least-loaded days', () {
       // Three 60m tasks, budget 60, 2-day horizon: no day has room for a third,
       // so it lands on the least-loaded day rather than stacking.

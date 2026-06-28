@@ -117,12 +117,15 @@ class OccurrenceService {
   }
 
   /// Move an occurrence to an explicit [day] (drag-to-reschedule). Marks it
-  /// rescheduled and preserves its originalDate so the "moved from…" note shows.
+  /// rescheduled, preserves its originalDate so the "moved from…" note shows,
+  /// and pins it so a later "spread it out" rebalance won't move it away from
+  /// the day the user deliberately chose.
   Future<TaskOccurrence> moveTo(TaskOccurrence occurrence, DateTime day) async {
     final moved = occurrence.copyWith(
       scheduledDate: dateOnly(day),
       status: OccurrenceStatus.rescheduled,
       originalDate: occurrence.originalDate ?? occurrence.scheduledDate,
+      pinned: true,
     );
     await occurrences.upsert(ownerId, moved);
     return moved;
