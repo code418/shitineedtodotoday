@@ -135,6 +135,13 @@ class _OccurrenceRow extends ConsumerWidget {
     final title = task?.title ?? occurrence.taskId;
     final effort = task?.estimatedEffortMinutes ?? 0;
 
+    // Done occurrences are shown for context but must not be draggable — moving
+    // one would flip it back to "rescheduled" (open) and silently undo the
+    // completion. Only open occurrences can be dragged to another day.
+    if (!occurrence.isOpen) {
+      return _RowContent(title: title, effort: effort, done: true);
+    }
+
     return LongPressDraggable<TaskOccurrence>(
       data: occurrence,
       delay: const Duration(milliseconds: 400),
@@ -168,10 +175,15 @@ class _OccurrenceRow extends ConsumerWidget {
 }
 
 class _RowContent extends StatelessWidget {
-  const _RowContent({required this.title, required this.effort});
+  const _RowContent({
+    required this.title,
+    required this.effort,
+    this.done = false,
+  });
 
   final String title;
   final int effort;
+  final bool done;
 
   @override
   Widget build(BuildContext context) {
@@ -180,12 +192,22 @@ class _RowContent extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(title, style: Theme.of(context).textTheme.bodyMedium),
+            child: Text(
+              title,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: done ? AppColors.textMuted : null,
+                decoration: done ? TextDecoration.lineThrough : null,
+              ),
+            ),
           ),
           const SizedBox(width: AppSpacing.x2),
           AppBadge(label: '~${effort}m'),
           const SizedBox(width: AppSpacing.x2),
-          Icon(AppIcons.dragHandle, size: 18, color: AppColors.textMuted),
+          Icon(
+            done ? AppIcons.check : AppIcons.dragHandle,
+            size: 18,
+            color: done ? AppColors.brand : AppColors.textMuted,
+          ),
         ],
       ),
     );
