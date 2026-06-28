@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import '../core/design/tokens/tokens.dart';
 
 /// App theming, built from the SINTDT design tokens (not `fromSeed`).
-/// Light is design-authoritative; dark is a best-effort adaptation pending
-/// dark tokens in the design system.
+/// Both brightnesses are first-class: each registers an [AppPalette] extension
+/// (light + dark semantic tokens) that the widgets resolve via `context.palette`.
 class AppTheme {
   const AppTheme._();
 
