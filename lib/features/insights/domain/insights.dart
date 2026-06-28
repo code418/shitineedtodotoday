@@ -116,7 +116,10 @@ InsightsSummary computeInsights({
       if (o.status == OccurrenceStatus.done) dateOnly(o.scheduledDate),
   };
   var streakDays = 0;
-  var cursor = today;
+  // Start at today if it already has a completion, else at yesterday: today is
+  // still in progress, so an active run shouldn't read 0 every morning until the
+  // day's first task is ticked — only a genuinely missed day breaks the streak.
+  var cursor = doneDays.contains(today) ? today : _addDays(today, -1);
   while (doneDays.contains(cursor)) {
     streakDays++;
     cursor = _addDays(cursor, -1);

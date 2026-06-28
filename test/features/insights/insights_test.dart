@@ -139,12 +139,35 @@ void main() {
       expect(s.streakDays, 1);
     });
 
-    test('streakDays is 0 when today has no done occurrence', () {
+    test('streakDays counts through yesterday while today is still open', () {
+      // Today not ticked yet, but yesterday + the day before are done. The run
+      // is still alive (today isn't over), so it should read 2 — not flash to 0.
       final occs = [
         _occ(
           taskId: 't1',
           scheduledDate: _now.subtract(const Duration(days: 1)),
         ), // yesterday — done
+        _occ(
+          taskId: 't1',
+          scheduledDate: _now.subtract(const Duration(days: 2)),
+        ), // 2 days ago — done
+      ];
+      final s = computeInsights(
+        occurrences: occs,
+        tasks: const [],
+        now: _now,
+        period: InsightsPeriod.week,
+      );
+      expect(s.streakDays, 2);
+    });
+
+    test('streakDays is 0 when neither today nor yesterday is done', () {
+      // The run is genuinely broken: yesterday was missed.
+      final occs = [
+        _occ(
+          taskId: 't1',
+          scheduledDate: _now.subtract(const Duration(days: 2)),
+        ), // 2 days ago — done, but yesterday missed
       ];
       final s = computeInsights(
         occurrences: occs,
