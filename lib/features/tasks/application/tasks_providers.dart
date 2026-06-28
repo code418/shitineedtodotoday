@@ -54,7 +54,7 @@ final todayChecklistProvider = Provider<List<TaskOccurrence>>((ref) {
   final tasks = tasksAsync.value!;
   final existing = occAsync.value!;
   final now = ref.watch(clockProvider)();
-  return ref
+  final list = ref
       .watch(schedulerProvider)
       .buildToday(
         tasks: tasks,
@@ -62,6 +62,13 @@ final todayChecklistProvider = Provider<List<TaskOccurrence>>((ref) {
         existing: existing,
         carryOverdue: true,
       );
+  // Defensively drop any occurrence whose task no longer exists (a deleted
+  // task should cascade its occurrences, but never render an orphan row).
+  final taskIds = {for (final t in tasks) t.id};
+  return [
+    for (final occ in list)
+      if (taskIds.contains(occ.taskId)) occ,
+  ];
 });
 
 /// A map from task id to its estimated effort in minutes — derived from the
@@ -108,6 +115,7 @@ final taskServiceProvider = Provider<TaskService?>((ref) {
   if (ownerId == null) return null;
   return TaskService(
     repository: ref.watch(taskRepositoryProvider),
+    occurrences: ref.watch(occurrenceRepositoryProvider),
     ownerId: ownerId,
     now: ref.watch(clockProvider),
   );

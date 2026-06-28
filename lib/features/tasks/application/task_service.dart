@@ -1,3 +1,4 @@
+import '../data/occurrence_repository.dart';
 import '../data/task_repository.dart';
 import '../domain/scheduling/recurrence.dart';
 import '../domain/task.dart';
@@ -8,11 +9,13 @@ import '../domain/task_suggestion.dart';
 class TaskService {
   TaskService({
     required this.repository,
+    required this.occurrences,
     required this.ownerId,
     required this.now,
   });
 
   final TaskRepository repository;
+  final OccurrenceRepository occurrences;
   final String ownerId;
   final DateTime Function() now;
 
@@ -63,5 +66,9 @@ class TaskService {
     return updated;
   }
 
-  Future<void> deleteTask(String taskId) => repository.delete(ownerId, taskId);
+  /// Delete a task and cascade-remove its occurrences so none are orphaned.
+  Future<void> deleteTask(String taskId) async {
+    await repository.delete(ownerId, taskId);
+    await occurrences.deleteForTask(ownerId, taskId);
+  }
 }

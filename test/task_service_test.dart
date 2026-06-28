@@ -2,8 +2,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:snitd/features/tasks/application/task_service.dart';
 import 'package:snitd/features/tasks/data/task_repository.dart';
 import 'package:snitd/features/tasks/domain/scheduling/recurrence.dart';
+import 'package:snitd/features/tasks/domain/scheduling/task_occurrence.dart';
 import 'package:snitd/features/tasks/domain/task.dart';
 import 'package:snitd/features/tasks/domain/task_suggestion.dart';
+
+import 'occurrence_service_test.dart' show FakeOccurrenceRepository;
 
 class FakeTaskRepository implements TaskRepository {
   final Map<String, Task> store = {};
@@ -26,12 +29,19 @@ class FakeTaskRepository implements TaskRepository {
 
 void main() {
   late FakeTaskRepository repo;
+  late FakeOccurrenceRepository occRepo;
   late TaskService service;
   final clock = DateTime(2026, 6, 29, 9);
 
   setUp(() {
     repo = FakeTaskRepository();
-    service = TaskService(repository: repo, ownerId: 'u1', now: () => clock);
+    occRepo = FakeOccurrenceRepository();
+    service = TaskService(
+      repository: repo,
+      occurrences: occRepo,
+      ownerId: 'u1',
+      now: () => clock,
+    );
   });
 
   test('addTask persists a trimmed, owned, timestamped task', () async {
@@ -71,7 +81,12 @@ void main() {
       recurrence: const Recurrence.flexible(),
     );
     final later = DateTime(2026, 6, 30, 9);
-    final s2 = TaskService(repository: repo, ownerId: 'u1', now: () => later);
+    final s2 = TaskService(
+      repository: repo,
+      occurrences: occRepo,
+      ownerId: 'u1',
+      now: () => later,
+    );
     final updated = await s2.updateTask(
       created.copyWith(title: 'Vacuum lounge'),
     );
@@ -80,12 +95,35 @@ void main() {
     expect(repo.store[created.id]!.title, 'Vacuum lounge');
   });
 
-  test('deleteTask removes the task', () async {
+  test('deleteTask removes the task and cascades its occurrences', () async {
     final created = await service.addTask(
       title: 'Bins',
       recurrence: const Recurrence.flexible(),
     );
+    // Seed two occurrences for this task and one for an unrelated task.
+    occRepo.store['o1'] = TaskOccurrence(
+      id: 'o1',
+      taskId: created.id,
+      scheduledDate: clock,
+    );
+    occRepo.store['o2'] = TaskOccurrence(
+      id: 'o2',
+      taskId: created.id,
+      scheduledDate: clock,
+    );
+    occRepo.store['other'] = TaskOccurrence(
+      id: 'other',
+      taskId: 'keep-me',
+      scheduledDate: clock,
+    );
+
     await service.deleteTask(created.id);
+
     expect(repo.store, isEmpty);
+    expect(
+      occRepo.store.keys,
+      ['other'],
+      reason: 'the task\'s occurrences are cascaded; others remain',
+    );
   });
 }

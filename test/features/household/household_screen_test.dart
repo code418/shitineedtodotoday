@@ -55,6 +55,9 @@ class _FakeOccurrenceRepository implements OccurrenceRepository {
 
   @override
   Future<void> delete(String ownerId, String occurrenceId) async {}
+
+  @override
+  Future<void> deleteForTask(String ownerId, String taskId) async {}
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

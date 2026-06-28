@@ -6,7 +6,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:snitd/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:snitd/features/settings/application/settings_providers.dart';
 import 'package:snitd/features/tasks/application/tasks_providers.dart';
+import 'package:snitd/features/tasks/data/occurrence_repository.dart';
 import 'package:snitd/features/tasks/data/task_repository.dart';
+import 'package:snitd/features/tasks/domain/scheduling/task_occurrence.dart';
 import 'package:snitd/features/tasks/domain/task.dart';
 
 // Re-use FakeTaskRepository from task_service_test.dart by copy (no shared
@@ -28,6 +30,23 @@ class _FakeTaskRepository implements TaskRepository {
 
   @override
   String newId(String ownerId) => 'task-${_seq++}';
+}
+
+/// No-op occurrence repo so taskServiceProvider (which now depends on it for
+/// cascade-delete) builds without Firestore in tests.
+class _FakeOccurrenceRepository implements OccurrenceRepository {
+  @override
+  Stream<List<TaskOccurrence>> watchOccurrences(String ownerId) =>
+      Stream.value(const <TaskOccurrence>[]);
+
+  @override
+  Future<void> upsert(String ownerId, TaskOccurrence occurrence) async {}
+
+  @override
+  Future<void> delete(String ownerId, String occurrenceId) async {}
+
+  @override
+  Future<void> deleteForTask(String ownerId, String taskId) async {}
 }
 
 void main() {
@@ -58,6 +77,9 @@ void main() {
             sharedPreferencesProvider.overrideWithValue(prefs),
             currentOwnerIdProvider.overrideWithValue('u1'),
             taskRepositoryProvider.overrideWithValue(fakeRepo),
+            occurrenceRepositoryProvider.overrideWithValue(
+              _FakeOccurrenceRepository(),
+            ),
             clockProvider.overrideWithValue(() => DateTime(2026, 6, 29, 9)),
           ],
           child: MaterialApp.router(routerConfig: router),
@@ -112,6 +134,9 @@ void main() {
           sharedPreferencesProvider.overrideWithValue(prefs),
           currentOwnerIdProvider.overrideWithValue('u1'),
           taskRepositoryProvider.overrideWithValue(fakeRepo),
+          occurrenceRepositoryProvider.overrideWithValue(
+            _FakeOccurrenceRepository(),
+          ),
           clockProvider.overrideWithValue(() => DateTime(2026, 6, 29, 9)),
         ],
         child: MaterialApp.router(routerConfig: router),

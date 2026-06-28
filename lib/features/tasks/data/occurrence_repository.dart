@@ -16,6 +16,10 @@ abstract interface class OccurrenceRepository {
   Future<void> upsert(String ownerId, TaskOccurrence occurrence);
 
   Future<void> delete(String ownerId, String occurrenceId);
+
+  /// Removes every occurrence belonging to [taskId] — used to cascade when a
+  /// task is deleted so no orphaned occurrences are left behind.
+  Future<void> deleteForTask(String ownerId, String taskId);
 }
 
 /// Firestore-backed [OccurrenceRepository].
@@ -52,6 +56,19 @@ class FirestoreOccurrenceRepository implements OccurrenceRepository {
   @override
   Future<void> delete(String ownerId, String occurrenceId) =>
       _ref(ownerId).doc(occurrenceId).delete();
+
+  @override
+  Future<void> deleteForTask(String ownerId, String taskId) async {
+    final matching = await _ref(
+      ownerId,
+    ).where('taskId', isEqualTo: taskId).get();
+    if (matching.docs.isEmpty) return;
+    final batch = _firestore.batch();
+    for (final doc in matching.docs) {
+      batch.delete(doc.reference);
+    }
+    await batch.commit();
+  }
 }
 
 final occurrenceRepositoryProvider = Provider<OccurrenceRepository>(

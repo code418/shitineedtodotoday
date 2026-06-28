@@ -23,6 +23,10 @@ class FakeOccurrenceRepository implements OccurrenceRepository {
   @override
   Future<void> delete(String ownerId, String occurrenceId) async =>
       store.remove(occurrenceId);
+
+  @override
+  Future<void> deleteForTask(String ownerId, String taskId) async =>
+      store.removeWhere((_, o) => o.taskId == taskId);
 }
 
 Task _task({int estimate = 15}) => Task(

@@ -4,10 +4,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:snitd/features/settings/application/settings_providers.dart';
 import 'package:snitd/features/tasks/application/tasks_providers.dart';
+import 'package:snitd/features/tasks/data/occurrence_repository.dart';
 import 'package:snitd/features/tasks/data/task_repository.dart';
 import 'package:snitd/features/tasks/domain/scheduling/recurrence.dart';
 import 'package:snitd/features/tasks/presentation/task_composer_sheet.dart';
 
+import 'occurrence_service_test.dart' show FakeOccurrenceRepository;
 import 'task_service_test.dart' show FakeTaskRepository;
 
 void main() {
@@ -24,6 +26,9 @@ void main() {
             sharedPreferencesProvider.overrideWithValue(prefs),
             currentOwnerIdProvider.overrideWithValue('u1'),
             taskRepositoryProvider.overrideWithValue(fakeTaskRepo),
+            occurrenceRepositoryProvider.overrideWithValue(
+              FakeOccurrenceRepository(),
+            ),
             clockProvider.overrideWithValue(() => DateTime(2026, 6, 29, 9)),
           ],
           child: MaterialApp(
@@ -73,6 +78,9 @@ void main() {
             sharedPreferencesProvider.overrideWithValue(prefs),
             currentOwnerIdProvider.overrideWithValue('u1'),
             taskRepositoryProvider.overrideWithValue(fakeTaskRepo),
+            occurrenceRepositoryProvider.overrideWithValue(
+              FakeOccurrenceRepository(),
+            ),
             clockProvider.overrideWithValue(() => DateTime(2026, 6, 29, 9)),
           ],
           child: MaterialApp(
