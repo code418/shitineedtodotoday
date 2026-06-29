@@ -146,6 +146,39 @@ void main() {
       );
     });
 
+    test('"three times a week" spreads to evenly-spaced anchor days', () {
+      final task = _task(
+        const Recurrence.flexible(
+          timesPerPeriod: 3,
+          period: FrequencyPeriod.week,
+        ),
+      );
+      // Anchors at offsets floor(0*7/3)=0 (Mon), floor(1*7/3)=2 (Wed),
+      // floor(2*7/3)=4 (Fri).
+      for (final anchor in [
+        monday, // Mon 2026-06-29
+        DateTime(2026, 7, 1), // Wed
+        DateTime(2026, 7, 3), // Fri
+      ]) {
+        expect(
+          scheduler.buildToday(tasks: [task], today: anchor),
+          hasLength(1),
+          reason: 'anchor day $anchor',
+        );
+      }
+      for (final gap in [
+        DateTime(2026, 6, 30), // Tue
+        DateTime(2026, 7, 2), // Thu
+        DateTime(2026, 7, 4), // Sat
+      ]) {
+        expect(
+          scheduler.buildToday(tasks: [task], today: gap),
+          isEmpty,
+          reason: 'non-anchor day $gap',
+        );
+      }
+    });
+
     test('daily flexible occurs every day', () {
       final task = _task(
         const Recurrence.flexible(period: FrequencyPeriod.day),

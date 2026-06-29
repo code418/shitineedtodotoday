@@ -206,6 +206,16 @@ test("occursOn: flexible weekly fires only on the week's Monday", () => {
   assert.equal(occursOn(rec, wed), false);
 });
 
+test("occursOn: flexible three-times-a-week hits evenly-spaced anchors", () => {
+  // lengthDays=7, times=3 → offsets 0,2,4 = Mon, Wed, Fri.
+  const rec = {runtimeType: "flexible", period: "week", timesPerPeriod: 3};
+  assert.equal(occursOn(rec, new Date(Date.UTC(2026, 5, 29))), true); // Mon
+  assert.equal(occursOn(rec, new Date(Date.UTC(2026, 6, 1))), true); // Wed
+  assert.equal(occursOn(rec, new Date(Date.UTC(2026, 6, 3))), true); // Fri
+  assert.equal(occursOn(rec, new Date(Date.UTC(2026, 5, 30))), false); // Tue
+  assert.equal(occursOn(rec, new Date(Date.UTC(2026, 6, 2))), false); // Thu
+});
+
 test("occursOn: flexible daily fires on any day", () => {
   const rec = {runtimeType: "flexible", period: "day", timesPerPeriod: 1};
   const mon = new Date(Date.UTC(2026, 5, 29));
