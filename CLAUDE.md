@@ -62,6 +62,14 @@ cd functions && npm install && npm run build                # tsc -> lib/
 will fail on stale generated files. Generated `*.freezed.dart` / `*.g.dart`
 files are committed and excluded from analysis (see `analysis_options.yaml`).
 
+`build.yaml` sets `json_serializable: explicit_to_json: true` — **required** for
+Firestore: `DocumentReference.set(map)` uses a binary codec that only accepts
+primitives / `List` / `Map` and throws on a raw nested object (e.g. a `Task`'s
+`Recurrence`). Without it, generated `toJson()` emits the live object and every
+write of a model with a nested model field fails at runtime. Keep it on, and
+make sure any new persisted nested model round-trips (see
+`test/features/tasks/firestore_serialization_test.dart`).
+
 ## Architecture
 
 Feature-first, layered. The `core/` and each feature's `domain/` + `data/`
