@@ -161,6 +161,34 @@ Prerequisites: `npm i -g firebase-tools` and
    cd functions && npm install && npm run deploy
    ```
 
+#### Google sign-in (account upgrade)
+
+The Account screen offers "Continue with Google" to upgrade the anonymous
+account in place (via `linkGoogle()` → `linkWithCredential`, keeping the uid +
+all data). It's wired behind the `GoogleSignInService` seam
+(`features/auth/data/google_sign_in_service.dart`, the only file importing
+`google_sign_in`). To make it work on a device:
+
+1. In the console, **enable the Google sign-in provider** (Authentication →
+   Sign-in method → Google).
+2. **Android:** register the app's signing **SHA-1 and SHA-256** fingerprints
+   (debug *and* release) in Project Settings, then re-download
+   `google-services.json`. Google Sign-In needs these or it returns no token.
+3. **Pass the Web client id at build time** so Android gets an `idToken`
+   (the audience Firebase verifies):
+   ```bash
+   flutter run --dart-define=GOOGLE_SERVER_CLIENT_ID=<web-client-id>.apps.googleusercontent.com
+   ```
+   Find it under Google → *Web SDK configuration*, or in
+   `google-services.json` (`oauth_client` entry with `client_type: 3`).
+4. **iOS:** add the reversed-client-id URL scheme from `GoogleService-Info.plist`
+   to the Runner's URL Types (per the `google_sign_in_ios` setup).
+
+The button is hidden on web (`googleSignInAvailable()` — the interactive flow
+isn't wired there). End-to-end Google sign-in can only be verified on a real
+device with the above configured; the Dart logic + UI flow are unit/widget
+tested with a fake `GoogleSignInService`.
+
 ## Git workflow
 
 The initial scaffold was committed to `main`. **Future work uses feature

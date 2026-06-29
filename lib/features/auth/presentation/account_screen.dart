@@ -7,6 +7,7 @@ import '../../../features/settings/application/settings_providers.dart';
 import '../../notifications/application/push_registrar.dart';
 import '../../tasks/application/tasks_providers.dart';
 import '../data/auth_repository.dart';
+import '../data/google_sign_in_service.dart';
 import '../domain/account_validation.dart';
 
 class AccountScreen extends ConsumerStatefulWidget {
@@ -83,6 +84,36 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           ? strings.emailInUse
           : e.code == 'weak-password'
           ? strings.weakPassword
+          : strings.upgradeFailed;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(strings.upgradeFailed)));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _continueWithGoogle() async {
+    final strings = ref.read(appStringsProvider);
+    setState(() => _loading = true);
+    try {
+      final linked = await ref.read(authRepositoryProvider).linkGoogle();
+      if (!mounted) return;
+      // linked == false → the user dismissed the Google picker; stay quiet.
+      if (linked) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(strings.accountUpgraded)));
+      }
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      final msg =
+          e.code == 'credential-already-in-use' ||
+              e.code == 'email-already-in-use'
+          ? strings.emailInUse
           : strings.upgradeFailed;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
     } catch (_) {
@@ -192,6 +223,38 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               pill: true,
               onPressed: _loading ? null : _upgrade,
             ),
+
+            // Google sign-in: a second one-tap way to upgrade the anonymous
+            // account in place (kept off the web build, which doesn't wire up
+            // the interactive flow).
+            if (googleSignInAvailable()) ...[
+              const SizedBox(height: AppSpacing.x5),
+              Row(
+                children: [
+                  const Expanded(child: Divider()),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.x3,
+                    ),
+                    child: Text(
+                      strings.orSeparator,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: context.palette.textMuted,
+                      ),
+                    ),
+                  ),
+                  const Expanded(child: Divider()),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.x5),
+              AppButton(
+                label: strings.continueWithGoogle,
+                variant: AppButtonVariant.tonal,
+                block: true,
+                pill: true,
+                onPressed: _loading ? null : _continueWithGoogle,
+              ),
+            ],
           ] else ...[
             // Signed-in card
             AppCard(

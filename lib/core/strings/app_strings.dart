@@ -124,6 +124,8 @@ class AppStrings {
     required this.emailLabel,
     required this.passwordLabel,
     required this.upgradeCta,
+    required this.continueWithGoogle,
+    required this.orSeparator,
     required this.accountUpgraded,
     required this.signedInAs,
     required this.signOut,
@@ -296,6 +298,8 @@ class AppStrings {
   final String emailLabel;
   final String passwordLabel;
   final String upgradeCta;
+  final String continueWithGoogle;
+  final String orSeparator;
   final String accountUpgraded;
   final String signedInAs;
   final String signOut;
@@ -466,6 +470,8 @@ class AppStrings {
     emailLabel: 'Email',
     passwordLabel: 'Password',
     upgradeCta: 'Save my account',
+    continueWithGoogle: 'Continue with Google',
+    orSeparator: 'or',
     accountUpgraded: 'Account saved — your stuff is safe now',
     signedInAs: 'Signed in as',
     signOut: 'Sign out',
@@ -628,6 +634,8 @@ class AppStrings {
     emailLabel: 'Email',
     passwordLabel: 'Password',
     upgradeCta: 'Save my account',
+    continueWithGoogle: 'Continue with Google',
+    orSeparator: 'or',
     accountUpgraded: "Account saved — your shit's safe now",
     signedInAs: 'Signed in as',
     signOut: 'Sign out',

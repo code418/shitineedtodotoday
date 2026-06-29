@@ -3,16 +3,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/firebase/firebase_providers.dart';
 import '../domain/account_status.dart';
+import 'google_sign_in_service.dart';
 
 /// Thin wrapper around [FirebaseAuth] for the app's anonymous-first auth flow.
 ///
-/// The scaffold signs users in anonymously so they can start immediately; a
-/// future iteration links the anonymous account to Google / Apple / email
-/// (see `docs/ROADMAP.md`, P4).
+/// The scaffold signs users in anonymously so they can start immediately; the
+/// anonymous account can then be upgraded in place — keeping its uid and all
+/// data — by linking an email/password or a Google credential.
 class AuthRepository {
-  AuthRepository(this._auth);
+  AuthRepository(this._auth, this._google);
 
   final FirebaseAuth _auth;
+  final GoogleSignInService _google;
 
   /// Emits the current user on every auth change *and* on user-property
   /// changes — crucially including [User.linkWithCredential], which keeps the
@@ -47,10 +49,33 @@ class AuthRepository {
     );
     await user.linkWithCredential(credential);
   }
+
+  /// Sign in with Google, upgrading the current anonymous account in place when
+  /// there is one — so the uid and all the user's data are kept — otherwise
+  /// signing in to the Google account directly.
+  ///
+  /// Returns `false` if the user cancelled the Google picker (so the caller can
+  /// stay quiet). Throws [FirebaseAuthException] on failure; in particular
+  /// `credential-already-in-use` means that Google account is already attached
+  /// to a different SINTDT account.
+  Future<bool> linkGoogle() async {
+    final credential = await _google.obtainGoogleCredential();
+    if (credential == null) return false; // user cancelled
+    final user = _auth.currentUser;
+    if (user != null && user.isAnonymous) {
+      await user.linkWithCredential(credential);
+    } else {
+      await _auth.signInWithCredential(credential);
+    }
+    return true;
+  }
 }
 
 final authRepositoryProvider = Provider<AuthRepository>(
-  (ref) => AuthRepository(ref.watch(firebaseAuthProvider)),
+  (ref) => AuthRepository(
+    ref.watch(firebaseAuthProvider),
+    ref.watch(googleSignInServiceProvider),
+  ),
 );
 
 /// Streams the signed-in [User] (or `null`). Used to scope data to the owner

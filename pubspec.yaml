@@ -46,6 +46,7 @@ dependencies:
   json_annotation: ^4.12.0
   shared_preferences: ^2.5.5
   material_symbols_icons: ^4.2951.0
+  google_sign_in: ^7.2.0
 
 dev_dependencies:
   flutter_test:

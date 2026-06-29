@@ -24,6 +24,12 @@ class _FakeAuthRepository implements AuthRepository {
   String? linkedPassword;
   bool signedOut = false;
   bool ensureSignedInCalled = false;
+  bool linkGoogleCalled = false;
+
+  /// What [linkGoogle] should do: return this value, unless [googleError] is set
+  /// (then throw it). `true` = linked, `false` = user cancelled.
+  bool googleResult = true;
+  Object? googleError;
 
   @override
   Stream<User?> userChanges() => const Stream.empty();
@@ -47,6 +53,13 @@ class _FakeAuthRepository implements AuthRepository {
   }) async {
     linkedEmail = email;
     linkedPassword = password;
+  }
+
+  @override
+  Future<bool> linkGoogle() async {
+    linkGoogleCalled = true;
+    if (googleError != null) throw googleError!;
+    return googleResult;
   }
 }
 
@@ -95,6 +108,62 @@ void main() {
       expect(fake.linkedEmail, 'test@example.com');
     },
   );
+
+  testWidgets('tapping Continue with Google links and confirms', (
+    tester,
+  ) async {
+    final fake = _FakeAuthRepository()..googleResult = true;
+    await _buildScope(
+      tester: tester,
+      fake: fake,
+      status: const AccountStatus(signedIn: true, isAnonymous: true),
+    );
+
+    expect(find.text('Continue with Google'), findsOneWidget);
+    await tester.tap(find.text('Continue with Google'));
+    await tester.pumpAndSettle();
+
+    expect(fake.linkGoogleCalled, isTrue);
+    expect(find.text('Account saved — your stuff is safe now'), findsOneWidget);
+  });
+
+  testWidgets('cancelling the Google picker shows no confirmation', (
+    tester,
+  ) async {
+    final fake = _FakeAuthRepository()..googleResult = false; // cancelled
+    await _buildScope(
+      tester: tester,
+      fake: fake,
+      status: const AccountStatus(signedIn: true, isAnonymous: true),
+    );
+
+    await tester.tap(find.text('Continue with Google'));
+    await tester.pumpAndSettle();
+
+    expect(fake.linkGoogleCalled, isTrue);
+    expect(
+      find.text('Account saved — your stuff is safe now'),
+      findsNothing,
+      reason: 'a cancelled sign-in must not claim success',
+    );
+  });
+
+  testWidgets('a Google account already in use shows the in-use message', (
+    tester,
+  ) async {
+    final fake = _FakeAuthRepository()
+      ..googleError = FirebaseAuthException(code: 'credential-already-in-use');
+    await _buildScope(
+      tester: tester,
+      fake: fake,
+      status: const AccountStatus(signedIn: true, isAnonymous: true),
+    );
+
+    await tester.tap(find.text('Continue with Google'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('That email is already in use'), findsOneWidget);
+  });
 
   testWidgets('upgraded account shows email and sign out button', (
     tester,
