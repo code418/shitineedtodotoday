@@ -45,6 +45,32 @@ void main() {
       expect(h.name, 'Our home');
     });
 
+    test('fromJson salvages good members and skips malformed ones', () {
+      // One well-formed member, plus entries that would previously throw and
+      // take the WHOLE household (including the good member) down with them.
+      final h = Household.fromJson({
+        'name': 'Our place',
+        'members': [
+          {'id': 'm1', 'name': 'Alice'}, // good
+          {'name': 'No Id'}, // missing id → skip
+          {'id': '', 'name': 'Blank Id'}, // empty id → skip
+          'not-a-map', // wrong shape → skip
+          {'id': 'm2'}, // missing name → kept with ''
+        ],
+      });
+      expect(h.name, 'Our place');
+      expect(h.members, const [
+        HouseholdMember(id: 'm1', name: 'Alice'),
+        HouseholdMember(id: 'm2', name: ''),
+      ]);
+    });
+
+    test('fromJson tolerates a non-list members field without throwing', () {
+      final h = Household.fromJson({'name': 'X', 'members': 'oops'});
+      expect(h.name, 'X');
+      expect(h.members, isEmpty);
+    });
+
     test('withMember appends a member', () {
       final h = Household.empty.withMember(alice);
       expect(h.members, [alice]);

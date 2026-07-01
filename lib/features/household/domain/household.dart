@@ -66,13 +66,27 @@ class Household {
     'members': [for (final m in members) m.toJson()],
   };
 
-  factory Household.fromJson(Map<String, dynamic> json) => Household(
-    name: json['name'] as String? ?? 'Our home',
-    members: [
-      for (final m in (json['members'] as List? ?? []))
-        HouseholdMember.fromJson(m as Map<String, dynamic>),
-    ],
-  );
+  factory Household.fromJson(Map<String, dynamic> json) {
+    // Decode defensively: one malformed member entry (missing id, wrong shape,
+    // or a `members` field that isn't even a list) must not throw and take the
+    // whole household — and its owner's other members — down with it. Salvage
+    // every well-formed member and skip the rest, mirroring the skip-bad-doc
+    // policy used for tasks/occurrences (see core/util/firestore_decode.dart).
+    final rawMembers = json['members'];
+    final members = <HouseholdMember>[
+      if (rawMembers is List)
+        for (final m in rawMembers)
+          if (m is Map && m['id'] is String && (m['id'] as String).isNotEmpty)
+            HouseholdMember(
+              id: m['id'] as String,
+              name: m['name'] is String ? m['name'] as String : '',
+            ),
+    ];
+    return Household(
+      name: json['name'] as String? ?? 'Our home',
+      members: members,
+    );
+  }
 
   @override
   bool operator ==(Object other) =>
