@@ -115,6 +115,34 @@ void main() {
     expect(result.updatedTask, isNull);
   });
 
+  test('complete does not double-count a stale done copy of itself', () async {
+    // History still holds a stale DONE copy of the very occurrence being
+    // completed (e.g. a re-complete after reopen, or a not-yet-refreshed
+    // stream). It must not be counted alongside the fresh completion.
+    final task = _task(estimate: 15);
+    final staleSelf = TaskOccurrence(
+      id: 't1_2026-06-29', // same id as pending()
+      taskId: 't1',
+      scheduledDate: _monday,
+      status: OccurrenceStatus.done,
+      completedAt: _earlier,
+      actualDurationMinutes: 120, // an inflated old value
+    );
+
+    final result = await service.complete(
+      occurrence: pending(),
+      task: task,
+      actualMinutes: 10,
+      history: [staleSelf],
+    );
+
+    // Only the fresh 10-min actual should feed the mean → learns 10, not
+    // mean([120, 10]) = 65. The stale self-copy is excluded.
+    expect(result.updatedTask, isNotNull);
+    expect(result.updatedTask!.estimatedEffortMinutes, 10);
+    expect(taskRepo.store['t1']!.estimatedEffortMinutes, 10);
+  });
+
   test('skip marks the occurrence skipped, never failed', () async {
     final skipped = await service.skip(pending());
     expect(skipped.status, OccurrenceStatus.skipped);

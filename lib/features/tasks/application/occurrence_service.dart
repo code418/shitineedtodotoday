@@ -52,7 +52,13 @@ class OccurrenceService {
     );
     await occurrences.upsert(ownerId, done);
 
-    final actuals = recentActualMinutes([...history, done]);
+    // Drop any prior copy of this occurrence from history before learning: if
+    // the caller's history still holds a stale *done* copy of it (e.g. a
+    // complete → reopen → re-complete flow, or a not-yet-refreshed stream), it
+    // would otherwise be counted alongside `done` and double-weight this one
+    // occurrence in the mean. Mirrors the same guard in [reopen].
+    final priorActuals = history.where((o) => o.id != occurrence.id);
+    final actuals = recentActualMinutes([...priorActuals, done]);
     final learned = learnedEstimateMinutes(
       actuals,
       fallback: task.estimatedEffortMinutes,
