@@ -45,9 +45,18 @@ export function prefsFromDoc(
 export function minuteOfDay(hhmm: string): number | null {
   const parts = hhmm.split(":");
   if (parts.length !== 2) return null;
-  const h = Number(parts[0]);
-  const m = Number(parts[1]);
-  if (!Number.isInteger(h) || !Number.isInteger(m)) return null;
+  // Mirror Dart's `int.tryParse` exactly so the server never accepts a time the
+  // client rejects (or vice versa): it trims surrounding whitespace, then wants
+  // an optional sign + digits. A naive `Number()` diverges — `Number("")` is 0,
+  // so a malformed "08:" would fire at 08:00 on the server while the Dart client
+  // treats it as invalid; `Number("8.5")` is 8.5 (a non-integer, so rejected).
+  const parseIntLike = (s: string): number | null => {
+    const t = s.trim();
+    return /^[+-]?\d+$/.test(t) ? Number(t) : null;
+  };
+  const h = parseIntLike(parts[0]);
+  const m = parseIntLike(parts[1]);
+  if (h === null || m === null) return null;
   if (h < 0 || h > 23 || m < 0 || m > 59) return null;
   return h * 60 + m;
 }

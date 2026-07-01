@@ -23,6 +23,24 @@ test("minuteOfDay parses valid times and rejects bad ones", () => {
   assert.equal(minuteOfDay("aa:bb"), null);
 });
 
+test("minuteOfDay rejects empty components but mirrors Dart int.tryParse", () => {
+  // Regression: `Number("")` is 0, so without a grammar check the server would
+  // parse an empty component ("08:" -> 08:00) where the Dart client returns null
+  // — breaking the documented client/server agreement.
+  assert.equal(minuteOfDay("08:"), null);
+  assert.equal(minuteOfDay(":30"), null);
+  assert.equal(minuteOfDay(":"), null);
+  assert.equal(minuteOfDay("8.5:00"), null);
+  // Dart's int.tryParse trims surrounding whitespace, so these are VALID in both
+  // languages — the parser must agree, not just be strict.
+  assert.equal(minuteOfDay(" 8:30"), 8 * 60 + 30);
+  assert.equal(minuteOfDay("8:3 "), 8 * 60 + 3);
+  // A leading '+' is accepted (int.tryParse("+8") == 8); a negative parses but
+  // fails the range check — same as Dart.
+  assert.equal(minuteOfDay("+8:30"), 8 * 60 + 30);
+  assert.equal(minuteOfDay("-1:00"), null);
+});
+
 test("isWithinQuietHours handles non-wrapping windows", () => {
   assert.equal(isWithinQuietHours(13 * 60, 13 * 60, 14 * 60), true);
   assert.equal(isWithinQuietHours(14 * 60, 13 * 60, 14 * 60), false); // end exclusive

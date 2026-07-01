@@ -15,6 +15,19 @@ void main() {
       expect(minuteOfDay('10:60'), isNull);
       expect(minuteOfDay('aa:bb'), isNull);
     });
+    test('rejects empty components; tolerates whitespace (mirrors TS)', () {
+      // The Cloud Function's minuteOfDay must agree with this parser: an empty
+      // component is where a naive Number()-based parser would silently diverge
+      // (Number('') is 0), while int.tryParse trims surrounding whitespace.
+      expect(minuteOfDay('08:'), isNull);
+      expect(minuteOfDay(':30'), isNull);
+      expect(minuteOfDay(':'), isNull);
+      expect(minuteOfDay('8.5:00'), isNull);
+      expect(minuteOfDay(' 8:30'), 8 * 60 + 30);
+      expect(minuteOfDay('8:3 '), 8 * 60 + 3);
+      // A negative component parses but fails the range check.
+      expect(minuteOfDay('-1:00'), isNull);
+    });
   });
 
   group('isWithinQuietHours', () {
