@@ -290,16 +290,50 @@ class _EmptyStateWithSuggestions extends ConsumerWidget {
   }
 }
 
-class _SuggestionGroup extends ConsumerWidget {
+class _SuggestionGroup extends ConsumerStatefulWidget {
   const _SuggestionGroup({required this.category, required this.suggestions});
 
   final String category;
   final List<TaskSuggestion> suggestions;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_SuggestionGroup> createState() => _SuggestionGroupState();
+}
+
+class _SuggestionGroupState extends ConsumerState<_SuggestionGroup> {
+  /// Suggestion keys whose add is in flight. Guards against a rapid double-tap
+  /// persisting the task twice (each [TaskService.addFromSuggestion] mints a
+  /// fresh id, so two taps = two identical recurring tasks). Keyed per
+  /// suggestion so tapping a different row stays responsive.
+  final Set<String> _adding = <String>{};
+
+  Future<void> _add(TaskSuggestion suggestion) async {
+    if (_adding.contains(suggestion.key)) return;
+    final strings = ref.read(appStringsProvider);
+    final svc = ref.read(taskServiceProvider);
+    if (svc == null) {
+      _snack(context, strings.firebaseNotConfigured);
+      return;
+    }
+    setState(() => _adding.add(suggestion.key));
+    try {
+      await svc.addFromSuggestion(suggestion);
+      if (mounted) _snack(context, strings.taskAdded);
+    } catch (_) {
+      if (mounted) _snack(context, strings.actionFailed);
+    } finally {
+      if (mounted) {
+        setState(() => _adding.remove(suggestion.key));
+      } else {
+        _adding.remove(suggestion.key);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final weekday = kWeekdayNamesLong[suggestions.first.weekday - 1];
+    final weekday = kWeekdayNamesLong[widget.suggestions.first.weekday - 1];
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -307,31 +341,18 @@ class _SuggestionGroup extends ConsumerWidget {
           Row(
             children: [
               Expanded(
-                child: Text(category, style: theme.textTheme.titleMedium),
+                child: Text(widget.category, style: theme.textTheme.titleMedium),
               ),
               AppChip(label: weekday, tone: AppChipTone.today),
             ],
           ),
           const SizedBox(height: AppSpacing.x3),
-          for (final suggestion in suggestions)
+          for (final suggestion in widget.suggestions)
             Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.x2),
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onTap: () async {
-                  final strings = ref.read(appStringsProvider);
-                  final svc = ref.read(taskServiceProvider);
-                  if (svc == null) {
-                    _snack(context, strings.firebaseNotConfigured);
-                    return;
-                  }
-                  try {
-                    await svc.addFromSuggestion(suggestion);
-                    if (context.mounted) _snack(context, strings.taskAdded);
-                  } catch (_) {
-                    if (context.mounted) _snack(context, strings.actionFailed);
-                  }
-                },
+                onTap: () => _add(suggestion),
                 child: Row(
                   children: [
                     Icon(
