@@ -114,4 +114,56 @@ void main() {
 
     expect(_bgColor(tester), AppColors.brandSoftHover);
   });
+
+  testWidgets('press-scale resets to 1.0 when disabled mid-press', (
+    tester,
+  ) async {
+    final enabled = ValueNotifier<bool>(true);
+    addTearDown(enabled.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: ValueListenableBuilder<bool>(
+              valueListenable: enabled,
+              builder: (_, on, _) => AppIconButton(
+                icon: AppIcons.settings,
+                onPressed: on ? () {} : null,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Press and hold — do not release.
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byType(AppIconButton)),
+    );
+    await tester.pump();
+    expect(_scale(tester), 0.9, reason: 'shrinks while pressed');
+
+    // Disable (onPressed -> null) while the finger is still down. The tap
+    // recognizer is torn down without firing onTapCancel, so _pressed would
+    // otherwise stay stuck true and the icon stay permanently shrunk + dim.
+    enabled.value = false;
+    await tester.pump();
+    expect(
+      _scale(tester),
+      1.0,
+      reason: 'must not stay shrunk after being disabled mid-press',
+    );
+
+    await gesture.up();
+    await tester.pumpAndSettle();
+  });
 }
+
+double _scale(WidgetTester tester) => tester
+    .widget<AnimatedScale>(
+      find.descendant(
+        of: find.byType(AppIconButton),
+        matching: find.byType(AnimatedScale),
+      ),
+    )
+    .scale;

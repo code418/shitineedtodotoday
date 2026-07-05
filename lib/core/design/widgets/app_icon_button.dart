@@ -61,12 +61,20 @@ class _AppIconButtonState extends State<AppIconButton> {
         // BoxDecoration container defers hit-testing to its child, which would
         // otherwise shrink the touch target to the icon (~half the size).
         behavior: HitTestBehavior.opaque,
-        onTapDown: enabled ? (_) => setState(() => _pressed = true) : null,
-        onTapUp: enabled ? (_) => setState(() => _pressed = false) : null,
-        onTapCancel: enabled ? () => setState(() => _pressed = false) : null,
+        // Track the press unconditionally (the visual is gated on [enabled]
+        // below). Gating these on [enabled] would drop every tap callback when
+        // the button is disabled mid-press, so GestureDetector tears the
+        // recognizer down without an onTapUp/Cancel — leaving _pressed stuck
+        // true and the icon permanently shrunk + dimmed. Keeping them live lets
+        // the press resolve normally when the finger lifts.
+        onTapDown: (_) => setState(() => _pressed = true),
+        onTapUp: (_) => setState(() => _pressed = false),
+        onTapCancel: () => setState(() => _pressed = false),
         onTap: widget.onPressed,
         child: AnimatedScale(
-          scale: _pressed ? 0.9 : 1,
+          // Only show the press-shrink when interactive — a disabled button
+          // must not read as pressable, and (with the above) never gets stuck.
+          scale: (enabled && _pressed) ? 0.9 : 1,
           duration: AppMotion.of(context, AppMotion.fast),
           curve: AppMotion.spring,
           child: AnimatedContainer(
