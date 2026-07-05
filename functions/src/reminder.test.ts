@@ -283,6 +283,38 @@ test("nudgeTimingAllows: false when disabled, outside window, or quiet", () => {
   );
 });
 
+test("nudgeTimingAllows: quiet hours are judged on the nudge time, not the tick", () => {
+  // The scheduler ticks on a ~15-min grid with a 14-min tolerance, so the tick
+  // that catches a nudge can land on the far side of a quiet boundary. The
+  // decision must judge the nudge time itself, matching the client's
+  // nudgeFallsInQuietHours warning.
+
+  // Nudge 20:55 is OUTSIDE quiet hours 21:00–07:00; the 21:00 tick catches it
+  // (diff 5 ≤ 14). A tick-based check would suppress it and the user would
+  // never get the nudge they set.
+  assert.equal(
+    nudgeTimingAllows({
+      prefs: {...defaultPrefs, dailyNudgeTime: "20:55"},
+      nowMinute: 21 * 60,
+      toleranceMinutes: 14,
+    }),
+    true,
+    "nudge 20:55 outside quiet hours must fire even when caught by the 21:00 tick",
+  );
+
+  // Nudge 06:50 is INSIDE quiet hours; the 07:00 tick catches it (diff 10 ≤ 14)
+  // but is itself outside quiet hours. A tick-based check would wrongly send.
+  assert.equal(
+    nudgeTimingAllows({
+      prefs: {...defaultPrefs, dailyNudgeTime: "06:50"},
+      nowMinute: 7 * 60,
+      toleranceMinutes: 14,
+    }),
+    false,
+    "nudge 06:50 inside quiet hours must stay suppressed even at the 07:00 tick",
+  );
+});
+
 test("occurrenceIdFor: matches the Dart {taskId}_yyyy-MM-dd format", () => {
   assert.equal(
     occurrenceIdFor("t1", new Date(Date.UTC(2026, 5, 29))),

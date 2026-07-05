@@ -300,6 +300,67 @@ void main() {
     });
   });
 
+  group('quiet-hours gate uses the nudge time, not the catching tick', () {
+    // The scheduler ticks on a grid (~15 min) with a tolerance window, so the
+    // tick that *catches* a nudge can land minutes after the configured nudge
+    // time — and on the far side of a quiet-hours boundary. The suppression
+    // decision must judge the nudge time itself (matching the UI's
+    // [nudgeFallsInQuietHours] warning), not whichever tick happens to fire.
+
+    test('a nudge just before quiet-start still fires when a later tick '
+        'catches it', () {
+      // Nudge 20:55 is OUTSIDE quiet hours 21:00–07:00, but a 15-min scheduler
+      // only catches it at the 21:00 tick (within the 14-min tolerance). If we
+      // judged quiet hours at the tick, 21:00 would suppress it and the user
+      // would never get a nudge they set for 20:55 — with no warning, since
+      // nudgeFallsInQuietHours(20:55) is false.
+      const prefs = NotificationPrefs(
+        dailyNudgeTime: '20:55',
+        quietHoursStart: '21:00',
+        quietHoursEnd: '07:00',
+      );
+      expect(nudgeFallsInQuietHours(prefs), isFalse);
+      expect(
+        shouldSendDailyNudge(
+          prefs: prefs,
+          nowMinute: 21 * 60, // 21:00 tick, diff 5 ≤ 14
+          hasOpenTasks: true,
+          toleranceMinutes: 14,
+        ),
+        isTrue,
+        reason:
+            'nudge 20:55 is outside quiet hours; the catching tick must not '
+            'suppress it',
+      );
+    });
+
+    test('a nudge inside quiet hours stays suppressed even when the catching '
+        'tick escapes the window', () {
+      // Nudge 06:50 is INSIDE quiet hours 21:00–07:00, so it should never send
+      // (and nudgeFallsInQuietHours warns as much). The 07:00 tick that catches
+      // it is itself outside quiet hours, so a tick-based check would wrongly
+      // let it slip through.
+      const prefs = NotificationPrefs(
+        dailyNudgeTime: '06:50',
+        quietHoursStart: '21:00',
+        quietHoursEnd: '07:00',
+      );
+      expect(nudgeFallsInQuietHours(prefs), isTrue);
+      expect(
+        shouldSendDailyNudge(
+          prefs: prefs,
+          nowMinute: 7 * 60, // 07:00 tick, diff 10 ≤ 14, itself outside quiet
+          hasOpenTasks: true,
+          toleranceMinutes: 14,
+        ),
+        isFalse,
+        reason:
+            'nudge 06:50 is inside quiet hours; an escaping tick must not send '
+            'it',
+      );
+    });
+  });
+
   group('NotificationPrefs', () {
     test('survives a JSON round-trip', () {
       const prefs = NotificationPrefs(

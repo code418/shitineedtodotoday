@@ -75,10 +75,16 @@ bool shouldSendDailyNudge({
   if (prefs.quietHoursEnabled) {
     final start = minuteOfDay(prefs.quietHoursStart);
     final end = minuteOfDay(prefs.quietHoursEnd);
+    // Judge quiet hours against the configured [nudge] time, NOT [nowMinute]:
+    // the tick that catches the nudge can land up to [toleranceMinutes] later,
+    // on the far side of a quiet boundary. Using the nudge time keeps the
+    // decision independent of the tick grid and consistent with the UI's
+    // [nudgeFallsInQuietHours] warning — a nudge outside quiet hours always
+    // fires; one inside is always suppressed.
     if (start != null &&
         end != null &&
         isWithinQuietHours(
-          nowMinute: nowMinute,
+          nowMinute: nudge,
           startMinute: start,
           endMinute: end,
         )) {

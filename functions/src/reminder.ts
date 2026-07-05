@@ -100,8 +100,14 @@ export function nudgeTimingAllows(args: {
   if (prefs.quietHoursEnabled) {
     const start = minuteOfDay(prefs.quietHoursStart);
     const end = minuteOfDay(prefs.quietHoursEnd);
+    // Judge quiet hours against the configured `nudge` time, NOT `nowMinute`:
+    // the tick that catches the nudge can land up to `tolerance` minutes later,
+    // on the far side of a quiet boundary. Using the nudge time keeps the
+    // decision independent of the tick grid and consistent with the client's
+    // `nudgeFallsInQuietHours` warning — a nudge outside quiet hours always
+    // fires; one inside is always suppressed.
     if (start !== null && end !== null &&
-        isWithinQuietHours(nowMinute, start, end)) {
+        isWithinQuietHours(nudge, start, end)) {
       return false;
     }
   }
