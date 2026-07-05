@@ -498,6 +498,47 @@ void main() {
         expect(moved.scheduledDate, DateTime(2026, 6, 26));
       },
     );
+
+    test(
+      'refuses to move a settled (done) occurrence — no silent un-complete',
+      () async {
+        final monday = DateTime(2026, 6, 29);
+        final thursday = DateTime(2026, 7, 2);
+        final done = TaskOccurrence(
+          id: 't1_2026-06-29',
+          taskId: 't1',
+          scheduledDate: monday,
+          status: OccurrenceStatus.done,
+          completedAt: DateTime(2026, 6, 29, 10),
+          actualDurationMinutes: 25,
+        );
+
+        final result = await service.moveTo(done, thursday);
+
+        // Settled occurrences are never moved (mirroring rebalance): returned
+        // unchanged and NOT persisted, so a done occurrence can't be flipped
+        // back to open while stranding its completedAt/actualDurationMinutes.
+        expect(result, done);
+        expect(result.status, OccurrenceStatus.done);
+        expect(result.completedAt, DateTime(2026, 6, 29, 10));
+        expect(result.actualDurationMinutes, 25);
+        expect(occRepo.store.containsKey(done.id), isFalse);
+      },
+    );
+
+    test('refuses to move a skipped occurrence', () async {
+      final skipped = TaskOccurrence(
+        id: 't1_2026-06-29',
+        taskId: 't1',
+        scheduledDate: DateTime(2026, 6, 29),
+        status: OccurrenceStatus.skipped,
+      );
+
+      final result = await service.moveTo(skipped, DateTime(2026, 7, 2));
+
+      expect(result, skipped);
+      expect(occRepo.store.containsKey(skipped.id), isFalse);
+    });
   });
 }
 

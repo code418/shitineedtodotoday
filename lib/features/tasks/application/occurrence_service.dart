@@ -127,6 +127,14 @@ class OccurrenceService {
   /// and pins it so a later "spread it out" rebalance won't move it away from
   /// the day the user deliberately chose.
   Future<TaskOccurrence> moveTo(TaskOccurrence occurrence, DateTime day) async {
+    // Settled occurrences (done/skipped) are never moved — the same invariant
+    // [rebalance] enforces. Flipping a done occurrence to `rescheduled` would
+    // silently re-open it while stranding its completedAt/actualDurationMinutes
+    // (effort learning then drops it, leaving its estimate contribution
+    // orphaned). A caller that genuinely needs to move a finished occurrence
+    // should [reopen] it first. The live drag UI only offers open occurrences,
+    // so this guards the primitive for reuse.
+    if (!occurrence.isOpen) return occurrence;
     final moved = occurrence.copyWith(
       scheduledDate: dateOnly(day),
       status: OccurrenceStatus.rescheduled,
