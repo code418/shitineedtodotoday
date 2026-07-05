@@ -82,8 +82,13 @@ class Household {
               name: m['name'] is String ? m['name'] as String : '',
             ),
     ];
+    // Decode the name defensively too (is-check, not `as String?`): this doc is
+    // read on a single-doc stream with no decodeDocs salvage, so a wrong-typed
+    // name would otherwise throw in the stream .map and blank the whole
+    // household — members included — the very failure the salvage above avoids.
+    final rawName = json['name'];
     return Household(
-      name: json['name'] as String? ?? 'Our home',
+      name: rawName is String ? rawName : 'Our home',
       members: members,
     );
   }

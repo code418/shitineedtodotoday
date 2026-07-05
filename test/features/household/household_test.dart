@@ -71,6 +71,21 @@ void main() {
       expect(h.members, isEmpty);
     });
 
+    test('fromJson uses the default name when the name is wrong-typed', () {
+      // A non-null, non-String name (e.g. a number from a schema change or a
+      // manual console edit) must fall back to the default, not throw — the
+      // single-doc household watch has no decodeDocs salvage around it, so a
+      // throw here would blank the whole household (members included).
+      final h = Household.fromJson({
+        'name': 42,
+        'members': [
+          {'id': 'm1', 'name': 'Alice'},
+        ],
+      });
+      expect(h.name, 'Our home');
+      expect(h.members, const [HouseholdMember(id: 'm1', name: 'Alice')]);
+    });
+
     test('withMember appends a member', () {
       final h = Household.empty.withMember(alice);
       expect(h.members, [alice]);

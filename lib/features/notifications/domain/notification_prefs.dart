@@ -51,14 +51,26 @@ class NotificationPrefs {
     'quietHoursEnd': quietHoursEnd,
   };
 
-  factory NotificationPrefs.fromJson(Map<String, dynamic> json) =>
-      NotificationPrefs(
-        dailyNudgeEnabled: json['dailyNudgeEnabled'] as bool? ?? true,
-        dailyNudgeTime: json['dailyNudgeTime'] as String? ?? '08:00',
-        quietHoursEnabled: json['quietHoursEnabled'] as bool? ?? true,
-        quietHoursStart: json['quietHoursStart'] as String? ?? '21:00',
-        quietHoursEnd: json['quietHoursEnd'] as String? ?? '07:00',
-      );
+  factory NotificationPrefs.fromJson(Map<String, dynamic> json) {
+    // Read each field defensively (is-check + fallback) rather than a hard
+    // `as` cast: this doc is read on a single-doc stream with no decodeDocs
+    // salvage, so a wrong-typed field (a schema change or a manual console
+    // edit) would otherwise throw inside the stream .map and blank the whole
+    // reminders screen. Mirrors the server's defensive prefsFromDoc
+    // (functions/src/reminder.ts), so the client is no stricter than the server.
+    final enabled = json['dailyNudgeEnabled'];
+    final time = json['dailyNudgeTime'];
+    final quietEnabled = json['quietHoursEnabled'];
+    final quietStart = json['quietHoursStart'];
+    final quietEnd = json['quietHoursEnd'];
+    return NotificationPrefs(
+      dailyNudgeEnabled: enabled is bool ? enabled : true,
+      dailyNudgeTime: time is String ? time : '08:00',
+      quietHoursEnabled: quietEnabled is bool ? quietEnabled : true,
+      quietHoursStart: quietStart is String ? quietStart : '21:00',
+      quietHoursEnd: quietEnd is String ? quietEnd : '07:00',
+    );
+  }
 
   @override
   bool operator ==(Object other) =>

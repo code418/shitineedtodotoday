@@ -375,5 +375,20 @@ void main() {
     test('fromJson tolerates missing keys via defaults', () {
       expect(NotificationPrefs.fromJson(const {}), NotificationPrefs.defaults);
     });
+
+    test('fromJson falls back to defaults on wrong-typed fields', () {
+      // Prefs are read on a single-doc stream with no decodeDocs salvage, so a
+      // wrong-typed field (schema change / manual edit) must fall back rather
+      // than throw and blank the reminders screen. Mirrors the server's
+      // defensive prefsFromDoc (functions/src/reminder.ts).
+      final prefs = NotificationPrefs.fromJson({
+        'dailyNudgeEnabled': 'yes', // not a bool
+        'dailyNudgeTime': 42, // not a String
+        'quietHoursEnabled': 1, // not a bool
+        'quietHoursStart': true, // not a String
+        'quietHoursEnd': <String>['07:00'], // not a String
+      });
+      expect(prefs, NotificationPrefs.defaults);
+    });
   });
 }
