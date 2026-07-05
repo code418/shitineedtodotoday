@@ -146,28 +146,37 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       ),
     );
     if (confirmed != true) return;
-    final auth = ref.read(authRepositoryProvider);
-    // Detach this device from the current owner first, so the dispatcher stops
-    // pushing their reminders here once we've signed out. Best-effort — token
-    // cleanup must never block sign-out.
-    final ownerId = ref.read(currentOwnerIdProvider);
-    if (ownerId != null) {
-      try {
-        await ref.read(pushRegistrarProvider).unregister(ownerId);
-      } catch (_) {
-        // Ignore; sign out regardless.
-      }
-    }
-    await auth.signOut();
-    // Anonymous-first: immediately re-establish a fresh anonymous session so the
-    // app stays usable. Without an owner the user can't add tasks and the
-    // upgrade form breaks, and there's no sign-in screen to recover — they'd be
-    // stuck until the next app launch re-creates an anonymous user.
+    // Re-entrancy guard, matching _upgrade / _continueWithGoogle: the button is
+    // `_loading ? null : _signOut`, so a second confirm can't launch a
+    // concurrent sign-out (a second signOut → ensureSignedIn race) while the
+    // async chain below is in flight.
+    setState(() => _loading = true);
     try {
-      final fresh = await auth.ensureSignedIn();
-      await ref.read(pushRegistrarProvider).registerFor(fresh.uid);
-    } catch (_) {
-      // Best-effort; a failed re-sign-in self-heals on the next app launch.
+      final auth = ref.read(authRepositoryProvider);
+      // Detach this device from the current owner first, so the dispatcher stops
+      // pushing their reminders here once we've signed out. Best-effort — token
+      // cleanup must never block sign-out.
+      final ownerId = ref.read(currentOwnerIdProvider);
+      if (ownerId != null) {
+        try {
+          await ref.read(pushRegistrarProvider).unregister(ownerId);
+        } catch (_) {
+          // Ignore; sign out regardless.
+        }
+      }
+      await auth.signOut();
+      // Anonymous-first: immediately re-establish a fresh anonymous session so
+      // the app stays usable. Without an owner the user can't add tasks and the
+      // upgrade form breaks, and there's no sign-in screen to recover — they'd
+      // be stuck until the next app launch re-creates an anonymous user.
+      try {
+        final fresh = await auth.ensureSignedIn();
+        await ref.read(pushRegistrarProvider).registerFor(fresh.uid);
+      } catch (_) {
+        // Best-effort; a failed re-sign-in self-heals on the next app launch.
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -287,7 +296,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             AppButton(
               label: strings.signOut,
               variant: AppButtonVariant.ghost,
-              onPressed: _signOut,
+              onPressed: _loading ? null : _signOut,
             ),
           ],
         ],

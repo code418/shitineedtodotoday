@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:snitd/core/design/widgets/app_button.dart';
 import 'package:snitd/features/auth/data/auth_repository.dart';
 import 'package:snitd/features/auth/domain/account_status.dart';
 import 'package:snitd/features/auth/presentation/account_screen.dart';
@@ -24,6 +27,11 @@ class _FakeAuthRepository implements AuthRepository {
   String? linkedPassword;
   bool signedOut = false;
   bool ensureSignedInCalled = false;
+  int ensureSignedInCount = 0;
+
+  /// When set, [ensureSignedIn] blocks on this until completed — lets a test
+  /// hold the sign-out chain in flight to probe the re-entrancy guard.
+  Completer<void>? ensureSignedInGate;
   bool linkGoogleCalled = false;
 
   /// What [linkGoogle] should do: return this value, unless [googleError] is set
@@ -40,6 +48,8 @@ class _FakeAuthRepository implements AuthRepository {
   @override
   Future<User> ensureSignedIn() async {
     ensureSignedInCalled = true;
+    ensureSignedInCount++;
+    if (ensureSignedInGate != null) await ensureSignedInGate!.future;
     return _FakeUser();
   }
 
@@ -207,5 +217,47 @@ void main() {
     // Anonymous-first: a new anonymous session is created so the app stays
     // usable rather than being left ownerless.
     expect(fake.ensureSignedInCalled, isTrue);
+  });
+
+  testWidgets('sign-out is re-entrancy-guarded while the chain is in flight', (
+    tester,
+  ) async {
+    final gate = Completer<void>();
+    final fake = _FakeAuthRepository()..ensureSignedInGate = gate;
+    await _buildScope(
+      tester: tester,
+      fake: fake,
+      status: const AccountStatus(
+        signedIn: true,
+        isAnonymous: false,
+        email: 'a@b.com',
+      ),
+    );
+
+    AppButton signOutButton() =>
+        tester.widget<AppButton>(find.widgetWithText(AppButton, 'Sign out'));
+    expect(signOutButton().onPressed, isNotNull, reason: 'enabled at rest');
+
+    // Tap + confirm; ensureSignedIn now blocks on the gate, holding the
+    // sign-out chain in flight.
+    await tester.tap(find.text('Sign out'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sign out').last); // confirm
+    await tester.pump();
+    await tester.pump();
+
+    // While in flight the button is disabled, so a rapid second tap can't
+    // launch a concurrent sign-out.
+    expect(
+      signOutButton().onPressed,
+      isNull,
+      reason: 'sign-out must be re-entrancy-guarded while in flight',
+    );
+
+    gate.complete();
+    await tester.pumpAndSettle();
+
+    // Exactly one sign-out ran; the re-established session was created once.
+    expect(fake.ensureSignedInCount, 1);
   });
 }
