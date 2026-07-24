@@ -5,7 +5,10 @@ import {logger, setGlobalOptions} from "firebase-functions/v2";
 import {onSchedule} from "firebase-functions/v2/scheduler";
 
 import {
+  OPEN_OCCURRENCE_STATUSES,
   RecurrenceJson,
+  carriedForwardTaskIds,
+  dayStartBound,
   localDateOnly,
   minuteOfDayInZone,
   nudgeTimingAllows,
@@ -33,15 +36,25 @@ const CHUNK = 25;
 // FCM's sendEachForMulticast accepts at most 500 tokens per call.
 const MAX_MULTICAST_TOKENS = 500;
 
+// Upper bound on the overdue-occurrence scan per user. We only need to know
+// whether *any* carried-forward work survives the still-live-task filter, so a
+// bounded read keeps a long-lived account's history from driving cost. Ordered
+// oldest-first (the inequality field orders the query), and a truncated scan is
+// logged rather than silently treated as complete.
+const OVERDUE_SCAN_LIMIT = 200;
+
 /**
  * Reminder dispatcher.
  *
  * Runs every 15 minutes. For each user it reads their notification prefs and
  * active tasks in parallel, sends a single gentle daily nudge at their chosen
- * time (respecting quiet hours) when at least one task actually falls on today
- * (recurrence-aware), and pushes it to their registered FCM device tokens.
- * This server-driven push is the app's reminder mechanism — no on-device local
- * notifications.
+ * time (respecting quiet hours) when there is genuinely something outstanding,
+ * and pushes it to their registered FCM device tokens. This server-driven push
+ * is the app's reminder mechanism — no on-device local notifications.
+ *
+ * "Outstanding" mirrors what the client actually renders on today's checklist:
+ * a task whose recurrence lands on today and isn't done/skipped, OR open work
+ * carried forward from an earlier day (see `carriedForwardTaskIds`).
  *
  * Push copy is always the clean register (the OS-level notification, like the
  * launcher label, stays clean regardless of the in-app profanity toggle).
@@ -119,23 +132,50 @@ export const sendDueReminders = onSchedule(
       const tasksToday = tasksSnap.docs.filter((t) =>
         occursOn((t.get("recurrence") ?? {}) as RecurrenceJson, todayLocal),
       );
-      if (tasksToday.length === 0) return {recipients: 0, pushed: 0};
 
-      // Don't nudge if everything due today is already done or skipped. Look up
-      // each task's deterministic occurrence doc by id (index-free GET); a
-      // missing doc means the task is untouched, so still outstanding.
-      const occSnaps = await Promise.all(
-        tasksToday.map((t) =>
-          db.doc(
-            `users/${uid}/occurrences/${occurrenceIdFor(t.id, todayLocal)}`,
-          ).get(),
+      const [occSnaps, overdueSnap] = await Promise.all([
+        // Don't nudge if everything due today is already done or skipped. Look
+        // up each task's deterministic occurrence doc by id (index-free GET); a
+        // missing doc means the task is untouched, so still outstanding.
+        Promise.all(
+          tasksToday.map((t) =>
+            db.doc(
+              `users/${uid}/occurrences/${occurrenceIdFor(t.id, todayLocal)}`,
+            ).get(),
+          ),
         ),
-      );
-      const hasOutstanding = occSnaps.some((snap) => {
+        // Work the user missed on an earlier day. The client carries these onto
+        // today's checklist, so they are genuinely outstanding even when
+        // nothing recurs today — without this, a task missed on Monday shows
+        // outstanding all week but is never nudged until its next natural day.
+        db
+          .collection(`users/${uid}/occurrences`)
+          .where("status", "in", OPEN_OCCURRENCE_STATUSES)
+          .where("scheduledDate", "<", dayStartBound(todayLocal))
+          .limit(OVERDUE_SCAN_LIMIT)
+          .get(),
+      ]);
+
+      const dueToday = occSnaps.some((snap) => {
         const status = snap.get("status");
         return status !== "done" && status !== "skipped";
       });
-      if (!hasOutstanding) return {recipients: 0, pushed: 0};
+      const carried = carriedForwardTaskIds({
+        rows: overdueSnap.docs.map((d) => ({
+          taskId: d.get("taskId") as string | undefined,
+          status: d.get("status") as string | undefined,
+          scheduledDate: d.get("scheduledDate") as string | undefined,
+        })),
+        activeTaskIds: new Set(tasksSnap.docs.map((t) => t.id)),
+        today: todayLocal,
+      });
+      if (overdueSnap.size === OVERDUE_SCAN_LIMIT && carried.size === 0) {
+        logger.warn(
+          `overdue scan hit the ${OVERDUE_SCAN_LIMIT}-doc cap for uid=${uid} ` +
+            "with no live task among them — carried-forward work may be missed",
+        );
+      }
+      if (!dueToday && carried.size === 0) return {recipients: 0, pushed: 0};
 
       // sendEachForMulticast rejects when handed more than 500 tokens, so send
       // in chunks (a device that reinstalls can accrue stale tokens over time).

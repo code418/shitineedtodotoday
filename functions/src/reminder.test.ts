@@ -2,8 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  carriedForwardTaskIds,
+  dayStartBound,
   defaultPrefs,
   isWithinQuietHours,
+  isoDay,
   minuteOfDay,
   minuteOfDayInZone,
   nudgeTimingAllows,
@@ -325,4 +328,106 @@ test("occurrenceIdFor: matches the Dart {taskId}_yyyy-MM-dd format", () => {
     occurrenceIdFor("abc", new Date(Date.UTC(2026, 0, 5))),
     "abc_2026-01-05",
   );
+});
+
+// ── Carried-forward (overdue) work ────────────────────────────────────────────
+// The client resurfaces open occurrences left on past days onto today
+// (`ForgivingScheduler.buildToday(carryOverdue: true)`). These tests pin the
+// server's mirror of that rule so the dispatcher nudges for work the user can
+// actually see on their checklist.
+
+const TODAY = new Date(Date.UTC(2026, 6, 24)); // 2026-07-24
+
+test("isoDay: renders a date-only UTC Date as yyyy-MM-dd", () => {
+  assert.equal(isoDay(TODAY), "2026-07-24");
+  assert.equal(isoDay(new Date(Date.UTC(2026, 0, 5))), "2026-01-05");
+});
+
+test("dayStartBound: is an exclusive upper bound for earlier local ISO days", () => {
+  const bound = dayStartBound(TODAY);
+  // Occurrences persist `scheduledDate` as a LOCAL ISO-8601 string (no zone),
+  // which sorts lexicographically in chronological order.
+  assert.ok("2026-07-23T00:00:00.000" < bound, "yesterday is below the bound");
+  assert.ok(
+    !("2026-07-24T00:00:00.000" < bound),
+    "today is not below the bound",
+  );
+  assert.ok(
+    !("2026-07-25T00:00:00.000" < bound),
+    "tomorrow is not below the bound",
+  );
+});
+
+test("carriedForwardTaskIds: surfaces open occurrences left on past days", () => {
+  const ids = carriedForwardTaskIds({
+    rows: [
+      {taskId: "t1", status: "pending", scheduledDate: "2026-07-20T00:00:00.000"},
+      {taskId: "t2", status: "rescheduled", scheduledDate: "2026-07-23T00:00:00.000"},
+    ],
+    activeTaskIds: new Set(["t1", "t2"]),
+    today: TODAY,
+  });
+  assert.deepEqual([...ids].sort(), ["t1", "t2"]);
+});
+
+test("carriedForwardTaskIds: ignores settled, current and future occurrences", () => {
+  const ids = carriedForwardTaskIds({
+    rows: [
+      // Settled — the user dealt with it, forgiven either way.
+      {taskId: "done", status: "done", scheduledDate: "2026-07-20T00:00:00.000"},
+      {taskId: "skipped", status: "skipped", scheduledDate: "2026-07-20T00:00:00.000"},
+      // Today's own work is counted by the recurrence path, not carry-forward —
+      // counting it here too would double-count, and a *future* open occurrence
+      // is not outstanding at all.
+      {taskId: "today", status: "pending", scheduledDate: "2026-07-24T00:00:00.000"},
+      {taskId: "future", status: "pending", scheduledDate: "2026-07-30T00:00:00.000"},
+    ],
+    activeTaskIds: new Set(["done", "skipped", "today", "future"]),
+    today: TODAY,
+  });
+  assert.deepEqual([...ids], []);
+});
+
+test("carriedForwardTaskIds: drops orphans and inactive tasks", () => {
+  // The client filters the checklist to occurrences whose task still exists
+  // (`todayChecklistProvider`), and only materialises for active tasks. A
+  // cascade-delete that half-failed must not nudge forever.
+  const ids = carriedForwardTaskIds({
+    rows: [
+      {taskId: "gone", status: "pending", scheduledDate: "2026-07-20T00:00:00.000"},
+      {taskId: "live", status: "pending", scheduledDate: "2026-07-20T00:00:00.000"},
+    ],
+    activeTaskIds: new Set(["live"]),
+    today: TODAY,
+  });
+  assert.deepEqual([...ids], ["live"]);
+});
+
+test("carriedForwardTaskIds: counts a task once however many days it slipped", () => {
+  // Mirrors the client's `claimed` set — one carried row per task, so a daily
+  // task missed all week doesn't stack five entries.
+  const ids = carriedForwardTaskIds({
+    rows: [
+      {taskId: "t1", status: "pending", scheduledDate: "2026-07-20T00:00:00.000"},
+      {taskId: "t1", status: "pending", scheduledDate: "2026-07-21T00:00:00.000"},
+      {taskId: "t1", status: "rescheduled", scheduledDate: "2026-07-22T00:00:00.000"},
+    ],
+    activeTaskIds: new Set(["t1"]),
+    today: TODAY,
+  });
+  assert.deepEqual([...ids], ["t1"]);
+});
+
+test("carriedForwardTaskIds: tolerates malformed rows", () => {
+  const ids = carriedForwardTaskIds({
+    rows: [
+      {taskId: "t1", status: "pending"},
+      {taskId: "", status: "pending", scheduledDate: "2026-07-20T00:00:00.000"},
+      {taskId: "t2", scheduledDate: "2026-07-20T00:00:00.000"},
+      {taskId: "t3", status: "pending", scheduledDate: "not-a-date"},
+    ],
+    activeTaskIds: new Set(["t1", "t2", "t3", ""]),
+    today: TODAY,
+  });
+  assert.deepEqual([...ids], []);
 });

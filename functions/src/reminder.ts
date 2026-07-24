@@ -125,6 +125,14 @@ export function shouldSendDailyNudge(args: {
   return nudgeTimingAllows(args);
 }
 
+/** `yyyy-MM-dd` for a date-only UTC Date. */
+export function isoDay(day: Date): string {
+  const y = day.getUTCFullYear().toString().padStart(4, "0");
+  const m = (day.getUTCMonth() + 1).toString().padStart(2, "0");
+  const d = day.getUTCDate().toString().padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 /**
  * Deterministic occurrence document id, mirroring the Dart `occurrenceId`
  * (`{taskId}_yyyy-MM-dd`). [day] must be a date-only UTC Date. Lets the
@@ -132,10 +140,63 @@ export function shouldSendDailyNudge(args: {
  * GET by id rather than a query.
  */
 export function occurrenceIdFor(taskId: string, day: Date): string {
-  const y = day.getUTCFullYear().toString().padStart(4, "0");
-  const m = (day.getUTCMonth() + 1).toString().padStart(2, "0");
-  const d = day.getUTCDate().toString().padStart(2, "0");
-  return `${taskId}_${y}-${m}-${d}`;
+  return `${taskId}_${isoDay(day)}`;
+}
+
+// ── Carried-forward (overdue) work ────────────────────────────────────────────
+// The Dart `ForgivingScheduler.buildToday(carryOverdue: true)` resurfaces open
+// occurrences left on past days onto today's checklist — the "neatly
+// reschedules instead of letting work pile up" promise. The dispatcher has to
+// mirror that, or a task missed on Monday stays visibly outstanding all week
+// while the server, which only evaluates today's recurrence, never nudges.
+
+/** Occurrence statuses that still need attention — mirrors Dart `isOpen`. */
+export const OPEN_OCCURRENCE_STATUSES = ["pending", "rescheduled"];
+
+/**
+ * Exclusive upper bound for "scheduled strictly before [day]", as a Firestore
+ * range operand. `scheduledDate` persists as a LOCAL ISO-8601 string (never a
+ * Timestamp), and ISO-8601 sorts lexicographically in chronological order.
+ */
+export function dayStartBound(day: Date): string {
+  return `${isoDay(day)}T00:00:00.000`;
+}
+
+/** The shape the dispatcher reads off an occurrence document. */
+export interface OccurrenceRow {
+  taskId?: string;
+  status?: string;
+  scheduledDate?: string;
+}
+
+/**
+ * Task ids with open work carried forward from a past day onto [today].
+ *
+ * Mirrors the client's carry-forward rules: only open occurrences strictly
+ * before today count, at most one per task (the client's `claimed` set), and
+ * the task must still be live — `todayChecklistProvider` drops occurrences
+ * whose task no longer exists, and only active tasks materialise, so a
+ * half-failed cascade-delete must not nudge forever.
+ */
+export function carriedForwardTaskIds(args: {
+  rows: OccurrenceRow[];
+  activeTaskIds: ReadonlySet<string>;
+  today: Date;
+}): Set<string> {
+  const bound = isoDay(args.today);
+  const carried = new Set<string>();
+  for (const row of args.rows) {
+    const taskId = row.taskId;
+    if (!taskId || !args.activeTaskIds.has(taskId)) continue;
+    if (!row.status || !OPEN_OCCURRENCE_STATUSES.includes(row.status)) continue;
+    // Compare calendar days, not instants: the stored string carries no zone,
+    // and its first 10 characters are exactly `yyyy-MM-dd`.
+    const day = row.scheduledDate?.slice(0, 10);
+    if (!day || !/^\d{4}-\d{2}-\d{2}$/.test(day)) continue;
+    if (!(day < bound)) continue;
+    carried.add(taskId);
+  }
+  return carried;
 }
 
 /** Minutes since local midnight for [date] rendered in [timeZone]. */

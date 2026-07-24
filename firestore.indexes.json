@@ -1,4 +1,14 @@
 {
-  "indexes": [],
+  "indexes": [
+    {
+      "//": "Reminder dispatcher (functions/src/index.ts): per-user scan for open work carried forward from an earlier day. An equality-style `in` on status plus a range on scheduledDate needs a composite index.",
+      "collectionGroup": "occurrences",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "status", "order": "ASCENDING"},
+        {"fieldPath": "scheduledDate", "order": "ASCENDING"}
+      ]
+    }
+  ],
   "fieldOverrides": []
 }
