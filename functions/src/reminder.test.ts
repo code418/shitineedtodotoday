@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  carriedForwardTaskIds,
+  addUtcDays,
   claimExpiry,
   dayStartBound,
   defaultPrefs,
@@ -14,6 +14,7 @@ import {
   nudgeTimingAllows,
   occurrenceIdFor,
   occursOn,
+  outstandingTaskIds,
   prefsFromDoc,
   reminderClaimId,
   shouldSendDailyNudge,
@@ -333,106 +334,180 @@ test("occurrenceIdFor: matches the Dart {taskId}_yyyy-MM-dd format", () => {
   );
 });
 
-// ── Carried-forward (overdue) work ────────────────────────────────────────────
-// The client resurfaces open occurrences left on past days onto today
-// (`ForgivingScheduler.buildToday(carryOverdue: true)`). These tests pin the
-// server's mirror of that rule so the dispatcher nudges for work the user can
-// actually see on their checklist.
+// ── Outstanding work (what the checklist would show) ─────────────────────────
+// `outstandingTaskIds` mirrors ForgivingScheduler.buildToday(carryOverdue:true)
+// plus todayChecklistProvider's live-task filter. It has to agree with the
+// client in BOTH directions — nudging for hidden work is as wrong as silence.
 
 const TODAY = new Date(Date.UTC(2026, 6, 24)); // 2026-07-24
+const at = (day: string) => `${day}T00:00:00.000`;
+
+/** Defaults every field so each test states only what it is about. */
+function outstanding(over: Partial<Parameters<typeof outstandingTaskIds>[0]>) {
+  return [
+    ...outstandingTaskIds({
+      todayRows: [],
+      pastOpenRows: [],
+      dueTodayTaskIds: [],
+      materialisedTaskIds: new Set<string>(),
+      activeTaskIds: new Set(["t1", "t2", "live"]),
+      today: TODAY,
+      ...over,
+    }),
+  ].sort();
+}
 
 test("isoDay: renders a date-only UTC Date as yyyy-MM-dd", () => {
   assert.equal(isoDay(TODAY), "2026-07-24");
   assert.equal(isoDay(new Date(Date.UTC(2026, 0, 5))), "2026-01-05");
 });
 
-test("dayStartBound: is an exclusive upper bound for earlier local ISO days", () => {
-  const bound = dayStartBound(TODAY);
-  // Occurrences persist `scheduledDate` as a LOCAL ISO-8601 string (no zone),
-  // which sorts lexicographically in chronological order.
-  assert.ok("2026-07-23T00:00:00.000" < bound, "yesterday is below the bound");
-  assert.ok(
-    !("2026-07-24T00:00:00.000" < bound),
-    "today is not below the bound",
+test("dayStartBound / addUtcDays: exact string bounds around a local day", () => {
+  assert.equal(dayStartBound(TODAY), "2026-07-24T00:00:00.000");
+  assert.equal(dayStartBound(addUtcDays(TODAY, 1)), "2026-07-25T00:00:00.000");
+  // The scan window is [todayStart, tomorrowStart) for today's rows and
+  // everything below todayStart for the past — ISO-8601 sorts chronologically.
+  assert.ok(at("2026-07-23") < dayStartBound(TODAY));
+  assert.ok(at("2026-07-24") >= dayStartBound(TODAY));
+  assert.ok(at("2026-07-24") < dayStartBound(addUtcDays(TODAY, 1)));
+  assert.ok(!(at("2026-07-25") < dayStartBound(addUtcDays(TODAY, 1))));
+});
+
+test("outstanding: a task due today that isn't materialised yet", () => {
+  assert.deepEqual(outstanding({dueTodayTaskIds: ["t1"]}), ["t1"]);
+});
+
+test("outstanding: an open occurrence dated today", () => {
+  assert.deepEqual(
+    outstanding({
+      todayRows: [{taskId: "t1", status: "pending", scheduledDate: at("2026-07-24")}],
+    }),
+    ["t1"],
   );
-  assert.ok(
-    !("2026-07-25T00:00:00.000" < bound),
-    "tomorrow is not below the bound",
+});
+
+test("outstanding: settled today -> nothing to nudge about", () => {
+  assert.deepEqual(
+    outstanding({
+      dueTodayTaskIds: ["t1", "t2"],
+      materialisedTaskIds: new Set(["t1", "t2"]),
+      todayRows: [
+        {taskId: "t1", status: "done", scheduledDate: at("2026-07-24")},
+        {taskId: "t2", status: "skipped", scheduledDate: at("2026-07-24")},
+      ],
+    }),
+    [],
   );
 });
 
-test("carriedForwardTaskIds: surfaces open occurrences left on past days", () => {
-  const ids = carriedForwardTaskIds({
-    rows: [
-      {taskId: "t1", status: "pending", scheduledDate: "2026-07-20T00:00:00.000"},
-      {taskId: "t2", status: "rescheduled", scheduledDate: "2026-07-23T00:00:00.000"},
-    ],
-    activeTaskIds: new Set(["t1", "t2"]),
-    today: TODAY,
-  });
-  assert.deepEqual([...ids].sort(), ["t1", "t2"]);
+test("outstanding: open work left on an earlier day is carried forward", () => {
+  // The whole point of the carry-forward: nothing recurs today, but the
+  // checklist still shows Monday's miss, so the nudge must fire.
+  assert.deepEqual(
+    outstanding({
+      pastOpenRows: [
+        {taskId: "t1", status: "pending", scheduledDate: at("2026-07-20")},
+        {taskId: "t2", status: "rescheduled", scheduledDate: at("2026-07-23")},
+      ],
+    }),
+    ["t1", "t2"],
+  );
 });
 
-test("carriedForwardTaskIds: ignores settled, current and future occurrences", () => {
-  const ids = carriedForwardTaskIds({
-    rows: [
-      // Settled — the user dealt with it, forgiven either way.
-      {taskId: "done", status: "done", scheduledDate: "2026-07-20T00:00:00.000"},
-      {taskId: "skipped", status: "skipped", scheduledDate: "2026-07-20T00:00:00.000"},
-      // Today's own work is counted by the recurrence path, not carry-forward —
-      // counting it here too would double-count, and a *future* open occurrence
-      // is not outstanding at all.
-      {taskId: "today", status: "pending", scheduledDate: "2026-07-24T00:00:00.000"},
-      {taskId: "future", status: "pending", scheduledDate: "2026-07-30T00:00:00.000"},
-    ],
-    activeTaskIds: new Set(["done", "skipped", "today", "future"]),
-    today: TODAY,
-  });
-  assert.deepEqual([...ids], []);
+test("outstanding: a row dated today blocks carry-forward for that task", () => {
+  // REGRESSION. The client's `claimed` set means a task with ANY occurrence
+  // dated today never also carries an older one. A weekly task missed last
+  // Monday and ticked off today shows nothing on the checklist — so nudging
+  // for it would be a phantom reminder.
+  assert.deepEqual(
+    outstanding({
+      dueTodayTaskIds: ["t1"],
+      materialisedTaskIds: new Set(["t1"]),
+      todayRows: [{taskId: "t1", status: "done", scheduledDate: at("2026-07-24")}],
+      pastOpenRows: [
+        {taskId: "t1", status: "pending", scheduledDate: at("2026-07-20")},
+      ],
+    }),
+    [],
+  );
 });
 
-test("carriedForwardTaskIds: drops orphans and inactive tasks", () => {
-  // The client filters the checklist to occurrences whose task still exists
-  // (`todayChecklistProvider`), and only materialises for active tasks. A
-  // cascade-delete that half-failed must not nudge forever.
-  const ids = carriedForwardTaskIds({
-    rows: [
-      {taskId: "gone", status: "pending", scheduledDate: "2026-07-20T00:00:00.000"},
-      {taskId: "live", status: "pending", scheduledDate: "2026-07-20T00:00:00.000"},
-    ],
-    activeTaskIds: new Set(["live"]),
-    today: TODAY,
-  });
-  assert.deepEqual([...ids], ["live"]);
+test("outstanding: an occurrence dragged to a future day is not regenerated", () => {
+  // REGRESSION. buildToday dedupes step 2 by occurrence *id*, and a moved
+  // occurrence keeps the id it was generated under. The client shows nothing
+  // today, so neither should the nudge — even though the task recurs today and
+  // has no row dated today.
+  assert.deepEqual(
+    outstanding({
+      dueTodayTaskIds: ["t1"],
+      materialisedTaskIds: new Set(["t1"]),
+    }),
+    [],
+  );
 });
 
-test("carriedForwardTaskIds: counts a task once however many days it slipped", () => {
-  // Mirrors the client's `claimed` set — one carried row per task, so a daily
-  // task missed all week doesn't stack five entries.
-  const ids = carriedForwardTaskIds({
-    rows: [
-      {taskId: "t1", status: "pending", scheduledDate: "2026-07-20T00:00:00.000"},
-      {taskId: "t1", status: "pending", scheduledDate: "2026-07-21T00:00:00.000"},
-      {taskId: "t1", status: "rescheduled", scheduledDate: "2026-07-22T00:00:00.000"},
-    ],
-    activeTaskIds: new Set(["t1"]),
-    today: TODAY,
-  });
-  assert.deepEqual([...ids], ["t1"]);
+test("outstanding: counts a task once however many days it slipped", () => {
+  assert.deepEqual(
+    outstanding({
+      pastOpenRows: [
+        {taskId: "t1", status: "pending", scheduledDate: at("2026-07-20")},
+        {taskId: "t1", status: "pending", scheduledDate: at("2026-07-21")},
+        {taskId: "t1", status: "rescheduled", scheduledDate: at("2026-07-22")},
+      ],
+    }),
+    ["t1"],
+  );
 });
 
-test("carriedForwardTaskIds: tolerates malformed rows", () => {
-  const ids = carriedForwardTaskIds({
-    rows: [
-      {taskId: "t1", status: "pending"},
-      {taskId: "", status: "pending", scheduledDate: "2026-07-20T00:00:00.000"},
-      {taskId: "t2", scheduledDate: "2026-07-20T00:00:00.000"},
-      {taskId: "t3", status: "pending", scheduledDate: "not-a-date"},
-    ],
-    activeTaskIds: new Set(["t1", "t2", "t3", ""]),
-    today: TODAY,
-  });
-  assert.deepEqual([...ids], []);
+test("outstanding: drops orphaned and inactive tasks everywhere", () => {
+  // A half-failed cascade-delete must not nudge forever, and the client filters
+  // the checklist to tasks that still exist.
+  assert.deepEqual(
+    outstanding({
+      dueTodayTaskIds: ["gone"],
+      todayRows: [{taskId: "gone", status: "pending", scheduledDate: at("2026-07-24")}],
+      pastOpenRows: [
+        {taskId: "gone", status: "pending", scheduledDate: at("2026-07-20")},
+        {taskId: "live", status: "pending", scheduledDate: at("2026-07-20")},
+      ],
+    }),
+    ["live"],
+  );
+});
+
+test("outstanding: settled rows in the past are forgiven, not carried", () => {
+  assert.deepEqual(
+    outstanding({
+      pastOpenRows: [
+        {taskId: "t1", status: "done", scheduledDate: at("2026-07-20")},
+        {taskId: "t2", status: "skipped", scheduledDate: at("2026-07-20")},
+      ],
+    }),
+    [],
+  );
+});
+
+test("outstanding: tolerates malformed and wrong-typed rows", () => {
+  // Defensive in the same way the Dart read paths are: one bad document must
+  // not throw and take out this user's entire nudge. A Firestore Timestamp
+  // where an ISO string was expected is the shape that would bite hardest —
+  // `.slice` on it throws, and Timestamps sort BEFORE strings, so such a row
+  // always matches the range filter.
+  assert.deepEqual(
+    outstanding({
+      activeTaskIds: new Set(["t1", "t2", "t3", "t4", ""]),
+      pastOpenRows: [
+        {taskId: "t1", status: "pending"},
+        {taskId: "", status: "pending", scheduledDate: at("2026-07-20")},
+        {taskId: "t2", scheduledDate: at("2026-07-20")},
+        {taskId: "t3", status: "pending", scheduledDate: "not-a-date"},
+        {taskId: "t4", status: "pending", scheduledDate: {seconds: 1770000000}},
+        {status: "pending", scheduledDate: at("2026-07-20")},
+      ],
+      todayRows: [{taskId: 42, status: "pending", scheduledDate: at("2026-07-24")}],
+    }),
+    [],
+  );
 });
 
 // ── Once-per-day send claim ───────────────────────────────────────────────────

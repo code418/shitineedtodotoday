@@ -7,7 +7,7 @@ import {onSchedule} from "firebase-functions/v2/scheduler";
 import {
   OPEN_OCCURRENCE_STATUSES,
   RecurrenceJson,
-  carriedForwardTaskIds,
+  addUtcDays,
   claimExpiry,
   dayStartBound,
   isAlreadyExistsError,
@@ -16,6 +16,7 @@ import {
   nudgeTimingAllows,
   occurrenceIdFor,
   occursOn,
+  outstandingTaskIds,
   prefsFromDoc,
   reminderClaimId,
 } from "./reminder";
@@ -55,9 +56,8 @@ const OVERDUE_SCAN_LIMIT = 200;
  * and pushes it to their registered FCM device tokens. This server-driven push
  * is the app's reminder mechanism — no on-device local notifications.
  *
- * "Outstanding" mirrors what the client actually renders on today's checklist:
- * a task whose recurrence lands on today and isn't done/skipped, OR open work
- * carried forward from an earlier day (see `carriedForwardTaskIds`).
+ * "Outstanding" mirrors what the client actually renders on today's checklist
+ * — see `outstandingTaskIds`, which is where that rule lives.
  *
  * Push copy is always the clean register (the OS-level notification, like the
  * launcher label, stays clean regardless of the in-app profanity toggle).
@@ -136,49 +136,58 @@ export const sendDueReminders = onSchedule(
         occursOn((t.get("recurrence") ?? {}) as RecurrenceJson, todayLocal),
       );
 
-      const [occSnaps, overdueSnap] = await Promise.all([
-        // Don't nudge if everything due today is already done or skipped. Look
-        // up each task's deterministic occurrence doc by id (index-free GET); a
-        // missing doc means the task is untouched, so still outstanding.
+      const occurrences = db.collection(`users/${uid}/occurrences`);
+      const [cycleSnaps, todaySnap, pastSnap] = await Promise.all([
+        // Has this cycle's occurrence been created at all? Looked up by
+        // deterministic id (index-free GET), because the client dedupes fresh
+        // materialisation by id too — an occurrence dragged to another day
+        // keeps the id it was generated under and is NOT regenerated.
         Promise.all(
           tasksToday.map((t) =>
-            db.doc(
-              `users/${uid}/occurrences/${occurrenceIdFor(t.id, todayLocal)}`,
-            ).get(),
+            occurrences.doc(occurrenceIdFor(t.id, todayLocal)).get(),
           ),
         ),
+        // Everything dated today, whatever its status: open rows are visible
+        // work, and settled ones still claim their task against carry-forward.
+        occurrences
+          .where("scheduledDate", ">=", dayStartBound(todayLocal))
+          .where("scheduledDate", "<", dayStartBound(addUtcDays(todayLocal, 1)))
+          .get(),
         // Work the user missed on an earlier day. The client carries these onto
         // today's checklist, so they are genuinely outstanding even when
         // nothing recurs today — without this, a task missed on Monday shows
         // outstanding all week but is never nudged until its next natural day.
-        db
-          .collection(`users/${uid}/occurrences`)
+        occurrences
           .where("status", "in", OPEN_OCCURRENCE_STATUSES)
           .where("scheduledDate", "<", dayStartBound(todayLocal))
           .limit(OVERDUE_SCAN_LIMIT)
           .get(),
       ]);
 
-      const dueToday = occSnaps.some((snap) => {
-        const status = snap.get("status");
-        return status !== "done" && status !== "skipped";
+      const row = (d: FirebaseFirestore.DocumentSnapshot) => ({
+        taskId: d.get("taskId"),
+        status: d.get("status"),
+        scheduledDate: d.get("scheduledDate"),
       });
-      const carried = carriedForwardTaskIds({
-        rows: overdueSnap.docs.map((d) => ({
-          taskId: d.get("taskId") as string | undefined,
-          status: d.get("status") as string | undefined,
-          scheduledDate: d.get("scheduledDate") as string | undefined,
-        })),
+      const outstanding = outstandingTaskIds({
+        todayRows: todaySnap.docs.map(row),
+        pastOpenRows: pastSnap.docs.map(row),
+        dueTodayTaskIds: tasksToday.map((t) => t.id),
+        // Keyed off the task we asked for, not the document's own taskId field,
+        // so a malformed doc still counts as "this cycle already exists".
+        materialisedTaskIds: new Set(
+          tasksToday.filter((_, i) => cycleSnaps[i].exists).map((t) => t.id),
+        ),
         activeTaskIds: new Set(tasksSnap.docs.map((t) => t.id)),
         today: todayLocal,
       });
-      if (overdueSnap.size === OVERDUE_SCAN_LIMIT && carried.size === 0) {
+      if (pastSnap.size === OVERDUE_SCAN_LIMIT) {
         logger.warn(
           `overdue scan hit the ${OVERDUE_SCAN_LIMIT}-doc cap for uid=${uid} ` +
-            "with no live task among them — carried-forward work may be missed",
+            "— older carried-forward work may be missed",
         );
       }
-      if (!dueToday && carried.size === 0) return {recipients: 0, pushed: 0};
+      if (outstanding.size === 0) return {recipients: 0, pushed: 0};
 
       // Claim the day before sending. `onSchedule` is at-least-once, so this
       // tick can be delivered more than once; `create()` fails if the claim

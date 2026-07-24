@@ -143,60 +143,126 @@ export function occurrenceIdFor(taskId: string, day: Date): string {
   return `${taskId}_${isoDay(day)}`;
 }
 
-// ── Carried-forward (overdue) work ────────────────────────────────────────────
-// The Dart `ForgivingScheduler.buildToday(carryOverdue: true)` resurfaces open
-// occurrences left on past days onto today's checklist — the "neatly
-// reschedules instead of letting work pile up" promise. The dispatcher has to
-// mirror that, or a task missed on Monday stays visibly outstanding all week
-// while the server, which only evaluates today's recurrence, never nudges.
+// ── What the client would show as outstanding ─────────────────────────────────
+// Mirrors `ForgivingScheduler.buildToday(carryOverdue: true)` + the live-task
+// filter in `todayChecklistProvider`. The server has to agree with what the
+// user can actually see, in BOTH directions: nudging for work the checklist
+// hides is as wrong as staying silent on work it shows.
 
 /** Occurrence statuses that still need attention — mirrors Dart `isOpen`. */
 export const OPEN_OCCURRENCE_STATUSES = ["pending", "rescheduled"];
 
 /**
- * Exclusive upper bound for "scheduled strictly before [day]", as a Firestore
- * range operand. `scheduledDate` persists as a LOCAL ISO-8601 string (never a
- * Timestamp), and ISO-8601 sorts lexicographically in chronological order.
+ * Start-of-day Firestore range operand for [day]. `scheduledDate` persists as a
+ * LOCAL ISO-8601 string (never a Timestamp), and ISO-8601 sorts
+ * lexicographically in chronological order, so string bounds are exact.
  */
 export function dayStartBound(day: Date): string {
   return `${isoDay(day)}T00:00:00.000`;
 }
 
+/** [day] plus [days], for date-only UTC Dates (no DST in UTC). */
+export function addUtcDays(day: Date, days: number): Date {
+  return new Date(day.getTime() + days * 86400000);
+}
+
 /** The shape the dispatcher reads off an occurrence document. */
 export interface OccurrenceRow {
-  taskId?: string;
-  status?: string;
-  scheduledDate?: string;
+  taskId?: unknown;
+  status?: unknown;
+  scheduledDate?: unknown;
+}
+
+/** The `yyyy-MM-dd` a row is scheduled on, or null if it isn't a usable date. */
+function rowDay(row: OccurrenceRow): string | null {
+  // Typed `unknown` on purpose: a wrong-typed field must be skipped, not throw.
+  // Everything else that reads Firestore here salvages bad docs the same way
+  // (see the Dart `firestore_decode.dart`), and `.slice` on a non-string would
+  // take out this user's whole nudge.
+  if (typeof row.scheduledDate !== "string") return null;
+  const day = row.scheduledDate.slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : null;
+}
+
+function isOpenRow(row: OccurrenceRow): boolean {
+  return (
+    typeof row.status === "string" &&
+    OPEN_OCCURRENCE_STATUSES.includes(row.status)
+  );
+}
+
+/** The row's task id, if it names a task that still exists and is active. */
+function liveTaskId(
+  row: OccurrenceRow,
+  activeTaskIds: ReadonlySet<string>,
+): string | null {
+  const taskId = row.taskId;
+  // An empty id is malformed rather than a real task — Firestore document ids
+  // are never empty — so reject it before it can match a stray "" in the set.
+  if (typeof taskId !== "string" || taskId === "") return null;
+  return activeTaskIds.has(taskId) ? taskId : null;
 }
 
 /**
- * Task ids with open work carried forward from a past day onto [today].
+ * The task ids the client's checklist would show as still needing attention on
+ * [today]. Empty means "genuinely nothing to nudge about".
  *
- * Mirrors the client's carry-forward rules: only open occurrences strictly
- * before today count, at most one per task (the client's `claimed` set), and
- * the task must still be live — `todayChecklistProvider` drops occurrences
- * whose task no longer exists, and only active tasks materialise, so a
- * half-failed cascade-delete must not nudge forever.
+ * The three sources mirror `buildToday`'s three steps:
+ *  1. an open occurrence already dated today;
+ *  2. an open occurrence left on an earlier day, carried forward — but only if
+ *     the task has no occurrence dated today at all, which is the client's
+ *     `claimed` set. Without that guard a weekly task missed last Monday and
+ *     ticked off today would still nudge, while the checklist showed nothing;
+ *  3. a task due today that hasn't been materialised yet. Deduped by occurrence
+ *     *id*, not by date — an occurrence dragged to a future day keeps the id it
+ *     was generated under, and the client won't regenerate it.
+ *
+ * Tasks that are inactive or no longer exist are dropped throughout, matching
+ * `todayChecklistProvider`, so a half-failed cascade-delete can't nudge forever.
  */
-export function carriedForwardTaskIds(args: {
-  rows: OccurrenceRow[];
+export function outstandingTaskIds(args: {
+  /** Every occurrence row dated today, whatever its status. */
+  todayRows: OccurrenceRow[];
+  /** Open occurrence rows dated before today (from the bounded scan). */
+  pastOpenRows: OccurrenceRow[];
+  /** Active task ids whose recurrence lands on today. */
+  dueTodayTaskIds: string[];
+  /** Active task ids whose `{taskId}_{today}` document already exists. */
+  materialisedTaskIds: ReadonlySet<string>;
   activeTaskIds: ReadonlySet<string>;
   today: Date;
 }): Set<string> {
-  const bound = isoDay(args.today);
-  const carried = new Set<string>();
-  for (const row of args.rows) {
-    const taskId = row.taskId;
-    if (!taskId || !args.activeTaskIds.has(taskId)) continue;
-    if (!row.status || !OPEN_OCCURRENCE_STATUSES.includes(row.status)) continue;
-    // Compare calendar days, not instants: the stored string carries no zone,
-    // and its first 10 characters are exactly `yyyy-MM-dd`.
-    const day = row.scheduledDate?.slice(0, 10);
-    if (!day || !/^\d{4}-\d{2}-\d{2}$/.test(day)) continue;
-    if (!(day < bound)) continue;
-    carried.add(taskId);
+  const todayIso = isoDay(args.today);
+  const outstanding = new Set<string>();
+  // Any occurrence dated today claims its task, settled or not.
+  const claimedToday = new Set<string>();
+
+  for (const row of args.todayRows) {
+    const taskId = liveTaskId(row, args.activeTaskIds);
+    if (taskId === null) continue;
+    if (rowDay(row) !== todayIso) continue;
+    claimedToday.add(taskId);
+    if (isOpenRow(row)) outstanding.add(taskId);
   }
-  return carried;
+
+  for (const row of args.pastOpenRows) {
+    const taskId = liveTaskId(row, args.activeTaskIds);
+    if (taskId === null) continue;
+    if (!isOpenRow(row)) continue;
+    const day = rowDay(row);
+    if (day === null || !(day < todayIso)) continue;
+    if (claimedToday.has(taskId)) continue;
+    outstanding.add(taskId);
+  }
+
+  for (const taskId of args.dueTodayTaskIds) {
+    if (!args.activeTaskIds.has(taskId)) continue;
+    if (claimedToday.has(taskId)) continue;
+    if (args.materialisedTaskIds.has(taskId)) continue;
+    outstanding.add(taskId);
+  }
+
+  return outstanding;
 }
 
 /** Minutes since local midnight for [date] rendered in [timeZone]. */
