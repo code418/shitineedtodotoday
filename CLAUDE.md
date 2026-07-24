@@ -84,7 +84,7 @@ lib/
                             #   degrades to offline mode if Firebase isn't configured
   app/                      # MaterialApp.router (app.dart), router.dart, theme.dart
   core/firebase/            # firebase_providers.dart (instances + firebaseReadyProvider),
-                            #   firebase_options.dart (committed PLACEHOLDER — throws)
+                            #   firebase_options.dart (real generated config; committed)
   features/
     auth/data/              # AuthRepository (anonymous-first) + providers
     tasks/
@@ -127,13 +127,22 @@ The remaining milestone is **P6** (multi-surface / accessibility) — see
 
 ## Firebase / secrets
 
-- No project secrets in the repo. `lib/firebase_options.dart` is a committed
-  placeholder that throws until `flutterfire configure` regenerates it.
+- `lib/firebase_options.dart` holds the **real** generated config (the project's
+  public client identifiers — app ids and browser/mobile API keys, which are
+  access-controlled by `firestore.rules`, not by being secret). It started as a
+  committed placeholder that threw; `flutterfire configure` replaced it.
+  `firebase_options.dart.example` still shows the placeholder shape.
 - `google-services.json`, `GoogleService-Info.plist`, `.firebaserc`,
   `functions/node_modules`, `.env*` are git-ignored. Don't commit real values.
-- The `google-services` Gradle plugin is intentionally **not** applied, so the
-  Android build compiles without `google-services.json` (FlutterFire initialises
-  from `firebase_options.dart`).
+- `flutterfire configure` **does** apply the `google-services` and
+  `firebase-crashlytics` Gradle plugins (see `android/app/build.gradle.kts`), so
+  the Android build now requires `android/app/google-services.json` to exist —
+  and that file is git-ignored. CI therefore copies
+  `tool/ci_google_services_placeholder.json` into place before
+  `flutter build apk`. Nothing reads it at runtime: FlutterFire is initialised
+  explicitly from `firebase_options.dart`, so the placeholder only has to
+  satisfy the build-time plugin. If you re-run `flutterfire configure`, check
+  that step still holds.
 - Firestore location must be **europe-west2 (London)** — chosen once at project
   creation, permanent. Functions are already pinned to that region.
 

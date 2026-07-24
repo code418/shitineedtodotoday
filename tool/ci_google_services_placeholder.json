@@ -1,0 +1,39 @@
+{
+  "_comment": [
+    "CI-only placeholder for android/app/google-services.json.",
+    "`flutterfire configure` applies the com.google.gms.google-services Gradle",
+    "plugin, which refuses to build without this file — but the real one is",
+    "git-ignored (no project secrets in the repo), so CI's `flutter build apk`",
+    "cannot see it. The app never reads this file at runtime: FlutterFire is",
+    "initialised explicitly from lib/firebase_options.dart, so a placeholder is",
+    "enough to satisfy the build-time plugin. Values are deliberately fake.",
+    "See .github/workflows/ci.yml and CLAUDE.md -> 'Firebase / secrets'."
+  ],
+  "project_info": {
+    "project_number": "000000000000",
+    "project_id": "ci-placeholder",
+    "storage_bucket": "ci-placeholder.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
+        "android_client_info": {
+          "package_name": "io.agilepixel.snitd"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCIplaceholderCIplaceholderCIplacehol"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

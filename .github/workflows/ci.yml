@@ -30,6 +30,14 @@ jobs:
       - run: flutter analyze
       - run: flutter test
 
+      # `flutterfire configure` applies the google-services Gradle plugin, which
+      # refuses to build without android/app/google-services.json — and that file
+      # is git-ignored (no project secrets in the repo). The app initialises
+      # FlutterFire explicitly from lib/firebase_options.dart and never reads
+      # this file at runtime, so a fake one is enough to get past the plugin.
+      - name: Provide a placeholder google-services.json
+        run: cp tool/ci_google_services_placeholder.json android/app/google-services.json
+
       # Android is the priority target for the initial version.
       - run: flutter build apk --debug
       # Web rides along as a quick secondary smoke build.
