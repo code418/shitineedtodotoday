@@ -8,13 +8,16 @@ import {
   OPEN_OCCURRENCE_STATUSES,
   RecurrenceJson,
   carriedForwardTaskIds,
+  claimExpiry,
   dayStartBound,
+  isAlreadyExistsError,
   localDateOnly,
   minuteOfDayInZone,
   nudgeTimingAllows,
   occurrenceIdFor,
   occursOn,
   prefsFromDoc,
+  reminderClaimId,
 } from "./reminder";
 
 // Run all functions in London (europe-west2) — the region closest to our
@@ -177,6 +180,21 @@ export const sendDueReminders = onSchedule(
       }
       if (!dueToday && carried.size === 0) return {recipients: 0, pushed: 0};
 
+      // Claim the day before sending. `onSchedule` is at-least-once, so this
+      // tick can be delivered more than once; `create()` fails if the claim
+      // already exists, which makes the claim atomic against a concurrent
+      // duplicate rather than merely racing it like a read-then-write would.
+      const claimRef = db.doc(
+        `users/${uid}/reminderLog/${reminderClaimId(todayLocal)}`,
+      );
+      try {
+        await claimRef.create({sentAt: now, expireAt: claimExpiry(now)});
+      } catch (err) {
+        // Another delivery of this tick got there first — that one sends.
+        if (isAlreadyExistsError(err)) return {recipients: 0, pushed: 0};
+        throw err;
+      }
+
       // sendEachForMulticast rejects when handed more than 500 tokens, so send
       // in chunks (a device that reinstalls can accrue stale tokens over time).
       const notification = {
@@ -185,24 +203,33 @@ export const sendDueReminders = onSchedule(
       };
       const stale: string[] = [];
       let pushed = 0;
-      for (let t = 0; t < tokens.length; t += MAX_MULTICAST_TOKENS) {
-        const batch = tokens.slice(t, t + MAX_MULTICAST_TOKENS);
-        const result = await messaging.sendEachForMulticast({
-          tokens: batch,
-          notification,
-        });
-        pushed += result.successCount;
-        // Prune tokens the device no longer accepts so we don't keep retrying.
-        result.responses.forEach((r, i) => {
-          const code = r.error?.code ?? "";
-          if (
-            !r.success &&
-            (code.includes("registration-token-not-registered") ||
-              code.includes("invalid-argument"))
-          ) {
-            stale.push(batch[i]);
-          }
-        });
+      try {
+        for (let t = 0; t < tokens.length; t += MAX_MULTICAST_TOKENS) {
+          const batch = tokens.slice(t, t + MAX_MULTICAST_TOKENS);
+          const result = await messaging.sendEachForMulticast({
+            tokens: batch,
+            notification,
+          });
+          pushed += result.successCount;
+          // Prune tokens the device no longer accepts so we don't keep retrying.
+          result.responses.forEach((r, i) => {
+            const code = r.error?.code ?? "";
+            if (
+              !r.success &&
+              (code.includes("registration-token-not-registered") ||
+                code.includes("invalid-argument"))
+            ) {
+              stale.push(batch[i]);
+            }
+          });
+        }
+      } finally {
+        // Release the claim if the nudge reached nobody, so a retry of this
+        // tick can try again. Holding a claim we never made good on would turn
+        // one transient FCM failure into a silently skipped day.
+        if (pushed === 0) {
+          await claimRef.delete().catch(() => undefined);
+        }
       }
       await Promise.all(
         stale.map((t) =>

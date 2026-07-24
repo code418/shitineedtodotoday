@@ -230,6 +230,53 @@ export function localDateOnly(now: Date, timeZone: string): Date {
   return new Date(Date.UTC(y, m - 1, d));
 }
 
+// ── Once-per-day send claim ───────────────────────────────────────────────────
+// `onSchedule` guarantees at-least-once delivery, so the same tick can be
+// delivered twice and the 14-minute tolerance only separates *distinct* ticks.
+// The dispatcher therefore claims the day atomically (`create()`, which fails
+// if the doc exists) before sending, and releases the claim if the send turned
+// out to reach nobody. Nudging twice is worse than nudging late, so the claim
+// deliberately errs towards at-most-once.
+
+/** Document id for a user's once-per-day send claim. */
+export function reminderClaimId(day: Date): string {
+  return isoDay(day);
+}
+
+/** How long a spent claim is kept before Firestore's TTL collects it. */
+export const CLAIM_RETENTION_DAYS = 7;
+
+/**
+ * When a claim written at [now] may be garbage-collected. Comfortably longer
+ * than the day it guards, so a claim is never collected while its own local
+ * day is still in progress in some time zone.
+ */
+export function claimExpiry(
+  now: Date,
+  retentionDays: number = CLAIM_RETENTION_DAYS,
+): Date {
+  return new Date(now.getTime() + retentionDays * 86400000);
+}
+
+/**
+ * Whether [err] is Firestore's "document already exists" rejection — i.e.
+ * another delivery of this tick already claimed the day.
+ *
+ * Checked across every shape the code can arrive in (numeric gRPC status,
+ * string enum, hyphenated client-SDK spelling, bare message), because getting
+ * this wrong fails in both directions: too narrow double-sends, too broad
+ * silently swallows a real error and drops the day's nudge.
+ */
+export function isAlreadyExistsError(err: unknown): boolean {
+  if (typeof err !== "object" || err === null) return false;
+  const code = (err as {code?: unknown}).code;
+  if (code === 6 || code === "ALREADY_EXISTS" || code === "already-exists") {
+    return true;
+  }
+  const message = (err as {message?: unknown}).message;
+  return typeof message === "string" && message.includes("ALREADY_EXISTS");
+}
+
 // ── Recurrence-aware occurrence check ─────────────────────────────────────────
 // Mirrors the Dart `ForgivingScheduler._occursOn` so the server dispatcher
 // fires only when something actually falls on today (not on every day for

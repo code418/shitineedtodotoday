@@ -10,5 +10,13 @@
       ]
     }
   ],
-  "fieldOverrides": []
+  "fieldOverrides": [
+    {
+      "//": "Reminder dispatcher writes one small `reminderLog/{yyyy-MM-dd}` claim per user per day to make the at-least-once scheduler tick idempotent. Nothing reads a claim older than the day it guards, so let Firestore's TTL collect them instead of accruing 365 docs per user per year.",
+      "collectionGroup": "reminderLog",
+      "fieldPath": "expireAt",
+      "ttl": true,
+      "indexes": []
+    }
+  ]
 }

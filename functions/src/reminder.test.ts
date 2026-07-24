@@ -3,8 +3,10 @@ import test from "node:test";
 
 import {
   carriedForwardTaskIds,
+  claimExpiry,
   dayStartBound,
   defaultPrefs,
+  isAlreadyExistsError,
   isWithinQuietHours,
   isoDay,
   minuteOfDay,
@@ -13,6 +15,7 @@ import {
   occurrenceIdFor,
   occursOn,
   prefsFromDoc,
+  reminderClaimId,
   shouldSendDailyNudge,
 } from "./reminder";
 
@@ -430,4 +433,61 @@ test("carriedForwardTaskIds: tolerates malformed rows", () => {
     today: TODAY,
   });
   assert.deepEqual([...ids], []);
+});
+
+// ── Once-per-day send claim ───────────────────────────────────────────────────
+// `onSchedule` delivers at-least-once, so the same tick can run twice. The
+// dispatcher claims the day atomically with `create()` before sending; these
+// pin the classifier that decides "someone already claimed it" (a
+// misclassification either double-sends or silently suppresses the nudge).
+
+test("reminderClaimId: one claim per local calendar day", () => {
+  assert.equal(reminderClaimId(new Date(Date.UTC(2026, 6, 24))), "2026-07-24");
+  assert.notEqual(
+    reminderClaimId(new Date(Date.UTC(2026, 6, 24))),
+    reminderClaimId(new Date(Date.UTC(2026, 6, 25))),
+  );
+});
+
+test("isAlreadyExistsError: recognises the gRPC ALREADY_EXISTS shapes", () => {
+  // firebase-admin surfaces the numeric gRPC status (ALREADY_EXISTS === 6).
+  assert.equal(isAlreadyExistsError(Object.assign(new Error("x"), {code: 6})), true);
+  // Some layers use the string enum / hyphenated client-SDK spelling instead.
+  assert.equal(
+    isAlreadyExistsError(Object.assign(new Error("x"), {code: "ALREADY_EXISTS"})),
+    true,
+  );
+  assert.equal(
+    isAlreadyExistsError(Object.assign(new Error("x"), {code: "already-exists"})),
+    true,
+  );
+  // Fallback: the status name in the message, when no structured code survives.
+  assert.equal(
+    isAlreadyExistsError(new Error("6 ALREADY_EXISTS: entity already exists")),
+    true,
+  );
+});
+
+test("isAlreadyExistsError: does NOT swallow other failures", () => {
+  // A transient/permission error must propagate — treating it as "already
+  // nudged" would silently drop the day's reminder.
+  assert.equal(isAlreadyExistsError(Object.assign(new Error("x"), {code: 7})), false);
+  assert.equal(
+    isAlreadyExistsError(Object.assign(new Error("x"), {code: "PERMISSION_DENIED"})),
+    false,
+  );
+  assert.equal(isAlreadyExistsError(new Error("UNAVAILABLE: backend down")), false);
+  assert.equal(isAlreadyExistsError(undefined), false);
+  assert.equal(isAlreadyExistsError(null), false);
+  assert.equal(isAlreadyExistsError("ALREADY_EXISTS"), false);
+});
+
+test("claimExpiry: sets a TTL well past the day it guards", () => {
+  const now = new Date(Date.UTC(2026, 6, 24, 8, 5));
+  const expiry = claimExpiry(now);
+  assert.ok(expiry.getTime() > now.getTime(), "expiry is in the future");
+  // Must outlive the local day it protects by a comfortable margin, so a claim
+  // can never be collected while its own day is still in progress anywhere.
+  const daysOut = (expiry.getTime() - now.getTime()) / 86400000;
+  assert.ok(daysOut >= 2, `expected >= 2 days of retention, got ${daysOut}`);
 });
