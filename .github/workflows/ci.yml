@@ -50,3 +50,6 @@ jobs:
           cache-dependency-path: functions/package-lock.json
       - run: npm ci
       - run: npm run build
+      # The dispatcher's pure logic (timing, recurrence, carry-forward) mirrors
+      # the Dart client by hand — these tests are what keeps the two in step.
+      - run: npm test
