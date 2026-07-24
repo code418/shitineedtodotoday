@@ -28,7 +28,13 @@ phased plan (P6 multi-surface/accessibility remains).
 - **Firebase**: anonymous-first Auth, Cloud Firestore, FCM, Analytics,
   Crashlytics, Cloud Functions — all in **europe-west2 (London)**.
 - **Reminders are server-driven (FCM only)** via a scheduled Cloud Function —
-  no on-device local notifications.
+  no on-device local notifications. The dispatcher must agree with what the
+  Today screen actually shows, in *both* directions: staying silent on visible
+  work and nudging for work the checklist hides are equally wrong. That rule
+  lives in `outstandingTaskIds` (`functions/src/reminder.ts`), which mirrors all
+  three steps of `ForgivingScheduler.buildToday` — change one, change the other.
+  The tick is at-least-once, so a send claims `users/{uid}/reminderLog/{day}`
+  with `create()` first (TTL-expired; see `firestore.indexes.json`).
 - `riverpod_lint` / `custom_lint` are intentionally omitted (version clash with
   current Riverpod/Freezed). Re-add when constraints align.
 - **Naming:** the store/display name is the clean **"Stuff I Need To Do Today"**
@@ -98,8 +104,13 @@ lib/
       data/                 # FirestoreTaskRepository (users/{uid}/tasks/{id})
       application/          # schedulerProvider, todayChecklistProvider
       presentation/         # today_screen.dart (daily checklist)
-functions/src/index.ts      # scheduled reminder dispatcher (FCM)
+functions/src/index.ts      # scheduled reminder dispatcher (FCM) — Firestore I/O only
+functions/src/reminder.ts   #   its pure logic (timing, recurrence, "is anything
+                            #   outstanding?"), hand-mirroring the Dart engine.
+                            #   Unit-tested in reminder.test.ts — put decisions
+                            #   HERE, not in index.ts, so they stay testable.
 firestore.rules             # owner-only: a user only touches users/{their uid}/**
+firestore.indexes.json      # composite index + TTL the dispatcher needs (deploy it)
 ```
 
 ### Implemented, and where the next milestone goes
@@ -164,11 +175,16 @@ Prerequisites: `npm i -g firebase-tools` and
    set the project id.
 4. In the console, **enable** Anonymous sign-in, Firestore, Cloud Messaging,
    Analytics and Crashlytics.
-5. **Deploy** rules & functions:
+5. **Deploy** rules, indexes & functions — **indexes before functions**, or the
+   reminder dispatcher's overdue scan fails until the index finishes building:
    ```bash
-   firebase deploy --only firestore:rules
+   firebase deploy --only firestore:rules,firestore:indexes
    cd functions && npm install && npm run deploy
    ```
+   Index builds are asynchronous; check the console shows them *Enabled* before
+   relying on a nudge. Deploying indexes also prompts to delete any index or
+   field override that exists in the project but is absent from
+   `firestore.indexes.json` — read that prompt rather than forcing it.
 
 #### Google sign-in (account upgrade)
 
