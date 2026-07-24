@@ -341,7 +341,10 @@ class _SuggestionGroupState extends ConsumerState<_SuggestionGroup> {
           Row(
             children: [
               Expanded(
-                child: Text(widget.category, style: theme.textTheme.titleMedium),
+                child: Text(
+                  widget.category,
+                  style: theme.textTheme.titleMedium,
+                ),
               ),
               AppChip(label: weekday, tone: AppChipTone.today),
             ],

@@ -44,52 +44,51 @@ class _BlockingTaskRepository implements TaskRepository {
 }
 
 void main() {
-  testWidgets(
-    'double-tapping a starter suggestion adds the task only once',
-    (tester) async {
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
-      final fakeTaskRepo = _BlockingTaskRepository();
+  testWidgets('double-tapping a starter suggestion adds the task only once', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final fakeTaskRepo = _BlockingTaskRepository();
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            currentOwnerIdProvider.overrideWithValue('u1'),
-            taskRepositoryProvider.overrideWithValue(fakeTaskRepo),
-            occurrenceRepositoryProvider.overrideWithValue(
-              FakeOccurrenceRepository(),
-            ),
-            clockProvider.overrideWithValue(() => DateTime(2026, 6, 29, 9)),
-          ],
-          child: const MaterialApp(home: TodayScreen()),
-        ),
-      );
-      await tester.pumpAndSettle();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          currentOwnerIdProvider.overrideWithValue('u1'),
+          taskRepositoryProvider.overrideWithValue(fakeTaskRepo),
+          occurrenceRepositoryProvider.overrideWithValue(
+            FakeOccurrenceRepository(),
+          ),
+          clockProvider.overrideWithValue(() => DateTime(2026, 6, 29, 9)),
+        ],
+        child: const MaterialApp(home: TodayScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
 
-      // Empty checklist → starter suggestions are shown. The blocking repo
-      // keeps the first add in-flight so the tile stays mounted for a second
-      // tap.
-      final firstSuggestion = find.byIcon(AppIcons.addCircle).first;
-      expect(firstSuggestion, findsWidgets);
+    // Empty checklist → starter suggestions are shown. The blocking repo
+    // keeps the first add in-flight so the tile stays mounted for a second
+    // tap.
+    final firstSuggestion = find.byIcon(AppIcons.addCircle).first;
+    expect(firstSuggestion, findsWidgets);
 
-      await tester.tap(firstSuggestion);
-      await tester.pump();
-      // Second tap while the first add is still pending must be a no-op — each
-      // addFromSuggestion mints a fresh task id, so two would persist two tasks.
-      await tester.tap(firstSuggestion);
-      await tester.pump();
-      expect(
-        fakeTaskRepo.upsertCalls,
-        1,
-        reason: 'the in-flight guard must suppress the second add',
-      );
+    await tester.tap(firstSuggestion);
+    await tester.pump();
+    // Second tap while the first add is still pending must be a no-op — each
+    // addFromSuggestion mints a fresh task id, so two would persist two tasks.
+    await tester.tap(firstSuggestion);
+    await tester.pump();
+    expect(
+      fakeTaskRepo.upsertCalls,
+      1,
+      reason: 'the in-flight guard must suppress the second add',
+    );
 
-      fakeTaskRepo.release();
-      await tester.pumpAndSettle();
+    fakeTaskRepo.release();
+    await tester.pumpAndSettle();
 
-      expect(fakeTaskRepo.upsertCalls, 1);
-      expect(fakeTaskRepo.store.length, 1);
-    },
-  );
+    expect(fakeTaskRepo.upsertCalls, 1);
+    expect(fakeTaskRepo.store.length, 1);
+  });
 }
