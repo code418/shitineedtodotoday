@@ -27,9 +27,19 @@ class AppBadge extends StatelessWidget {
     if (!soft) {
       background = toneColor ?? c.textMuted;
       foreground = AppColors.white;
-    } else if (toneColor != null) {
-      background = Color.lerp(c.surfaceCard, toneColor, 0.14)!;
-      foreground = toneColor;
+    } else if (tone != null) {
+      // Foreground is a dedicated on-tint role, not the accent itself: the mid
+      // accent on its own soft tint fails WCAG AA in light mode (the done pill
+      // was ~2.1:1). Mirrors AppChip — brand keeps the darker textBrand, status
+      // tones use the on-soft roles (dark ink in light, lightened accent in
+      // dark). See AppPalette.onDoneSoft.
+      background = Color.lerp(c.surfaceCard, toneColor!, 0.14)!;
+      foreground = switch (tone!) {
+        AppBadgeTone.brand => c.textBrand,
+        AppBadgeTone.done => c.onDoneSoft,
+        AppBadgeTone.today => c.onTodaySoft,
+        AppBadgeTone.reschedule => c.onRescheduleSoft,
+      };
     } else {
       background = c.surfaceSunken;
       foreground = c.textSecondary;
