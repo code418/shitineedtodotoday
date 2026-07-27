@@ -4,21 +4,13 @@ import {getMessaging} from "firebase-admin/messaging";
 import {logger, setGlobalOptions} from "firebase-functions/v2";
 import {onSchedule} from "firebase-functions/v2/scheduler";
 
+import {claimDay, computeOutstanding, releaseClaim} from "./dispatch";
 import {
-  OPEN_OCCURRENCE_STATUSES,
   RecurrenceJson,
-  addUtcDays,
-  claimExpiry,
-  dayStartBound,
-  isAlreadyExistsError,
   localDateOnly,
   minuteOfDayInZone,
   nudgeTimingAllows,
-  occurrenceIdFor,
-  occursOn,
-  outstandingTaskIds,
   prefsFromDoc,
-  reminderClaimId,
   resolveZone,
 } from "./reminder";
 
@@ -40,13 +32,6 @@ const CHUNK = 25;
 
 // FCM's sendEachForMulticast accepts at most 500 tokens per call.
 const MAX_MULTICAST_TOKENS = 500;
-
-// Upper bound on the overdue-occurrence scan per user. We only need to know
-// whether *any* carried-forward work survives the still-live-task filter, so a
-// bounded read keeps a long-lived account's history from driving cost. Ordered
-// oldest-first (the inequality field orders the query), and a truncated scan is
-// logged rather than silently treated as complete.
-const OVERDUE_SCAN_LIMIT = 200;
 
 /**
  * Reminder dispatcher.
@@ -140,78 +125,27 @@ export const sendDueReminders = onSchedule(
         return {recipients: 0, pushed: 0};
       }
 
-      // Tasks whose recurrence actually lands on today — weekly tasks should
-      // not fire every day.
-      const tasksToday = tasksSnap.docs.filter((t) =>
-        occursOn((t.get("recurrence") ?? {}) as RecurrenceJson, todayLocal),
-      );
-
-      const occurrences = db.collection(`users/${uid}/occurrences`);
-      const [cycleSnaps, todaySnap, pastSnap] = await Promise.all([
-        // Has this cycle's occurrence been created at all? Looked up by
-        // deterministic id (index-free GET), because the client dedupes fresh
-        // materialisation by id too — an occurrence dragged to another day
-        // keeps the id it was generated under and is NOT regenerated.
-        Promise.all(
-          tasksToday.map((t) =>
-            occurrences.doc(occurrenceIdFor(t.id, todayLocal)).get(),
+      const activeTasks = tasksSnap.docs.map((t) => ({
+        id: t.id,
+        recurrence: (t.get("recurrence") ?? {}) as RecurrenceJson,
+      }));
+      const outstanding = await computeOutstanding(
+        db,
+        uid,
+        todayLocal,
+        activeTasks,
+        (limit) =>
+          logger.warn(
+            `overdue scan hit the ${limit}-doc cap for uid=${uid} ` +
+              "— older carried-forward work may be missed",
           ),
-        ),
-        // Everything dated today, whatever its status: open rows are visible
-        // work, and settled ones still claim their task against carry-forward.
-        occurrences
-          .where("scheduledDate", ">=", dayStartBound(todayLocal))
-          .where("scheduledDate", "<", dayStartBound(addUtcDays(todayLocal, 1)))
-          .get(),
-        // Work the user missed on an earlier day. The client carries these onto
-        // today's checklist, so they are genuinely outstanding even when
-        // nothing recurs today — without this, a task missed on Monday shows
-        // outstanding all week but is never nudged until its next natural day.
-        occurrences
-          .where("status", "in", OPEN_OCCURRENCE_STATUSES)
-          .where("scheduledDate", "<", dayStartBound(todayLocal))
-          .limit(OVERDUE_SCAN_LIMIT)
-          .get(),
-      ]);
-
-      const row = (d: FirebaseFirestore.DocumentSnapshot) => ({
-        taskId: d.get("taskId"),
-        status: d.get("status"),
-        scheduledDate: d.get("scheduledDate"),
-      });
-      const outstanding = outstandingTaskIds({
-        todayRows: todaySnap.docs.map(row),
-        pastOpenRows: pastSnap.docs.map(row),
-        dueTodayTaskIds: tasksToday.map((t) => t.id),
-        // Keyed off the task we asked for, not the document's own taskId field,
-        // so a malformed doc still counts as "this cycle already exists".
-        materialisedTaskIds: new Set(
-          tasksToday.filter((_, i) => cycleSnaps[i].exists).map((t) => t.id),
-        ),
-        activeTaskIds: new Set(tasksSnap.docs.map((t) => t.id)),
-        today: todayLocal,
-      });
-      if (pastSnap.size === OVERDUE_SCAN_LIMIT) {
-        logger.warn(
-          `overdue scan hit the ${OVERDUE_SCAN_LIMIT}-doc cap for uid=${uid} ` +
-            "— older carried-forward work may be missed",
-        );
-      }
+      );
       if (outstanding.size === 0) return {recipients: 0, pushed: 0};
 
-      // Claim the day before sending. `onSchedule` is at-least-once, so this
-      // tick can be delivered more than once; `create()` fails if the claim
-      // already exists, which makes the claim atomic against a concurrent
-      // duplicate rather than merely racing it like a read-then-write would.
-      const claimRef = db.doc(
-        `users/${uid}/reminderLog/${reminderClaimId(todayLocal)}`,
-      );
-      try {
-        await claimRef.create({sentAt: now, expireAt: claimExpiry(now)});
-      } catch (err) {
-        // Another delivery of this tick got there first — that one sends.
-        if (isAlreadyExistsError(err)) return {recipients: 0, pushed: 0};
-        throw err;
+      // Claim the day before sending — at-least-once delivery means this tick
+      // can run twice, and claimDay wins-or-defers atomically via create().
+      if (!(await claimDay(db, uid, todayLocal, now))) {
+        return {recipients: 0, pushed: 0};
       }
 
       // sendEachForMulticast rejects when handed more than 500 tokens, so send
@@ -246,9 +180,7 @@ export const sendDueReminders = onSchedule(
         // Release the claim if the nudge reached nobody, so a retry of this
         // tick can try again. Holding a claim we never made good on would turn
         // one transient FCM failure into a silently skipped day.
-        if (pushed === 0) {
-          await claimRef.delete().catch(() => undefined);
-        }
+        if (pushed === 0) await releaseClaim(db, uid, todayLocal);
       }
       await Promise.all(
         stale.map((t) =>

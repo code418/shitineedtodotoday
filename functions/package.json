@@ -11,6 +11,7 @@
     "build:watch": "tsc --watch",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test src/reminder.test.ts",
+    "test:integration": "firebase emulators:exec --only firestore --project demo-sintdt \"node --import tsx --test src/dispatch.integration.test.ts\"",
     "serve": "npm run build && firebase emulators:start --only functions",
     "deploy": "firebase deploy --only functions"
   },

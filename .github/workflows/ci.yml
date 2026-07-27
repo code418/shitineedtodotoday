@@ -61,3 +61,30 @@ jobs:
       # The dispatcher's pure logic (timing, recurrence, carry-forward) mirrors
       # the Dart client by hand — these tests are what keeps the two in step.
       - run: npm test
+
+  functions-integration:
+    name: Cloud Functions (Firestore emulator)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: functions
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+      # The Firestore emulator needs a JRE; firebase-tools requires JDK 21+.
+      # Independent of the Flutter job, which is pinned to JDK 17.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - run: npm ci
+      # The emulators:exec script calls the global `firebase` binary, matching
+      # the project's serve/deploy scripts (setup docs install it globally too).
+      - run: npm i -g firebase-tools
+      # Exercises the real Firestore queries + the atomic once-per-day claim
+      # against the emulator — the parts the pure unit tests can't cover.
+      - run: npm run test:integration

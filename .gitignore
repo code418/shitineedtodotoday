@@ -58,6 +58,10 @@ app.*.map.json
 **/GoogleService-Info.plist
 firebase-debug.log
 firebase-debug.*.log
+# Firestore/UI emulator logs, written next to the emulators:exec cwd.
+firestore-debug.log
+ui-debug.log
+firestore-debug.*.log
 .runtimeconfig.json
 **/.env
 **/.env.*
