@@ -26,12 +26,14 @@ class AppChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.palette;
+    // Foreground is a dedicated on-tint role, not the mid accent: the accent on
+    // its own soft tint fails WCAG AA in light mode (see AppPalette.onTodaySoft).
     final (Color bg, Color fg) = switch (tone) {
       AppChipTone.neutral => (c.surfaceSunken, c.textSecondary),
       AppChipTone.brand => (c.brandSoft, c.textBrand),
-      AppChipTone.today => (c.todaySoft, c.today),
-      AppChipTone.done => (c.doneSoft, c.done),
-      AppChipTone.reschedule => (c.rescheduleSoft, c.reschedule),
+      AppChipTone.today => (c.todaySoft, c.onTodaySoft),
+      AppChipTone.done => (c.doneSoft, c.onDoneSoft),
+      AppChipTone.reschedule => (c.rescheduleSoft, c.onRescheduleSoft),
     };
     final isFilled = selectable ? selected : true;
     final showBorder = selectable && !selected;

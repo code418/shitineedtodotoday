@@ -31,10 +31,13 @@ class AppPalette extends ThemeExtension<AppPalette> {
     required this.brandSoftHover,
     required this.done,
     required this.doneSoft,
+    required this.onDoneSoft,
     required this.today,
     required this.todaySoft,
+    required this.onTodaySoft,
     required this.reschedule,
     required this.rescheduleSoft,
+    required this.onRescheduleSoft,
     required this.error,
   });
 
@@ -59,6 +62,15 @@ class AppPalette extends ThemeExtension<AppPalette> {
   final Color rescheduleSoft;
   final Color error;
 
+  /// Foreground (text + icon) for content sitting on the matching `*Soft`
+  /// status tint. Split out as its own role because it can't just be the mid
+  /// accent: the accent on its own 200 tint is only ~1.5–1.9:1 in light mode
+  /// (well under WCAG AA). Light mode uses dark ink on the pale tint; dark mode
+  /// keeps the lightened accent, which already reads on the subtle dark tint.
+  final Color onDoneSoft;
+  final Color onTodaySoft;
+  final Color onRescheduleSoft;
+
   /// Light mode — mirrors the existing [AppColors] semantic aliases exactly, so
   /// light rendering is unchanged by the migration.
   static const light = AppPalette(
@@ -77,10 +89,13 @@ class AppPalette extends ThemeExtension<AppPalette> {
     brandSoftHover: AppColors.blue100,
     done: AppColors.green500,
     doneSoft: AppColors.green200,
+    onDoneSoft: AppColors.ink900,
     today: AppColors.sun500,
     todaySoft: AppColors.sun200,
+    onTodaySoft: AppColors.ink900,
     reschedule: AppColors.coral500,
     rescheduleSoft: AppColors.coral200,
+    onRescheduleSoft: AppColors.ink900,
     error: AppColors.red500,
   );
 
@@ -103,10 +118,13 @@ class AppPalette extends ThemeExtension<AppPalette> {
     brandSoftHover: Color.lerp(AppColors.ink900, AppColors.blue500, 0.40)!,
     done: AppColors.green400,
     doneSoft: Color.lerp(AppColors.ink900, AppColors.green500, 0.24)!,
+    onDoneSoft: AppColors.green400,
     today: AppColors.sun400,
     todaySoft: Color.lerp(AppColors.ink900, AppColors.sun500, 0.24)!,
+    onTodaySoft: AppColors.sun400,
     reschedule: AppColors.coral400,
     rescheduleSoft: Color.lerp(AppColors.ink900, AppColors.coral500, 0.24)!,
+    onRescheduleSoft: AppColors.coral400,
     error: AppColors.red400,
   );
 
@@ -127,10 +145,13 @@ class AppPalette extends ThemeExtension<AppPalette> {
     Color? brandSoftHover,
     Color? done,
     Color? doneSoft,
+    Color? onDoneSoft,
     Color? today,
     Color? todaySoft,
+    Color? onTodaySoft,
     Color? reschedule,
     Color? rescheduleSoft,
+    Color? onRescheduleSoft,
     Color? error,
   }) => AppPalette(
     surfacePage: surfacePage ?? this.surfacePage,
@@ -148,10 +169,13 @@ class AppPalette extends ThemeExtension<AppPalette> {
     brandSoftHover: brandSoftHover ?? this.brandSoftHover,
     done: done ?? this.done,
     doneSoft: doneSoft ?? this.doneSoft,
+    onDoneSoft: onDoneSoft ?? this.onDoneSoft,
     today: today ?? this.today,
     todaySoft: todaySoft ?? this.todaySoft,
+    onTodaySoft: onTodaySoft ?? this.onTodaySoft,
     reschedule: reschedule ?? this.reschedule,
     rescheduleSoft: rescheduleSoft ?? this.rescheduleSoft,
+    onRescheduleSoft: onRescheduleSoft ?? this.onRescheduleSoft,
     error: error ?? this.error,
   );
 
@@ -174,10 +198,17 @@ class AppPalette extends ThemeExtension<AppPalette> {
       brandSoftHover: Color.lerp(brandSoftHover, other.brandSoftHover, t)!,
       done: Color.lerp(done, other.done, t)!,
       doneSoft: Color.lerp(doneSoft, other.doneSoft, t)!,
+      onDoneSoft: Color.lerp(onDoneSoft, other.onDoneSoft, t)!,
       today: Color.lerp(today, other.today, t)!,
       todaySoft: Color.lerp(todaySoft, other.todaySoft, t)!,
+      onTodaySoft: Color.lerp(onTodaySoft, other.onTodaySoft, t)!,
       reschedule: Color.lerp(reschedule, other.reschedule, t)!,
       rescheduleSoft: Color.lerp(rescheduleSoft, other.rescheduleSoft, t)!,
+      onRescheduleSoft: Color.lerp(
+        onRescheduleSoft,
+        other.onRescheduleSoft,
+        t,
+      )!,
       error: Color.lerp(error, other.error, t)!,
     );
   }
