@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'app/app.dart';
 import 'core/firebase/firebase_providers.dart';
 import 'features/auth/data/auth_repository.dart';
+import 'features/notifications/application/notification_providers.dart';
 import 'features/notifications/application/push_registrar.dart';
 import 'features/settings/application/settings_providers.dart';
 import 'firebase_options.dart';
@@ -79,6 +80,14 @@ Future<void> _ensureSignedIn(ProviderContainer container) async {
       await container.read(pushRegistrarProvider).registerFor(user.uid);
     } catch (error, stackTrace) {
       debugPrint('Push registration failed: $error\n$stackTrace');
+    }
+    // Capture the device's time zone so the dispatcher nudges at the user's
+    // local wall-clock time, not London's. Best-effort and independent of push
+    // registration — a failure here must not stop the app either.
+    try {
+      await container.read(timeZoneRegistrarProvider).registerFor(user.uid);
+    } catch (error, stackTrace) {
+      debugPrint('Time-zone registration failed: $error\n$stackTrace');
     }
   } catch (error, stackTrace) {
     debugPrint('Anonymous sign-in failed: $error\n$stackTrace');

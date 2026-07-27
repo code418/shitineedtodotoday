@@ -9,6 +9,7 @@ import {
   isAlreadyExistsError,
   isWithinQuietHours,
   isoDay,
+  localDateOnly,
   minuteOfDay,
   minuteOfDayInZone,
   nudgeTimingAllows,
@@ -17,6 +18,7 @@ import {
   outstandingTaskIds,
   prefsFromDoc,
   reminderClaimId,
+  resolveZone,
   shouldSendDailyNudge,
 } from "./reminder";
 
@@ -180,6 +182,41 @@ test("prefsFromDoc fills defaults and reads overrides", () => {
   assert.deepEqual(prefsFromDoc(undefined), defaultPrefs);
   assert.equal(prefsFromDoc({dailyNudgeEnabled: false}).dailyNudgeEnabled, false);
   assert.equal(prefsFromDoc({dailyNudgeTime: "09:15"}).dailyNudgeTime, "09:15");
+});
+
+test("prefsFromDoc reads the stored time zone, defaulting for missing/bad", () => {
+  assert.equal(prefsFromDoc(undefined).timeZone, "Europe/London");
+  assert.equal(
+    prefsFromDoc({timeZone: "America/New_York"}).timeZone,
+    "America/New_York",
+  );
+  // A wrong-typed field falls back rather than throwing, like every other field.
+  assert.equal(prefsFromDoc({timeZone: 42}).timeZone, "Europe/London");
+});
+
+test("resolveZone: passes valid IANA zones, falls back on anything else", () => {
+  assert.equal(resolveZone("America/New_York"), "America/New_York");
+  assert.equal(resolveZone("Asia/Kolkata"), "Asia/Kolkata"); // +5:30 offset
+  assert.equal(resolveZone("UTC"), "UTC");
+  // Unknown zone, empty, wrong type → the London fallback (previous behaviour),
+  // never a throw: Intl.DateTimeFormat rejects a bad zone with a RangeError, and
+  // one bad prefs doc must not take out that user's nudge.
+  assert.equal(resolveZone("Mars/Olympus_Mons"), "Europe/London");
+  assert.equal(resolveZone(""), "Europe/London");
+  assert.equal(resolveZone(undefined), "Europe/London");
+  assert.equal(resolveZone("Not A Zone"), "Europe/London");
+  // Explicit fallback is honoured.
+  assert.equal(resolveZone(undefined, "UTC"), "UTC");
+});
+
+test("minuteOfDayInZone / localDateOnly honour a non-London zone", () => {
+  // 2026-07-24T02:30:00Z is 22:30 on 2026-07-23 in New York (EDT, -4).
+  const t = new Date("2026-07-24T02:30:00Z");
+  assert.equal(minuteOfDayInZone(t, "America/New_York"), 22 * 60 + 30);
+  assert.equal(isoDay(localDateOnly(t, "America/New_York")), "2026-07-23");
+  // Same instant in London (BST, +1) is 03:30 on the 24th.
+  assert.equal(minuteOfDayInZone(t, "Europe/London"), 3 * 60 + 30);
+  assert.equal(isoDay(localDateOnly(t, "Europe/London")), "2026-07-24");
 });
 
 test("minuteOfDayInZone respects the time zone (BST in June)", () => {

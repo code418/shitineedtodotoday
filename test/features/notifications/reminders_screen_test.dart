@@ -15,6 +15,7 @@ import 'package:snitd/features/tasks/domain/scheduling/task_occurrence.dart';
 class _FakeNotificationPrefsRepository implements NotificationPrefsRepository {
   NotificationPrefs current = NotificationPrefs.defaults;
   NotificationPrefs? saved;
+  String? savedTimeZone;
 
   @override
   Stream<NotificationPrefs> watch(String ownerId) => Stream.value(current);
@@ -23,6 +24,12 @@ class _FakeNotificationPrefsRepository implements NotificationPrefsRepository {
   Future<void> save(String ownerId, NotificationPrefs prefs) async {
     current = prefs;
     saved = prefs;
+  }
+
+  @override
+  Future<void> saveTimeZone(String ownerId, String timeZone) async {
+    savedTimeZone = timeZone;
+    current = current.copyWith(timeZone: timeZone);
   }
 }
 
@@ -36,6 +43,10 @@ class _ThrowingNotificationPrefsRepository
   @override
   Future<void> save(String ownerId, NotificationPrefs prefs) async =>
       throw Exception('save failed');
+
+  @override
+  Future<void> saveTimeZone(String ownerId, String timeZone) async =>
+      throw Exception('saveTimeZone failed');
 }
 
 // ── Tests ────────────────────────────────────────────────────────────────────

@@ -34,7 +34,11 @@ phased plan (P6 multi-surface/accessibility remains).
   lives in `outstandingTaskIds` (`functions/src/reminder.ts`), which mirrors all
   three steps of `ForgivingScheduler.buildToday` — change one, change the other.
   The tick is at-least-once, so a send claims `users/{uid}/reminderLog/{day}`
-  with `create()` first (TTL-expired; see `firestore.indexes.json`).
+  with `create()` first (TTL-expired; see `firestore.indexes.json`). Each user
+  is evaluated in **their own IANA time zone** (captured from the device into
+  `NotificationPrefs.timeZone` at startup; the device lookup is behind the
+  `DeviceTimeZone` seam — the only importer of `flutter_timezone`), falling back
+  to `Europe/London` for a missing/unknown zone (`resolveZone`).
 - `riverpod_lint` / `custom_lint` are intentionally omitted (version clash with
   current Riverpod/Freezed). Re-add when constraints align.
 - **Naming:** the store/display name is the clean **"Stuff I Need To Do Today"**

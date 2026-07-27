@@ -13,7 +13,16 @@ export interface NotificationPrefs {
   quietHoursEnabled: boolean;
   quietHoursStart: string;
   quietHoursEnd: string;
+  /**
+   * The user's IANA time zone (e.g. "America/New_York"), captured from the
+   * device. Every HH:mm above is a wall-clock time in THIS zone. Falls back to
+   * [DEFAULT_TIME_ZONE] for pre-migration users who never wrote one.
+   */
+  timeZone: string;
 }
+
+/** The zone assumed for users with no stored one, and for any unusable value. */
+export const DEFAULT_TIME_ZONE = "Europe/London";
 
 export const defaultPrefs: NotificationPrefs = {
   dailyNudgeEnabled: true,
@@ -21,7 +30,28 @@ export const defaultPrefs: NotificationPrefs = {
   quietHoursEnabled: true,
   quietHoursStart: "21:00",
   quietHoursEnd: "07:00",
+  timeZone: DEFAULT_TIME_ZONE,
 };
+
+/**
+ * A usable IANA zone: [tz] if `Intl` accepts it, else [fallback]. A stored zone
+ * can be missing (pre-migration), wrong-typed, or stale/unknown — and
+ * `Intl.DateTimeFormat` throws a RangeError on an unknown zone, which would
+ * otherwise take out that user's nudge. Never throws.
+ */
+export function resolveZone(
+  tz: unknown,
+  fallback: string = DEFAULT_TIME_ZONE,
+): string {
+  if (typeof tz !== "string" || tz === "") return fallback;
+  try {
+    // Constructing a formatter validates the zone without formatting anything.
+    new Intl.DateTimeFormat("en-GB", {timeZone: tz});
+    return tz;
+  } catch {
+    return fallback;
+  }
+}
 
 /** Parse a Firestore `meta/notifications` doc into prefs, filling defaults. */
 export function prefsFromDoc(
@@ -38,6 +68,9 @@ export function prefsFromDoc(
     quietHoursEnabled: bool(data.quietHoursEnabled, true),
     quietHoursStart: str(data.quietHoursStart, "21:00"),
     quietHoursEnd: str(data.quietHoursEnd, "07:00"),
+    // Read raw; the dispatcher runs it through resolveZone at point of use, so
+    // an unknown-but-string zone is stored as-is here and only validated there.
+    timeZone: str(data.timeZone, DEFAULT_TIME_ZONE),
   };
 }
 

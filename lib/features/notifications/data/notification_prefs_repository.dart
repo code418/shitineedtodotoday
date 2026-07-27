@@ -15,6 +15,11 @@ abstract interface class NotificationPrefsRepository {
   Stream<NotificationPrefs> watch(String ownerId);
 
   Future<void> save(String ownerId, NotificationPrefs prefs);
+
+  /// Writes only the `timeZone` field, leaving every other pref intact (and
+  /// creating the doc if absent). Called at startup with the device's current
+  /// zone, which shouldn't disturb a nudge time the user has set.
+  Future<void> saveTimeZone(String ownerId, String timeZone);
 }
 
 /// Firestore-backed [NotificationPrefsRepository].
@@ -43,6 +48,10 @@ class FirestoreNotificationPrefsRepository
   @override
   Future<void> save(String ownerId, NotificationPrefs prefs) =>
       _ref(ownerId).set(prefs.toJson());
+
+  @override
+  Future<void> saveTimeZone(String ownerId, String timeZone) =>
+      _ref(ownerId).set({'timeZone': timeZone}, SetOptions(merge: true));
 }
 
 final notificationPrefsRepositoryProvider =

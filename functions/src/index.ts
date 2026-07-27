@@ -19,6 +19,7 @@ import {
   outstandingTaskIds,
   prefsFromDoc,
   reminderClaimId,
+  resolveZone,
 } from "./reminder";
 
 // Run all functions in London (europe-west2) — the region closest to our
@@ -69,10 +70,9 @@ export const sendDueReminders = onSchedule(
   async () => {
     const db = getFirestore();
     const messaging = getMessaging();
+    // A single wall-clock instant for the whole tick; each user's local minute
+    // and calendar day are derived from it in THEIR zone (below), not globally.
     const now = new Date();
-    const nowMinute = minuteOfDayInZone(now, TIME_ZONE);
-    // Today's LOCAL calendar day as a date-only UTC Date (DST-safe).
-    const todayLocal = localDateOnly(now, TIME_ZONE);
 
     // Enumerate users via their registered device tokens. We can't list the
     // `users` collection directly: those parent docs are never written (the app
@@ -117,6 +117,16 @@ export const sendDueReminders = onSchedule(
       ]);
 
       const prefs = prefsFromDoc(prefsSnap.data());
+
+      // Evaluate this user in THEIR zone: their configured HH:mm are wall-clock
+      // times there, and "today" is their calendar day. The tick fires every
+      // 15 min of real time, which is also every 15 min in any whole-or-quarter-
+      // hour-offset zone, so the [nudge, nudge+14] window still catches exactly
+      // one tick. resolveZone falls back to London for a missing/bad value.
+      const zone = resolveZone(prefs.timeZone, TIME_ZONE);
+      const nowMinute = minuteOfDayInZone(now, zone);
+      // Today's LOCAL calendar day as a date-only UTC Date (DST-safe).
+      const todayLocal = localDateOnly(now, zone);
 
       // Cheap gate first: only the few users whose nudge is actually due this
       // tick proceed to the per-task occurrence reads below.
@@ -270,7 +280,8 @@ export const sendDueReminders = onSchedule(
     }
 
     logger.info(
-      `sendDueReminders tick — nowMinute=${nowMinute}, ` +
+      `sendDueReminders tick — ${TIME_ZONE} minute=` +
+        `${minuteOfDayInZone(now, TIME_ZONE)}, ` +
         `recipients=${recipients}, pushes=${pushed}`,
     );
   },

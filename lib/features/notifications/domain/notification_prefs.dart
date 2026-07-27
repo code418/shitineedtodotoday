@@ -11,7 +11,12 @@ class NotificationPrefs {
     this.quietHoursEnabled = true,
     this.quietHoursStart = '21:00',
     this.quietHoursEnd = '07:00',
+    this.timeZone = defaultTimeZone,
   });
+
+  /// The zone assumed before the device reports one — mirrors the server's
+  /// `DEFAULT_TIME_ZONE` (functions/src/reminder.ts).
+  static const String defaultTimeZone = 'Europe/London';
 
   /// A single gentle daily nudge about today's checklist.
   final bool dailyNudgeEnabled;
@@ -27,6 +32,11 @@ class NotificationPrefs {
   final String quietHoursStart;
   final String quietHoursEnd;
 
+  /// The device's IANA time zone (e.g. `America/New_York`). Every `HH:mm` above
+  /// is a wall-clock time in THIS zone; the dispatcher evaluates the user here
+  /// rather than assuming London. Captured from the device at startup.
+  final String timeZone;
+
   static const NotificationPrefs defaults = NotificationPrefs();
 
   NotificationPrefs copyWith({
@@ -35,12 +45,14 @@ class NotificationPrefs {
     bool? quietHoursEnabled,
     String? quietHoursStart,
     String? quietHoursEnd,
+    String? timeZone,
   }) => NotificationPrefs(
     dailyNudgeEnabled: dailyNudgeEnabled ?? this.dailyNudgeEnabled,
     dailyNudgeTime: dailyNudgeTime ?? this.dailyNudgeTime,
     quietHoursEnabled: quietHoursEnabled ?? this.quietHoursEnabled,
     quietHoursStart: quietHoursStart ?? this.quietHoursStart,
     quietHoursEnd: quietHoursEnd ?? this.quietHoursEnd,
+    timeZone: timeZone ?? this.timeZone,
   );
 
   Map<String, dynamic> toJson() => {
@@ -49,6 +61,7 @@ class NotificationPrefs {
     'quietHoursEnabled': quietHoursEnabled,
     'quietHoursStart': quietHoursStart,
     'quietHoursEnd': quietHoursEnd,
+    'timeZone': timeZone,
   };
 
   factory NotificationPrefs.fromJson(Map<String, dynamic> json) {
@@ -63,12 +76,14 @@ class NotificationPrefs {
     final quietEnabled = json['quietHoursEnabled'];
     final quietStart = json['quietHoursStart'];
     final quietEnd = json['quietHoursEnd'];
+    final zone = json['timeZone'];
     return NotificationPrefs(
       dailyNudgeEnabled: enabled is bool ? enabled : true,
       dailyNudgeTime: time is String ? time : '08:00',
       quietHoursEnabled: quietEnabled is bool ? quietEnabled : true,
       quietHoursStart: quietStart is String ? quietStart : '21:00',
       quietHoursEnd: quietEnd is String ? quietEnd : '07:00',
+      timeZone: zone is String && zone.isNotEmpty ? zone : defaultTimeZone,
     );
   }
 
@@ -79,7 +94,8 @@ class NotificationPrefs {
       other.dailyNudgeTime == dailyNudgeTime &&
       other.quietHoursEnabled == quietHoursEnabled &&
       other.quietHoursStart == quietHoursStart &&
-      other.quietHoursEnd == quietHoursEnd;
+      other.quietHoursEnd == quietHoursEnd &&
+      other.timeZone == timeZone;
 
   @override
   int get hashCode => Object.hash(
@@ -88,5 +104,6 @@ class NotificationPrefs {
     quietHoursEnabled,
     quietHoursStart,
     quietHoursEnd,
+    timeZone,
   );
 }
