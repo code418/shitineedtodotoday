@@ -67,10 +67,15 @@ class _Auth implements AuthRepository {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-/// The whole app, onboarded, with two chores due today (Mon 29 Jun 2026) and
-/// one tomorrow so every tab has real, tappable content.
-Future<void> _pumpApp(WidgetTester tester) async {
-  SharedPreferences.setMockInitialValues({'onboarding_complete': true});
+/// The whole app with two chores due today (Mon 29 Jun 2026) and one tomorrow
+/// so every tab has real, tappable content. [onboarded] false starts on the
+/// onboarding flow; [textScale] simulates the system font-size setting.
+Future<void> _pumpApp(
+  WidgetTester tester, {
+  bool onboarded = true,
+  double textScale = 1,
+}) async {
+  SharedPreferences.setMockInitialValues({'onboarding_complete': onboarded});
   final prefs = await SharedPreferences.getInstance();
   final tasks = FakeTaskRepository()
     ..store['a'] = _task('a', 'Wipe the counters', [DateTime.monday])
@@ -94,7 +99,10 @@ Future<void> _pumpApp(WidgetTester tester) async {
           const AccountStatus(signedIn: true, isAnonymous: true),
         ),
       ],
-      child: const SnitdApp(),
+      child: MediaQuery(
+        data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
+        child: const SnitdApp(),
+      ),
     ),
   );
   await tester.pumpAndSettle();
@@ -151,6 +159,53 @@ void main() {
       semantics.dispose();
     });
   }
+
+  testWidgets('onboarding meets the same guidelines', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await _pumpApp(tester, onboarded: false);
+    await _expectAccessible(tester, 'Onboarding');
+    semantics.dispose();
+  });
+
+  testWidgets('the task sheets meet the same guidelines', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await _pumpApp(tester);
+    await tester.tap(find.byType(AppCheckbox).first);
+    await tester.pumpAndSettle();
+    await _expectAccessible(tester, 'Log-duration sheet');
+    Navigator.of(tester.element(find.byType(BottomSheet))).pop();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(AppButton, strings.addTask));
+    await tester.pumpAndSettle();
+    await _expectAccessible(tester, 'Task composer');
+    semantics.dispose();
+  });
+
+  testWidgets('every screen lays out without overflow at 200% text', (
+    tester,
+  ) async {
+    await _pumpApp(tester, textScale: 2);
+    // A RenderFlex overflow is reported as a test exception, so any screen
+    // that can't cope with a large system font fails here.
+    for (final tab in [1, 2, 3]) {
+      await tester.tap(find.byType(NavigationDestination).at(tab));
+      await tester.pumpAndSettle();
+    }
+    for (final route in [
+      Routes.reminders,
+      Routes.account,
+      Routes.household,
+      Routes.taskDetailPath('a'),
+      Routes.today,
+    ]) {
+      _go(tester, route);
+      await tester.pumpAndSettle();
+    }
+    await tester.tap(find.byType(AppCheckbox).first);
+    await tester.pumpAndSettle();
+    expect(find.byType(BottomSheet), findsOneWidget);
+  });
 
   testWidgets('a checklist tick-box is announced with its chore', (
     tester,

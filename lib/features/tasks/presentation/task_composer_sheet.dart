@@ -236,6 +236,7 @@ class _TaskComposerSheetState extends ConsumerState<_TaskComposerSheet> {
                 ),
                 AppIconButton(
                   icon: AppIcons.close,
+                  tooltip: strings.close,
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
@@ -327,9 +328,10 @@ class _TaskComposerSheetState extends ConsumerState<_TaskComposerSheet> {
               style: theme.textTheme.labelMedium,
             ),
             const SizedBox(height: AppSpacing.x2),
+            // No runSpacing: each tappable chip already carries invisible
+            // slack up to a 48px touch target, which spaces the rows.
             Wrap(
               spacing: AppSpacing.x2,
-              runSpacing: AppSpacing.x2,
               children: [
                 for (final preset in _RecurrencePreset.values)
                   AppChip(
@@ -343,10 +345,8 @@ class _TaskComposerSheetState extends ConsumerState<_TaskComposerSheet> {
 
             // Weekday chips (shown only when "Specific days" is selected)
             if (_preset == _RecurrencePreset.weekdays) ...[
-              const SizedBox(height: AppSpacing.x2),
               Wrap(
                 spacing: AppSpacing.x2,
-                runSpacing: AppSpacing.x2,
                 children: [
                   for (int i = 0; i < 7; i++)
                     AppChip(
@@ -368,10 +368,8 @@ class _TaskComposerSheetState extends ConsumerState<_TaskComposerSheet> {
 
             // Season chips (shown only when "Seasonal" is selected)
             if (_preset == _RecurrencePreset.seasonal) ...[
-              const SizedBox(height: AppSpacing.x2),
               Wrap(
                 spacing: AppSpacing.x2,
-                runSpacing: AppSpacing.x2,
                 children: [
                   for (int i = 0; i < _seasonLabels.length; i++)
                     AppChip(

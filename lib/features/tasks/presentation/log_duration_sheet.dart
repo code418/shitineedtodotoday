@@ -123,10 +123,10 @@ class _LogDurationSheetState extends ConsumerState<_LogDurationSheet> {
             ),
             const SizedBox(height: AppSpacing.x4),
 
-            // Quick-pick chips
+            // Quick-pick chips. No runSpacing: each tappable chip's 48px
+            // touch target already spaces the rows.
             Wrap(
               spacing: AppSpacing.x2,
-              runSpacing: AppSpacing.x2,
               children: [
                 for (final m in _quickPickMinutes)
                   AppChip(

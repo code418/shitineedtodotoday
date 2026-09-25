@@ -53,6 +53,7 @@ class AppStrings {
     required this.deleteTaskBody,
     required this.deleteConfirm,
     required this.cancel,
+    required this.close,
     required this.effortHeading,
     required this.historyHeading,
     required this.noEffortYet,
@@ -227,6 +228,9 @@ class AppStrings {
   final String deleteTaskBody;
   final String deleteConfirm;
   final String cancel;
+
+  /// Screen-reader / tooltip name for a sheet's close (×) button.
+  final String close;
   final String effortHeading;
   final String historyHeading;
   final String noEffortYet;
@@ -396,6 +400,7 @@ class AppStrings {
         'This removes the task and its history. It cannot be undone.',
     deleteConfirm: 'Delete',
     cancel: 'Cancel',
+    close: 'Close',
     effortHeading: 'Effort',
     historyHeading: 'History',
     noEffortYet:
@@ -560,6 +565,7 @@ class AppStrings {
     deleteTaskBody: 'This bins the task and its history. No takebacks.',
     deleteConfirm: 'Bin it',
     cancel: 'Cancel',
+    close: 'Close',
     effortHeading: 'Effort',
     historyHeading: 'History',
     noEffortYet:

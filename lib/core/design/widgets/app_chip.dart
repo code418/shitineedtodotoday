@@ -23,6 +23,8 @@ class AppChip extends StatelessWidget {
   final bool selectable;
   final VoidCallback? onTap;
 
+  static const double _height = 30;
+
   @override
   Widget build(BuildContext context) {
     final c = context.palette;
@@ -38,44 +40,56 @@ class AppChip extends StatelessWidget {
     final isFilled = selectable ? selected : true;
     final showBorder = selectable && !selected;
 
+    final chip = Container(
+      height: _height,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: isFilled ? bg : Colors.transparent,
+        borderRadius: BorderRadius.circular(AppRadii.pill),
+        border: Border.all(
+          color: showBorder ? c.borderDefault : Colors.transparent,
+          width: 1.5,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 15, color: isFilled ? fg : c.textMuted),
+            const SizedBox(width: 6),
+          ],
+          Text(
+            label,
+            style: TextStyle(
+              fontFamily: AppTypography.fontSans,
+              fontSize: AppTypography.sizeXs,
+              fontWeight: AppTypography.bold,
+              color: isFilled ? fg : c.textMuted,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    // Named by its Text — an explicit `label:` as well was read twice
+    // ("Seasonal, Seasonal").
     return Semantics(
       button: onTap != null,
       selected: selectable ? selected : null,
-      label: label,
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: Container(
-          height: 30,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: isFilled ? bg : Colors.transparent,
-            borderRadius: BorderRadius.circular(AppRadii.pill),
-            border: Border.all(
-              color: showBorder ? c.borderDefault : Colors.transparent,
-              width: 1.5,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (icon != null) ...[
-                Icon(icon, size: 15, color: isFilled ? fg : c.textMuted),
-                const SizedBox(width: 6),
-              ],
-              Text(
-                label,
-                style: TextStyle(
-                  fontFamily: AppTypography.fontSans,
-                  fontSize: AppTypography.sizeXs,
-                  fontWeight: AppTypography.bold,
-                  color: isFilled ? fg : c.textMuted,
+      child: onTap == null
+          // Display-only pills (categories, status) keep their 30px footprint.
+          ? chip
+          : GestureDetector(
+              onTap: onTap,
+              behavior: HitTestBehavior.opaque,
+              // Invisible vertical slack up to a 48px touch target.
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: (kMinInteractiveDimension - _height) / 2,
                 ),
+                child: chip,
               ),
-            ],
-          ),
-        ),
-      ),
+            ),
     );
   }
 }
