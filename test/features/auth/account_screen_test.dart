@@ -75,6 +75,24 @@ class _FakeAuthRepository implements AuthRepository {
     linkedPassword = password;
   }
 
+  /// Sign-in is exercised through SignInService / the sign-in screen tests;
+  /// here it only needs to exist.
+  @override
+  Future<User> signInWithEmail({
+    required String email,
+    required String password,
+  }) async => _FakeUser();
+
+  @override
+  Future<AuthCredential?> googleCredential() async => null;
+
+  @override
+  Future<User> signInWithCredential(AuthCredential credential) async =>
+      _FakeUser();
+
+  @override
+  Future<void> sendPasswordReset(String email) async {}
+
   @override
   Future<bool> linkGoogle() async {
     linkGoogleCalled = true;

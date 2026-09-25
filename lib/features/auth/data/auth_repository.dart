@@ -35,6 +35,38 @@ class AuthRepository {
 
   Future<void> signOut() => _auth.signOut();
 
+  /// Sign in to an existing email/password account, replacing the current
+  /// (guest) session. Throws [FirebaseAuthException] on bad credentials etc.
+  Future<User> signInWithEmail({
+    required String email,
+    required String password,
+  }) async {
+    final result = await _auth.signInWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+    return result.user!;
+  }
+
+  /// Runs the Google picker and returns the chosen account's credential, or
+  /// `null` if the user cancelled — without signing in yet, so a caller can
+  /// prepare the switch (see SignInService) only once there's a credential.
+  Future<AuthCredential?> googleCredential() =>
+      _google.obtainGoogleCredential();
+
+  /// Sign in with [credential] (e.g. from [googleCredential], or the one a
+  /// `credential-already-in-use` link failure carries), replacing the current
+  /// session.
+  Future<User> signInWithCredential(AuthCredential credential) async {
+    final result = await _auth.signInWithCredential(credential);
+    return result.user!;
+  }
+
+  /// Emails a password-reset link. Firebase answers the same whether or not
+  /// the address has an account, so callers shouldn't imply either way.
+  Future<void> sendPasswordReset(String email) =>
+      _auth.sendPasswordResetEmail(email: email);
+
   /// Link the current (anonymous) user to an email/password credential,
   /// upgrading the account in place so the uid — and all their data — is kept.
   Future<void> linkEmailPassword({
