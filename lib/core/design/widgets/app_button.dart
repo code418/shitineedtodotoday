@@ -36,7 +36,13 @@ class AppButton extends StatefulWidget {
     this.block = false,
     this.icon,
     this.iconRight,
-  });
+  }) : assert(
+         size != AppButtonSize.sm ||
+             variant == AppButtonVariant.tonal ||
+             variant == AppButtonVariant.ghost,
+         'A small button\'s 14px label is too small for white on a filled '
+         'background to meet WCAG AA contrast; use tonal/ghost, or md/lg.',
+       );
 
   final String label;
   final VoidCallback? onPressed;
@@ -49,7 +55,7 @@ class AppButton extends StatefulWidget {
 
   static const _sizes = {
     AppButtonSize.sm: _SizeSpec(36, 14, AppTypography.sizeSm, 16, 6),
-    AppButtonSize.md: _SizeSpec(46, 20, AppTypography.title, 18, 8),
+    AppButtonSize.md: _SizeSpec(46, 20, AppTypography.button, 18, 8),
     AppButtonSize.lg: _SizeSpec(54, 26, AppTypography.h3, 20, 10),
   };
 

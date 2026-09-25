@@ -20,6 +20,12 @@ abstract final class AppTypography {
   static const double h1 = 30;
   static const double h2 = 24;
   static const double h3 = 20;
+
+  /// Label size for standard buttons. White on the brand/error fills is only
+  /// 3.0–4.2:1, short of WCAG AA's 4.5:1 for normal text; at 19px bold the
+  /// label counts as "large text" (bold from 14pt ≈ 18.67px), where 3:1 is
+  /// the bar — so it passes in both themes without touching the brand colour.
+  static const double button = 19;
   static const double title = 17;
   static const double body = 16;
   static const double sizeSm = 14;
