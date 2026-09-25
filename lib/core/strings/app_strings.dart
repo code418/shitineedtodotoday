@@ -489,7 +489,10 @@ class AppStrings {
     signedInAs: 'Signed in as',
     signOut: 'Sign out',
     signOutConfirmTitle: 'Sign out?',
-    signOutConfirmBody: "You'll need your email and password to sign back in.",
+    signOutConfirmBody:
+        'This device will start over with an empty list. Your tasks stay '
+        "saved in your account, but you can't sign back in to it from the "
+        'app yet — only sign out if you really need to.',
     emailInUse: 'That email is already in use',
     weakPassword: 'That password is too weak',
     upgradeFailed: "Couldn't save your account — please try again",
@@ -656,7 +659,10 @@ class AppStrings {
     signedInAs: 'Signed in as',
     signOut: 'Sign out',
     signOutConfirmTitle: 'Sign out?',
-    signOutConfirmBody: "You'll need your email and password to sign back in.",
+    signOutConfirmBody:
+        'This device starts over with an empty list. Your shit stays saved '
+        "in your account, but you can't sign back in to it from the app "
+        'yet — only do this if you really have to.',
     emailInUse: 'That email is already in use',
     weakPassword: 'That password is too weak',
     upgradeFailed: "Couldn't save your account — please try again",

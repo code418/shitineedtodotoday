@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:snitd/core/design/widgets/app_button.dart';
+import 'package:snitd/core/strings/app_strings.dart';
 import 'package:snitd/features/auth/data/auth_repository.dart';
 import 'package:snitd/features/auth/domain/account_status.dart';
 import 'package:snitd/features/auth/presentation/account_screen.dart';
@@ -225,6 +226,35 @@ void main() {
 
     expect(find.text('a@b.com'), findsOneWidget);
     expect(find.text('Sign out'), findsOneWidget);
+  });
+
+  testWidgets('sign-out warns that this device starts over empty', (
+    tester,
+  ) async {
+    final fake = _FakeAuthRepository();
+    await _buildScope(
+      tester: tester,
+      fake: fake,
+      status: const AccountStatus(
+        signedIn: true,
+        isAnonymous: false,
+        email: 'a@b.com',
+      ),
+    );
+
+    await tester.tap(find.text('Sign out'));
+    await tester.pumpAndSettle();
+
+    // The old copy promised "you'll need your email and password to sign
+    // back in" — there was no way to sign back in at all.
+    expect(find.text(AppStrings.clean.signOutConfirmBody), findsOneWidget);
+    expect(AppStrings.clean.signOutConfirmBody, contains('empty list'));
+    expect(find.textContaining('email and password'), findsNothing);
+
+    // Cancelling leaves the account alone.
+    await tester.tap(find.text(AppStrings.clean.cancel));
+    await tester.pumpAndSettle();
+    expect(fake.signedOut, isFalse);
   });
 
   testWidgets('signing out re-establishes a fresh anonymous session', (

@@ -140,6 +140,10 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             child: Text(strings.cancel),
           ),
           TextButton(
+            // Destructive: it leaves this device on a fresh, empty account.
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(ctx).colorScheme.error,
+            ),
             onPressed: () => Navigator.of(ctx).pop(true),
             child: Text(strings.signOut),
           ),
