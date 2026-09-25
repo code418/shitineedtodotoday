@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design/design.dart';
 import '../../../features/settings/application/settings_providers.dart';
+import '../../notifications/application/device_registration.dart';
 import '../../notifications/application/push_registrar.dart';
 import '../../tasks/application/tasks_providers.dart';
 import '../data/auth_repository.dart';
@@ -168,10 +169,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       // Anonymous-first: immediately re-establish a fresh anonymous session so
       // the app stays usable. Without an owner the user can't add tasks and the
       // upgrade form breaks, and there's no sign-in screen to recover — they'd
-      // be stuck until the next app launch re-creates an anonymous user.
+      // be stuck until the next app launch re-creates an anonymous user. The
+      // fresh uid then needs the same device registration start-up does (push
+      // token + time zone), or the dispatcher can't reach it / nudges it on
+      // London time until the next cold start.
       try {
         final fresh = await auth.ensureSignedIn();
-        await ref.read(pushRegistrarProvider).registerFor(fresh.uid);
+        await ref.read(deviceRegistrationProvider).registerFor(fresh.uid);
       } catch (_) {
         // Best-effort; a failed re-sign-in self-heals on the next app launch.
       }

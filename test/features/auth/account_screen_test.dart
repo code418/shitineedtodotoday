@@ -3,13 +3,22 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:snitd/core/design/widgets/app_button.dart';
 import 'package:snitd/features/auth/data/auth_repository.dart';
 import 'package:snitd/features/auth/domain/account_status.dart';
 import 'package:snitd/features/auth/presentation/account_screen.dart';
+import 'package:snitd/features/notifications/application/notification_providers.dart';
+import 'package:snitd/features/notifications/application/push_registrar.dart';
+import 'package:snitd/features/notifications/data/device_time_zone.dart';
+import 'package:snitd/features/notifications/data/notification_prefs_repository.dart';
+import 'package:snitd/features/notifications/domain/notification_prefs.dart';
 import 'package:snitd/features/settings/application/settings_providers.dart';
+
+import '../../push_registrar_test.dart'
+    show FakePushMessaging, FakePushTokenRepository;
 
 // ── Fake ─────────────────────────────────────────────────────────────────────
 
@@ -73,12 +82,36 @@ class _FakeAuthRepository implements AuthRepository {
   }
 }
 
+class _FakeDeviceTimeZone implements DeviceTimeZone {
+  _FakeDeviceTimeZone(this._zone);
+  final String? _zone;
+  @override
+  Future<String?> current() async => _zone;
+}
+
+/// Records time-zone merge-writes; nothing else is exercised here.
+class _RecordingPrefsRepository implements NotificationPrefsRepository {
+  final List<(String, String)> timeZoneWrites = [];
+
+  @override
+  Stream<NotificationPrefs> watch(String ownerId) =>
+      Stream.value(NotificationPrefs.defaults);
+
+  @override
+  Future<void> save(String ownerId, NotificationPrefs prefs) async {}
+
+  @override
+  Future<void> saveTimeZone(String ownerId, String timeZone) async =>
+      timeZoneWrites.add((ownerId, timeZone));
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 Future<ProviderScope> _buildScope({
   required WidgetTester tester,
   required _FakeAuthRepository fake,
   required AccountStatus status,
+  List<Override> extraOverrides = const [],
 }) async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
@@ -88,6 +121,7 @@ Future<ProviderScope> _buildScope({
       sharedPreferencesProvider.overrideWithValue(prefs),
       authRepositoryProvider.overrideWithValue(fake),
       accountStatusProvider.overrideWithValue(status),
+      ...extraOverrides,
     ],
     child: const MaterialApp(home: AccountScreen()),
   );
@@ -218,6 +252,50 @@ void main() {
     // usable rather than being left ownerless.
     expect(fake.ensureSignedInCalled, isTrue);
   });
+
+  testWidgets(
+    'signing out registers the fresh session for push AND its time zone',
+    (tester) async {
+      // The new anonymous uid starts with no prefs doc, so without a fresh
+      // time-zone write the dispatcher nudges it on London time until the next
+      // cold start — the same registration app start-up does must run here.
+      final fake = _FakeAuthRepository();
+      final tokens = FakePushTokenRepository();
+      final prefs = _RecordingPrefsRepository();
+      await _buildScope(
+        tester: tester,
+        fake: fake,
+        status: const AccountStatus(
+          signedIn: true,
+          isAnonymous: false,
+          email: 'a@b.com',
+        ),
+        extraOverrides: [
+          pushRegistrarProvider.overrideWithValue(
+            PushRegistrar(
+              messaging: FakePushMessaging('tok-1'),
+              tokens: tokens,
+              platform: 'android',
+            ),
+          ),
+          timeZoneRegistrarProvider.overrideWithValue(
+            TimeZoneRegistrar(
+              device: _FakeDeviceTimeZone('America/New_York'),
+              prefs: prefs,
+            ),
+          ),
+        ],
+      );
+
+      await tester.tap(find.text('Sign out'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Sign out').last);
+      await tester.pumpAndSettle();
+
+      expect(tokens.registered.map((r) => r.owner), ['anon-2']);
+      expect(prefs.timeZoneWrites, [('anon-2', 'America/New_York')]);
+    },
+  );
 
   testWidgets('sign-out is re-entrancy-guarded while the chain is in flight', (
     tester,
