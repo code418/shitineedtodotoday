@@ -1,6 +1,7 @@
 import '../data/occurrence_repository.dart';
 import '../data/task_repository.dart';
 import '../domain/scheduling/recurrence.dart';
+import '../domain/scheduling/task_occurrence.dart';
 import '../domain/task.dart';
 import '../domain/task_suggestion.dart';
 
@@ -60,7 +61,25 @@ class TaskService {
   }
 
   /// Persist edits to an existing task, re-stamping [Task.updatedAt].
-  Future<Task> updateTask(Task task) async {
+  ///
+  /// When the edit changes the recurrence ([previous] = the task as it was),
+  /// the task's OPEN persisted occurrences in [history] belong to the old
+  /// schedule. A dragged, spread-out or un-ticked instance would otherwise keep
+  /// showing — and carrying forward, and triggering the reminder dispatcher —
+  /// beside the new schedule's, so they're removed first (like [deleteTask]'s
+  /// cascade, and for the same retry-safety). Done/skipped history is kept.
+  Future<Task> updateTask(
+    Task task, {
+    Task? previous,
+    Iterable<TaskOccurrence> history = const [],
+  }) async {
+    if (previous != null && previous.recurrence != task.recurrence) {
+      for (final o in history) {
+        if (o.taskId == task.id && o.isOpen) {
+          await occurrences.delete(ownerId, o.id);
+        }
+      }
+    }
     final updated = task.copyWith(updatedAt: now());
     await repository.upsert(updated);
     return updated;

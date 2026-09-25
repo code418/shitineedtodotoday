@@ -113,6 +113,89 @@ void main() {
     expect(repo.store[created.id]!.title, 'Vacuum lounge');
   });
 
+  group('updateTask with a changed recurrence', () {
+    // A Monday task whose instances were acted on: one dragged to Wednesday
+    // (rescheduled, pinned), one un-ticked back to pending, one done, one
+    // skipped — plus another task's open occurrence that must be left alone.
+    late Task bins;
+    setUp(() async {
+      bins = await service.addTask(
+        title: 'Bins',
+        recurrence: const Recurrence.strict(weekdays: [DateTime.monday]),
+      );
+      for (final o in [
+        TaskOccurrence(
+          id: '${bins.id}_2026-06-29',
+          taskId: bins.id,
+          scheduledDate: DateTime(2026, 7, 1),
+          status: OccurrenceStatus.rescheduled,
+          originalDate: DateTime(2026, 6, 29),
+          pinned: true,
+        ),
+        TaskOccurrence(
+          id: '${bins.id}_2026-07-06',
+          taskId: bins.id,
+          scheduledDate: DateTime(2026, 7, 6),
+        ),
+        TaskOccurrence(
+          id: '${bins.id}_2026-06-22',
+          taskId: bins.id,
+          scheduledDate: DateTime(2026, 6, 22),
+          status: OccurrenceStatus.done,
+          completedAt: DateTime(2026, 6, 22, 9),
+          actualDurationMinutes: 5,
+        ),
+        TaskOccurrence(
+          id: '${bins.id}_2026-06-15',
+          taskId: bins.id,
+          scheduledDate: DateTime(2026, 6, 15),
+          status: OccurrenceStatus.skipped,
+        ),
+        TaskOccurrence(
+          id: 'other_2026-06-29',
+          taskId: 'other',
+          scheduledDate: DateTime(2026, 6, 29),
+        ),
+      ]) {
+        occRepo.store[o.id] = o;
+      }
+    });
+
+    test('drops the old schedule\'s OPEN instances, keeps history', () async {
+      await service.updateTask(
+        bins.copyWith(
+          recurrence: const Recurrence.strict(weekdays: [DateTime.tuesday]),
+        ),
+        previous: bins,
+        history: occRepo.store.values.toList(),
+      );
+
+      // The dragged-to-Wednesday and un-ticked Monday instances belonged to
+      // the Monday schedule: left alone they'd keep showing (and carrying
+      // forward, and nudging) beside the new Tuesday ones.
+      expect(occRepo.store.keys, {
+        '${bins.id}_2026-06-22',
+        '${bins.id}_2026-06-15',
+        'other_2026-06-29',
+      });
+      expect(
+        repo.store[bins.id]!.recurrence,
+        const Recurrence.strict(weekdays: [DateTime.tuesday]),
+      );
+    });
+
+    test('an edit that keeps the recurrence touches no occurrences', () async {
+      final before = Map.of(occRepo.store);
+      await service.updateTask(
+        bins.copyWith(title: 'Put the bins out'),
+        previous: bins,
+        history: occRepo.store.values.toList(),
+      );
+      expect(occRepo.store, before);
+      expect(repo.store[bins.id]!.title, 'Put the bins out');
+    });
+  });
+
   test('deleteTask removes the task and cascades its occurrences', () async {
     final created = await service.addTask(
       title: 'Bins',

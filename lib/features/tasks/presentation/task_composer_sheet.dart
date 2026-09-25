@@ -150,13 +150,17 @@ class _TaskComposerSheetState extends ConsumerState<_TaskComposerSheet> {
           estimatedEffortMinutes: _effort,
         );
       } else {
+        final existing = widget.existing!;
         await svc.updateTask(
-          widget.existing!.copyWith(
+          existing.copyWith(
             title: title,
             category: category.isEmpty ? null : category,
             recurrence: recurrence,
             estimatedEffortMinutes: _effort,
           ),
+          // A recurrence change retires the old schedule's open instances.
+          previous: existing,
+          history: ref.read(occurrencesForTaskProvider(existing.id)),
         );
       }
     } catch (_) {

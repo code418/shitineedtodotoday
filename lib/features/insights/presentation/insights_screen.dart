@@ -363,6 +363,9 @@ class _SuggestionCard extends ConsumerWidget {
     try {
       await service.updateTask(
         task.copyWith(recurrence: suggestion.suggestedRecurrence),
+        // The new recurrence retires the old schedule's open instances.
+        previous: task,
+        history: ref.read(occurrencesForTaskProvider(task.id)),
       );
     } catch (_) {
       messenger.showSnackBar(SnackBar(content: Text(strings.actionFailed)));

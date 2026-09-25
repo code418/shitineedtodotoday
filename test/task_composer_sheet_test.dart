@@ -9,6 +9,7 @@ import 'package:snitd/features/tasks/application/tasks_providers.dart';
 import 'package:snitd/features/tasks/data/occurrence_repository.dart';
 import 'package:snitd/features/tasks/data/task_repository.dart';
 import 'package:snitd/features/tasks/domain/scheduling/recurrence.dart';
+import 'package:snitd/features/tasks/domain/scheduling/task_occurrence.dart';
 import 'package:snitd/features/tasks/domain/task.dart';
 import 'package:snitd/features/tasks/presentation/task_composer_sheet.dart';
 
@@ -268,4 +269,75 @@ void main() {
 
     expect(find.byType(DatePickerDialog), findsOneWidget);
   });
+
+  testWidgets(
+    'changing a task\'s days retires its old-schedule open instances',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final bins = Task(
+        id: 'bins',
+        ownerId: 'u1',
+        title: 'Bins',
+        recurrence: const Recurrence.strict(weekdays: [DateTime.monday]),
+        createdAt: DateTime(2026),
+        updatedAt: DateTime(2026),
+      );
+      final tasks = FakeTaskRepository()..store['bins'] = bins;
+      // Monday's instance, dragged to Wednesday under the OLD schedule.
+      final occurrences = FakeOccurrenceRepository()
+        ..store['bins_2026-06-29'] = TaskOccurrence(
+          id: 'bins_2026-06-29',
+          taskId: 'bins',
+          scheduledDate: DateTime(2026, 7, 1),
+          status: OccurrenceStatus.rescheduled,
+          originalDate: DateTime(2026, 6, 29),
+          pinned: true,
+        );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            currentOwnerIdProvider.overrideWithValue('u1'),
+            taskRepositoryProvider.overrideWithValue(tasks),
+            occurrenceRepositoryProvider.overrideWithValue(occurrences),
+            clockProvider.overrideWithValue(() => DateTime(2026, 6, 29, 9)),
+          ],
+          child: MaterialApp(
+            home: Consumer(
+              builder: (context, ref, _) {
+                // As in the app, where Today keeps the occurrences stream live.
+                ref.watch(occurrencesProvider);
+                return Scaffold(
+                  body: ElevatedButton(
+                    onPressed: () => showTaskComposer(context, existing: bins),
+                    child: const Text('Open'),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      // Monday -> Tuesday.
+      await tester.tap(find.text('Tue'));
+      await tester.tap(find.text('Mon'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Save task'));
+      await tester.tap(find.text('Save task'));
+      await tester.pumpAndSettle();
+
+      expect(
+        tasks.store['bins']!.recurrence,
+        const Recurrence.strict(weekdays: [DateTime.tuesday]),
+      );
+      // Left behind, it would show on Wednesday beside the new Tuesday bins.
+      expect(occurrences.store, isEmpty);
+    },
+  );
 }
