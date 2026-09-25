@@ -226,9 +226,12 @@ pre-onboarding exception; signing in completes onboarding) and from the Account
 screen, including the "Sign in instead" action when an upgrade finds the
 email/Google account taken. Every path goes through **`SignInService`**, which
 switches in a fixed order: snapshot the guest's tasks + occurrences → detach the
-push token from the outgoing owner → sign in (re-register the old owner on
-failure) → merge (`planGuestMerge`: re-own, clear assignees, skip chores the
-account already has by title + recurrence) → `DeviceRegistration`. Owner-only
+push token from the outgoing owner (if that fails or stalls, abandon the switch
+— it's the only chance) → sign in (re-register the old owner on failure) →
+merge (`planGuestMerge`: re-own, clear assignees, skip chores the account
+already has by title + recurrence, checked against
+`fetchTasksFromServer` — never the cache, which can hold a stale copy of an
+account last used on this device) → `DeviceRegistration`. Owner-only
 rules are why the order matters: the guest's data can only be read — and its
 push token only removed — *before* the switch, so the merge is a copy and the
 guest's docs are left behind, unreachable. Password reset uses Firebase's
