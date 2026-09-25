@@ -138,11 +138,9 @@ void main() {
     await service.deleteTask(created.id);
 
     expect(repo.store, isEmpty);
-    expect(
-      occRepo.store.keys,
-      ['other'],
-      reason: 'the task\'s occurrences are cascaded; others remain',
-    );
+    expect(occRepo.store.keys, [
+      'other',
+    ], reason: 'the task\'s occurrences are cascaded; others remain');
   });
 
   test(
