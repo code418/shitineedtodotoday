@@ -55,10 +55,11 @@ class AppTheme {
 
   static ThemeData _build(ColorScheme scheme, Color background) {
     final isLight = scheme.brightness == Brightness.light;
+    final palette = isLight ? AppPalette.light : AppPalette.dark;
     return ThemeData(
       colorScheme: scheme,
       useMaterial3: true,
-      extensions: [isLight ? AppPalette.light : AppPalette.dark],
+      extensions: [palette],
       scaffoldBackgroundColor: background,
       textTheme: AppTypography.textTheme(scheme.brightness),
       fontFamily: AppTypography.fontSans,
@@ -111,6 +112,12 @@ class AppTheme {
         overlayColor: scheme.primary.withValues(alpha: 0.12),
         tickMarkShape: SliderTickMarkShape.noTickMark,
         showValueIndicator: ShowValueIndicator.never,
+      ),
+      // Text links ("Forgot password?", "Sign in", dialog actions) use the
+      // AA-safe brand text colour: Material's default, scheme.primary, is the
+      // brand FILL colour and only 3.9:1 as text on the page.
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(foregroundColor: palette.textBrand),
       ),
       splashFactory: InkRipple.splashFactory,
     );

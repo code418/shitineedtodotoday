@@ -27,9 +27,8 @@ import '../task_service_test.dart' show FakeTaskRepository;
 // P6 accessibility: every screen meets Flutter's touch-target (48dp Android)
 // and labelled-control guidelines, in both themes, with real content on it.
 //
-// Text contrast (textContrastGuideline) is deliberately NOT asserted yet: the
-// muted-text token and white-on-brand buttons measure below WCAG AA (3.7-4.2:1)
-// and fixing them is a palette decision, not a mechanical one.
+// Text contrast is asserted too: WCAG AA (4.5:1, or 3:1 for large text) for
+// every text node on every screen, in both themes.
 
 Task _task(String id, String title, List<int> weekdays) => Task(
   id: id,
@@ -112,6 +111,7 @@ Future<void> _expectAccessible(WidgetTester tester, String screen) async {
   for (final guideline in [
     androidTapTargetGuideline,
     labeledTapTargetGuideline,
+    textContrastGuideline,
   ]) {
     final result = await guideline.evaluate(tester);
     expect(
@@ -129,36 +129,39 @@ void main() {
   const strings = AppStrings.clean;
 
   for (final brightness in Brightness.values) {
-    testWidgets('every screen meets touch-target and label guidelines '
-        '(${brightness.name})', (tester) async {
-      tester.platformDispatcher.platformBrightnessTestValue = brightness;
-      addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
-      final semantics = tester.ensureSemantics();
-      await _pumpApp(tester);
+    testWidgets(
+      'every screen meets touch-target, label and contrast guidelines '
+      '(${brightness.name})',
+      (tester) async {
+        tester.platformDispatcher.platformBrightnessTestValue = brightness;
+        addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+        final semantics = tester.ensureSemantics();
+        await _pumpApp(tester);
 
-      await _expectAccessible(tester, 'Today');
-      for (final (tab, name) in [
-        (1, 'Schedule'),
-        (2, 'Insights'),
-        (3, 'You'),
-      ]) {
-        await tester.tap(find.byType(NavigationDestination).at(tab));
-        await tester.pumpAndSettle();
-        await _expectAccessible(tester, name);
-      }
-      for (final route in [
-        Routes.reminders,
-        Routes.account,
-        Routes.signIn,
-        Routes.household,
-        Routes.taskDetailPath('a'),
-      ]) {
-        _go(tester, route);
-        await tester.pumpAndSettle();
-        await _expectAccessible(tester, route);
-      }
-      semantics.dispose();
-    });
+        await _expectAccessible(tester, 'Today');
+        for (final (tab, name) in [
+          (1, 'Schedule'),
+          (2, 'Insights'),
+          (3, 'You'),
+        ]) {
+          await tester.tap(find.byType(NavigationDestination).at(tab));
+          await tester.pumpAndSettle();
+          await _expectAccessible(tester, name);
+        }
+        for (final route in [
+          Routes.reminders,
+          Routes.account,
+          Routes.signIn,
+          Routes.household,
+          Routes.taskDetailPath('a'),
+        ]) {
+          _go(tester, route);
+          await tester.pumpAndSettle();
+          await _expectAccessible(tester, route);
+        }
+        semantics.dispose();
+      },
+    );
   }
 
   testWidgets('onboarding meets the same guidelines', (tester) async {

@@ -48,8 +48,17 @@ abstract final class AppColors {
   static const ink800 = Color(0xFF292C3C);
   static const ink700 = Color(0xFF3A3D4D);
   static const ink600 = Color(0xFF565A6E);
+
+  /// Muted text in light mode: the lightest ink that still meets WCAG AA
+  /// (4.5:1) on every light surface, sunken included (4.55:1). [ink500] was
+  /// 3.7–4.0:1; [ink600] is taken by secondary text.
+  static const ink550 = Color(0xFF686C81);
   static const ink500 = Color(0xFF757A90);
   static const ink400 = Color(0xFF9AA0B4);
+
+  /// Muted text in dark mode: the darkest ink that meets WCAG AA on every dark
+  /// surface, sunken included (4.53:1; [ink400] was 4.12:1 there).
+  static const ink350 = Color(0xFFA2A8BA);
   static const ink300 = Color(0xFFC4C8D6);
   static const ink200 = Color(0xFFE2E5EE);
   static const ink100 = Color(0xFFEEF0F6);
@@ -66,7 +75,7 @@ abstract final class AppColors {
   // Text.
   static const textPrimary = ink900;
   static const textSecondary = ink600;
-  static const textMuted = ink500;
+  static const textMuted = ink550;
   static const textOnBrand = white;
   static const textBrand = blue600;
 
