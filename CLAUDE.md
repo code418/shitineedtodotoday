@@ -218,6 +218,22 @@ isn't wired there). End-to-end Google sign-in can only be verified on a real
 device with the above configured; the Dart logic + UI flow are unit/widget
 tested with a fake `GoogleSignInService`.
 
+#### Signing in to an existing account
+
+`/sign-in` (`SignInScreen`) signs a guest in to an existing email/password or
+Google account — reached from onboarding's welcome page (the router's one
+pre-onboarding exception; signing in completes onboarding) and from the Account
+screen, including the "Sign in instead" action when an upgrade finds the
+email/Google account taken. Every path goes through **`SignInService`**, which
+switches in a fixed order: snapshot the guest's tasks + occurrences → detach the
+push token from the outgoing owner → sign in (re-register the old owner on
+failure) → merge (`planGuestMerge`: re-own, clear assignees, skip chores the
+account already has by title + recurrence) → `DeviceRegistration`. Owner-only
+rules are why the order matters: the guest's data can only be read — and its
+push token only removed — *before* the switch, so the merge is a copy and the
+guest's docs are left behind, unreachable. Password reset uses Firebase's
+built-in email; the Email/Password provider must be enabled in the console.
+
 ## Git workflow
 
 The initial scaffold was committed to `main`. **Future work uses feature
