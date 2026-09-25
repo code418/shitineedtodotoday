@@ -5,13 +5,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:snitd/app/router.dart';
 import 'package:snitd/core/design/widgets/app_button.dart';
 import 'package:snitd/core/firebase/firebase_providers.dart';
 import 'package:snitd/core/strings/app_strings.dart';
+import 'package:snitd/features/auth/application/sign_in_service.dart';
 import 'package:snitd/features/auth/data/auth_repository.dart';
 import 'package:snitd/features/auth/domain/account_status.dart';
 import 'package:snitd/features/auth/presentation/account_screen.dart';
+import 'package:snitd/features/auth/presentation/sign_in_screen.dart';
 import 'package:snitd/features/notifications/application/notification_providers.dart';
 import 'package:snitd/features/notifications/application/push_registrar.dart';
 import 'package:snitd/features/notifications/data/device_time_zone.dart';
@@ -72,9 +76,13 @@ class _FakeAuthRepository implements AuthRepository {
     required String email,
     required String password,
   }) async {
+    if (linkError != null) throw linkError!;
     linkedEmail = email;
     linkedPassword = password;
   }
+
+  /// When set, [linkEmailPassword] throws it (e.g. email-already-in-use).
+  Object? linkError;
 
   /// Sign-in is exercised through SignInService / the sign-in screen tests;
   /// here it only needs to exist.
@@ -409,4 +417,104 @@ void main() {
     // Exactly one sign-out ran; the re-established session was created once.
     expect(fake.ensureSignedInCount, 1);
   });
+
+  group('an upgrade that finds the account already exists', () {
+    /// The Account screen inside a router, so "sign in instead" can navigate.
+    Future<void> pumpRouted(
+      WidgetTester tester,
+      _FakeAuthRepository fake, {
+      SignInService? signIn,
+    }) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final router = GoRouter(
+        initialLocation: Routes.account,
+        routes: [
+          GoRoute(
+            path: Routes.today,
+            builder: (_, _) => const Scaffold(body: Text('TODAY')),
+          ),
+          GoRoute(
+            path: Routes.account,
+            builder: (_, _) => const AccountScreen(),
+          ),
+          GoRoute(
+            path: Routes.signIn,
+            builder: (_, state) =>
+                SignInScreen(initialEmail: state.uri.queryParameters['email']),
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            authRepositoryProvider.overrideWithValue(fake),
+            accountStatusProvider.overrideWithValue(
+              const AccountStatus(signedIn: true, isAnonymous: true),
+            ),
+            if (signIn != null) signInServiceProvider.overrideWithValue(signIn),
+          ],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('email in use offers sign-in with the address carried over', (
+      tester,
+    ) async {
+      final fake = _FakeAuthRepository()
+        ..linkError = FirebaseAuthException(code: 'email-already-in-use');
+      await pumpRouted(tester, fake);
+
+      await tester.enterText(find.byType(TextField).first, 'me@home.com');
+      await tester.enterText(find.byType(TextField).last, 'password123');
+      await tester.tap(find.text('Save my account'));
+      await tester.pumpAndSettle();
+      expect(find.text(AppStrings.clean.emailInUse), findsOneWidget);
+
+      await tester.tap(find.text(AppStrings.clean.signInInstead));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SignInScreen), findsOneWidget);
+      expect(find.text('me@home.com'), findsOneWidget);
+    });
+
+    testWidgets('a Google account in use signs straight in to it', (
+      tester,
+    ) async {
+      final credential = GoogleAuthProvider.credential(idToken: 'tok');
+      final fake = _FakeAuthRepository()
+        ..googleError = FirebaseAuthException(
+          code: 'credential-already-in-use',
+          credential: credential,
+        );
+      final signIn = _RecordingSignIn();
+      await pumpRouted(tester, fake, signIn: signIn);
+
+      await tester.tap(find.text(AppStrings.clean.continueWithGoogle));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(AppStrings.clean.signInInstead));
+      await tester.pumpAndSettle();
+
+      // The credential from the failed link is reused: no second picker.
+      expect(signIn.credentials, [credential]);
+      expect(find.text('TODAY'), findsOneWidget);
+      expect(find.text(AppStrings.clean.signedInMerged), findsOneWidget);
+    });
+  });
+}
+
+class _RecordingSignIn implements SignInService {
+  final credentials = <AuthCredential>[];
+
+  @override
+  Future<SignInResult> signInWithCredential(AuthCredential credential) async {
+    credentials.add(credential);
+    return const SignInResult(cancelled: false, mergedTasks: 1);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

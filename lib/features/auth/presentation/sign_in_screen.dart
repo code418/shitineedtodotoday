@@ -89,19 +89,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       if (!mounted) return;
       context.go(Routes.today);
       messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            result.mergeFailed
-                ? strings.signedInMergeFailed
-                : result.mergedTasks > 0
-                ? strings.signedInMerged
-                : strings.signedInWelcome,
-          ),
-        ),
+        SnackBar(content: Text(signedInMessage(result, strings))),
       );
     } on FirebaseAuthException catch (e) {
       messenger.showSnackBar(
-        SnackBar(content: Text(_messageFor(e.code, strings))),
+        SnackBar(content: Text(signInErrorMessage(e.code, strings))),
       );
     } catch (_) {
       messenger.showSnackBar(SnackBar(content: Text(strings.signInFailed)));
@@ -109,18 +101,6 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       if (mounted) setState(() => _loading = false);
     }
   }
-
-  static String _messageFor(String code, AppStrings strings) => switch (code) {
-    // Current Firebase (with email-enumeration protection) reports every bad
-    // email/password pair as invalid-credential; older codes kept for safety.
-    'invalid-credential' ||
-    'wrong-password' ||
-    'user-not-found' ||
-    'invalid-email' => strings.signInBadCredentials,
-    'too-many-requests' => strings.signInTooManyTries,
-    'account-exists-with-different-credential' => strings.signInOtherMethod,
-    _ => strings.signInFailed,
-  };
 
   Future<void> _forgotPassword() async {
     final strings = ref.read(appStringsProvider);
@@ -230,3 +210,24 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     );
   }
 }
+
+/// The welcome shown after a successful sign-in, from any entry point.
+String signedInMessage(SignInResult result, AppStrings strings) =>
+    result.mergeFailed
+    ? strings.signedInMergeFailed
+    : result.mergedTasks > 0
+    ? strings.signedInMerged
+    : strings.signedInWelcome;
+
+/// User-facing copy for a sign-in [FirebaseAuthException] code.
+String signInErrorMessage(String code, AppStrings strings) => switch (code) {
+  // Current Firebase (with email-enumeration protection) reports every bad
+  // email/password pair as invalid-credential; older codes kept for safety.
+  'invalid-credential' ||
+  'wrong-password' ||
+  'user-not-found' ||
+  'invalid-email' => strings.signInBadCredentials,
+  'too-many-requests' => strings.signInTooManyTries,
+  'account-exists-with-different-credential' => strings.signInOtherMethod,
+  _ => strings.signInFailed,
+};

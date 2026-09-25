@@ -145,6 +145,7 @@ class AppStrings {
     required this.signedInWelcome,
     required this.signedInMerged,
     required this.signedInMergeFailed,
+    required this.signInInstead,
     required this.emailInUse,
     required this.weakPassword,
     required this.upgradeFailed,
@@ -342,6 +343,9 @@ class AppStrings {
   final String signedInWelcome;
   final String signedInMerged;
   final String signedInMergeFailed;
+
+  /// Snackbar action when an upgrade finds the email/Google account taken.
+  final String signInInstead;
   final String emailInUse;
   final String weakPassword;
   final String upgradeFailed;
@@ -541,6 +545,7 @@ class AppStrings {
     signedInMerged: 'Welcome back — your guest tasks are in your account now',
     signedInMergeFailed:
         "Signed in, but this device's guest tasks didn't come across",
+    signInInstead: 'Sign in instead',
     emailInUse: 'That email is already in use',
     weakPassword: 'That password is too weak',
     upgradeFailed: "Couldn't save your account — please try again",
@@ -728,6 +733,7 @@ class AppStrings {
     signedInMerged: 'Welcome back — your guest shit is in your account now',
     signedInMergeFailed:
         "Signed in, but this device's guest tasks didn't come across",
+    signInInstead: 'Sign in instead',
     emailInUse: 'That email is already in use',
     weakPassword: 'That password is too weak',
     upgradeFailed: "Couldn't save your account — please try again",

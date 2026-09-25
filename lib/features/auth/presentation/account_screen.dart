@@ -6,14 +6,17 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router.dart';
 import '../../../core/design/design.dart';
 import '../../../core/firebase/firebase_providers.dart';
+import '../../../core/strings/app_strings.dart';
 import '../../../features/settings/application/settings_providers.dart';
 import '../../notifications/application/device_registration.dart';
 import '../../notifications/application/push_registrar.dart';
 import '../../tasks/application/tasks_providers.dart';
+import '../application/sign_in_service.dart';
 import '../data/auth_repository.dart';
 import '../data/google_sign_in_service.dart';
 import '../domain/account_validation.dart';
 import 'auth_field_decoration.dart';
+import 'sign_in_screen.dart';
 
 class AccountScreen extends ConsumerStatefulWidget {
   const AccountScreen({super.key});
@@ -65,11 +68,20 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       ).showSnackBar(SnackBar(content: Text(strings.accountUpgraded)));
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
-      final msg =
-          e.code == 'email-already-in-use' ||
-              e.code == 'credential-already-in-use'
-          ? strings.emailInUse
-          : e.code == 'weak-password'
+      if (e.code == 'email-already-in-use' ||
+          e.code == 'credential-already-in-use') {
+        // Most likely a returning user on a new device: offer the way in,
+        // with their email carried over.
+        final email = _emailCtrl.text.trim();
+        _showInUse(
+          strings,
+          onSignIn: () => context.push(
+            '${Routes.signIn}?email=${Uri.encodeQueryComponent(email)}',
+          ),
+        );
+        return;
+      }
+      final msg = e.code == 'weak-password'
           ? strings.weakPassword
           : strings.upgradeFailed;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
@@ -97,17 +109,69 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       }
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
-      final msg =
-          e.code == 'credential-already-in-use' ||
-              e.code == 'email-already-in-use'
-          ? strings.emailInUse
-          : strings.upgradeFailed;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+      if (e.code == 'credential-already-in-use' ||
+          e.code == 'email-already-in-use') {
+        // That Google account already has its own SINTDT account. The error
+        // carries the credential, so "sign in instead" needs no second picker.
+        final credential = e.credential;
+        _showInUse(
+          strings,
+          onSignIn: credential != null
+              ? () => _signInWith(credential)
+              : () => context.push(Routes.signIn),
+        );
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(strings.upgradeFailed)));
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(strings.upgradeFailed)));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  /// "That email is already in use", with a way into that account.
+  void _showInUse(AppStrings strings, {required VoidCallback onSignIn}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(strings.emailInUse),
+        action: SnackBarAction(
+          label: strings.signInInstead,
+          onPressed: () {
+            if (mounted) onSignIn();
+          },
+        ),
+      ),
+    );
+  }
+
+  /// Signs in to the account that already owns [credential] (merging this
+  /// guest's chores), then lands on Today — as the sign-in screen does.
+  Future<void> _signInWith(AuthCredential credential) async {
+    if (_loading) return;
+    final strings = ref.read(appStringsProvider);
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _loading = true);
+    try {
+      final result = await ref
+          .read(signInServiceProvider)
+          .signInWithCredential(credential);
+      if (!mounted) return;
+      context.go(Routes.today);
+      messenger.showSnackBar(
+        SnackBar(content: Text(signedInMessage(result, strings))),
+      );
+    } on FirebaseAuthException catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(signInErrorMessage(e.code, strings))),
+      );
+    } catch (_) {
+      messenger.showSnackBar(SnackBar(content: Text(strings.signInFailed)));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
