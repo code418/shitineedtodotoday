@@ -143,6 +143,7 @@ class AppStrings {
     required this.periodMonth,
     required this.periodYear,
     required this.completionRateLabel,
+    required this.chartDoneSuffix,
     required this.streakLabel,
     required this.timeSpentLabel,
     required this.slipsHeading,
@@ -321,6 +322,9 @@ class AppStrings {
   final String periodMonth;
   final String periodYear;
   final String completionRateLabel;
+
+  /// Screen-reader suffix for an Insights chart bar: "Mon, 3 done".
+  final String chartDoneSuffix;
   final String streakLabel;
   final String timeSpentLabel;
   final String slipsHeading;
@@ -495,6 +499,7 @@ class AppStrings {
     periodMonth: 'Month',
     periodYear: 'Year',
     completionRateLabel: 'Done vs skipped',
+    chartDoneSuffix: 'done',
     streakLabel: 'Day streak',
     timeSpentLabel: 'Time spent',
     slipsHeading: 'Slips most often',
@@ -661,6 +666,7 @@ class AppStrings {
     periodMonth: 'Month',
     periodYear: 'Year',
     completionRateLabel: 'Done vs skipped',
+    chartDoneSuffix: 'done',
     streakLabel: 'Day streak',
     timeSpentLabel: 'Time spent',
     slipsHeading: 'Slips most often',

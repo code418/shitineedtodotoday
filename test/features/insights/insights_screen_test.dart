@@ -177,4 +177,52 @@ void main() {
       expect(find.text(AppStrings.clean.actionFailed), findsNothing);
     },
   );
+
+  testWidgets('each chart bar reads as one "day, N done" item', (tester) async {
+    final semantics = tester.ensureSemantics();
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    const summary = InsightsSummary(
+      completedCount: 3,
+      skippedCount: 0,
+      completionRate: 1,
+      streakDays: 1,
+      totalMinutes: 30,
+      buckets: [InsightBucket('Mon', 3), InsightBucket('Tue', 0)],
+      slips: [],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          currentOwnerIdProvider.overrideWithValue(null),
+          // Any history at all, so the screen shows the chart rather than
+          // its empty state; the numbers come from [summary].
+          occurrencesProvider.overrideWith(
+            (ref) => Stream.value([
+              TaskOccurrence(
+                id: 't1_2026-06-29',
+                taskId: 't1',
+                scheduledDate: DateTime(2026, 6, 29),
+              ),
+            ]),
+          ),
+          tasksProvider.overrideWith((ref) => Stream.value(const <Task>[])),
+          insightsSummaryProvider(
+            InsightsPeriod.week,
+          ).overrideWithValue(summary),
+        ],
+        child: const MaterialApp(home: InsightsScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Was a bare "3" and a separate "Mon"; a zero day said only "Tue".
+    final done = AppStrings.clean.chartDoneSuffix;
+    expect(find.bySemanticsLabel('Mon, 3 $done'), findsOneWidget);
+    expect(find.bySemanticsLabel('Tue, 0 $done'), findsOneWidget);
+    expect(find.bySemanticsLabel('3'), findsNothing);
+    semantics.dispose();
+  });
 }

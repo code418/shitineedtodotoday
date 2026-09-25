@@ -98,7 +98,12 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
             const SizedBox(height: AppSpacing.x4),
 
             // ── Completion chart ───────────────────────────────────────────
-            AppCard(child: _BucketChart(buckets: s.buckets)),
+            AppCard(
+              child: _BucketChart(
+                buckets: s.buckets,
+                doneSuffix: strings.chartDoneSuffix,
+              ),
+            ),
 
             const SizedBox(height: AppSpacing.x4),
 
@@ -206,9 +211,10 @@ class _Divider extends StatelessWidget {
 // ── Bucket bar chart ───────────────────────────────────────────────────────────
 
 class _BucketChart extends StatelessWidget {
-  const _BucketChart({required this.buckets});
+  const _BucketChart({required this.buckets, required this.doneSuffix});
 
   final List<InsightBucket> buckets;
+  final String doneSuffix;
 
   @override
   Widget build(BuildContext context) {
@@ -226,6 +232,7 @@ class _BucketChart extends StatelessWidget {
               bucket: bucket,
               maxCount: maxCount,
               maxBarHeight: maxBarHeight,
+              doneSuffix: doneSuffix,
             ),
         ],
       ),
@@ -238,11 +245,13 @@ class _BucketBar extends StatelessWidget {
     required this.bucket,
     required this.maxCount,
     required this.maxBarHeight,
+    required this.doneSuffix,
   });
 
   final InsightBucket bucket;
   final int maxCount;
   final double maxBarHeight;
+  final String doneSuffix;
 
   @override
   Widget build(BuildContext context) {
@@ -251,35 +260,42 @@ class _BucketBar extends StatelessWidget {
         : (bucket.doneCount / maxCount) * maxBarHeight;
     final barH = h.clamp(2.0, maxBarHeight);
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (bucket.doneCount > 0)
-          Text(
-            '${bucket.doneCount}',
-            style: AppTypography.mono(size: AppTypography.size2xs),
-          )
-        else
-          const SizedBox(height: 14),
-        const SizedBox(height: 2),
-        Container(
-          width: 18,
-          height: barH,
-          decoration: BoxDecoration(
-            color: bucket.doneCount > 0
-                ? context.palette.brand
-                : context.palette.surfaceSunken,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(AppRadii.xs),
+    // One screen-reader stop per bar ("Mon, 3 done") instead of a bare count
+    // and a separate label — and a zero day still says its count.
+    return Semantics(
+      container: true,
+      label: '${bucket.label}, ${bucket.doneCount} $doneSuffix',
+      excludeSemantics: true,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (bucket.doneCount > 0)
+            Text(
+              '${bucket.doneCount}',
+              style: AppTypography.mono(size: AppTypography.size2xs),
+            )
+          else
+            const SizedBox(height: 14),
+          const SizedBox(height: 2),
+          Container(
+            width: 18,
+            height: barH,
+            decoration: BoxDecoration(
+              color: bucket.doneCount > 0
+                  ? context.palette.brand
+                  : context.palette.surfaceSunken,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(AppRadii.xs),
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          bucket.label,
-          style: AppTypography.mono(size: AppTypography.size2xs),
-        ),
-      ],
+          const SizedBox(height: 4),
+          Text(
+            bucket.label,
+            style: AppTypography.mono(size: AppTypography.size2xs),
+          ),
+        ],
+      ),
     );
   }
 }
