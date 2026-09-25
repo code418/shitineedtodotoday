@@ -132,6 +132,19 @@ class AppStrings {
     required this.signOut,
     required this.signOutConfirmTitle,
     required this.signOutConfirmBody,
+    required this.signInTitle,
+    required this.signInIntro,
+    required this.signInCta,
+    required this.haveAccountSignIn,
+    required this.forgotPassword,
+    required this.passwordResetSent,
+    required this.signInBadCredentials,
+    required this.signInTooManyTries,
+    required this.signInOtherMethod,
+    required this.signInFailed,
+    required this.signedInWelcome,
+    required this.signedInMerged,
+    required this.signedInMergeFailed,
     required this.emailInUse,
     required this.weakPassword,
     required this.upgradeFailed,
@@ -311,6 +324,24 @@ class AppStrings {
   final String signOut;
   final String signOutConfirmTitle;
   final String signOutConfirmBody;
+
+  // Sign in (to an existing account)
+  final String signInTitle;
+  final String signInIntro;
+  final String signInCta;
+  final String haveAccountSignIn;
+  final String forgotPassword;
+
+  /// Deliberately non-committal: Firebase answers the same whether or not the
+  /// address has an account, so the copy mustn't imply either way.
+  final String passwordResetSent;
+  final String signInBadCredentials;
+  final String signInTooManyTries;
+  final String signInOtherMethod;
+  final String signInFailed;
+  final String signedInWelcome;
+  final String signedInMerged;
+  final String signedInMergeFailed;
   final String emailInUse;
   final String weakPassword;
   final String upgradeFailed;
@@ -491,8 +522,25 @@ class AppStrings {
     signOutConfirmTitle: 'Sign out?',
     signOutConfirmBody:
         'This device will start over with an empty list. Your tasks stay '
-        "saved in your account, but you can't sign back in to it from the "
-        'app yet — only sign out if you really need to.',
+        'saved in your account — sign back in any time from You → Account.',
+    signInTitle: 'Sign in',
+    signInIntro:
+        "Welcome back. Anything you've added on this device as a guest "
+        'comes with you.',
+    signInCta: 'Sign in',
+    haveAccountSignIn: 'Already have an account? Sign in',
+    forgotPassword: 'Forgot password?',
+    passwordResetSent:
+        'If that email has an account, a reset link is on its way',
+    signInBadCredentials: "That email and password don't match an account",
+    signInTooManyTries: 'Too many tries — wait a minute and try again',
+    signInOtherMethod:
+        'That email signs in a different way — try Google or your password',
+    signInFailed: "Couldn't sign in — please try again",
+    signedInWelcome: 'Welcome back',
+    signedInMerged: 'Welcome back — your guest tasks are in your account now',
+    signedInMergeFailed:
+        "Signed in, but this device's guest tasks didn't come across",
     emailInUse: 'That email is already in use',
     weakPassword: 'That password is too weak',
     upgradeFailed: "Couldn't save your account — please try again",
@@ -661,8 +709,25 @@ class AppStrings {
     signOutConfirmTitle: 'Sign out?',
     signOutConfirmBody:
         'This device starts over with an empty list. Your shit stays saved '
-        "in your account, but you can't sign back in to it from the app "
-        'yet — only do this if you really have to.',
+        'in your account — sign back in any time from You → Account.',
+    signInTitle: 'Sign in',
+    signInIntro:
+        "Welcome back. Any shit you've added on this device as a guest "
+        'comes with you.',
+    signInCta: 'Sign in',
+    haveAccountSignIn: 'Already have an account? Sign in',
+    forgotPassword: 'Forgot password?',
+    passwordResetSent:
+        'If that email has an account, a reset link is on its way',
+    signInBadCredentials: "That email and password don't match an account",
+    signInTooManyTries: 'Too many tries — give it a minute, champ',
+    signInOtherMethod:
+        'That email signs in a different way — try Google or your password',
+    signInFailed: "Couldn't sign in — please try again",
+    signedInWelcome: 'Welcome back',
+    signedInMerged: 'Welcome back — your guest shit is in your account now',
+    signedInMergeFailed:
+        "Signed in, but this device's guest tasks didn't come across",
     emailInUse: 'That email is already in use',
     weakPassword: 'That password is too weak',
     upgradeFailed: "Couldn't save your account — please try again",

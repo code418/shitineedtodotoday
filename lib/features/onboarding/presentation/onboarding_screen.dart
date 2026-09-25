@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router.dart';
 import '../../../core/design/design.dart';
+import '../../../core/firebase/firebase_providers.dart';
 import '../../../core/strings/app_strings.dart';
 import '../../../core/util/date_labels.dart';
 import '../../settings/application/settings_providers.dart';
@@ -140,7 +141,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 controller: _pageController,
                 physics: const NeverScrollableScrollPhysics(),
                 children: [
-                  _WelcomePage(strings: strings),
+                  _WelcomePage(
+                    strings: strings,
+                    // Returning users skip the starter setup: signing in
+                    // brings their list (and completes onboarding).
+                    onSignIn: ref.watch(firebaseReadyProvider)
+                        ? () => context.push('${Routes.signIn}?from=onboarding')
+                        : null,
+                  ),
                   _PacePage(
                     strings: strings,
                     budget: budget,
@@ -191,9 +199,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _WelcomePage extends StatelessWidget {
-  const _WelcomePage({required this.strings});
+  const _WelcomePage({required this.strings, this.onSignIn});
 
   final AppStrings strings;
+
+  /// "Already have an account? Sign in" — hidden when null (no Firebase).
+  final VoidCallback? onSignIn;
 
   @override
   Widget build(BuildContext context) {
@@ -222,6 +233,13 @@ class _WelcomePage extends StatelessWidget {
             ),
             textAlign: TextAlign.center,
           ),
+          if (onSignIn != null) ...[
+            const SizedBox(height: AppSpacing.x6),
+            TextButton(
+              onPressed: onSignIn,
+              child: Text(strings.haveAccountSignIn),
+            ),
+          ],
         ],
       ),
     );

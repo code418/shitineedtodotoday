@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:snitd/core/design/widgets/app_button.dart';
+import 'package:snitd/core/firebase/firebase_providers.dart';
 import 'package:snitd/core/strings/app_strings.dart';
 import 'package:snitd/features/auth/data/auth_repository.dart';
 import 'package:snitd/features/auth/domain/account_status.dart';
@@ -246,6 +247,27 @@ void main() {
     expect(find.text('Sign out'), findsOneWidget);
   });
 
+  testWidgets('a guest is offered "Already have an account? Sign in"', (
+    tester,
+  ) async {
+    await _buildScope(
+      tester: tester,
+      fake: _FakeAuthRepository(),
+      status: const AccountStatus(signedIn: true, isAnonymous: true),
+      extraOverrides: [firebaseReadyProvider.overrideWithValue(true)],
+    );
+    expect(find.text(AppStrings.clean.haveAccountSignIn), findsOneWidget);
+  });
+
+  testWidgets('without Firebase there is no sign-in link', (tester) async {
+    await _buildScope(
+      tester: tester,
+      fake: _FakeAuthRepository(),
+      status: const AccountStatus(signedIn: true, isAnonymous: true),
+    );
+    expect(find.text(AppStrings.clean.haveAccountSignIn), findsNothing);
+  });
+
   testWidgets('sign-out warns that this device starts over empty', (
     tester,
   ) async {
@@ -264,9 +286,10 @@ void main() {
     await tester.pumpAndSettle();
 
     // The old copy promised "you'll need your email and password to sign
-    // back in" — there was no way to sign back in at all.
+    // back in" when there was no way back in; now it says where to find it.
     expect(find.text(AppStrings.clean.signOutConfirmBody), findsOneWidget);
     expect(AppStrings.clean.signOutConfirmBody, contains('empty list'));
+    expect(AppStrings.clean.signOutConfirmBody, contains('sign back in'));
     expect(find.textContaining('email and password'), findsNothing);
 
     // Cancelling leaves the account alone.

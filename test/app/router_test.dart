@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:snitd/app/home_shell.dart';
 import 'package:snitd/app/router.dart';
+import 'package:snitd/core/firebase/firebase_providers.dart';
+import 'package:snitd/core/strings/app_strings.dart';
+import 'package:snitd/features/auth/presentation/sign_in_screen.dart';
 import 'package:snitd/features/settings/application/settings_providers.dart';
 
 /// Pumps the real [routerProvider] with onboarding either complete or not,
@@ -12,6 +15,7 @@ import 'package:snitd/features/settings/application/settings_providers.dart';
 Future<GoRouter> _pumpRouter(
   WidgetTester tester, {
   required bool onboarded,
+  bool firebaseReady = false,
 }) async {
   SharedPreferences.setMockInitialValues({'onboarding_complete': onboarded});
   final prefs = await SharedPreferences.getInstance();
@@ -19,7 +23,10 @@ Future<GoRouter> _pumpRouter(
     // Firebase-backed providers error in the offline test environment; disable
     // Riverpod's automatic retry so no background timer outlives the test.
     retry: (_, _) => null,
-    overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+    overrides: [
+      sharedPreferencesProvider.overrideWithValue(prefs),
+      firebaseReadyProvider.overrideWithValue(firebaseReady),
+    ],
   );
   addTearDown(container.dispose);
   final router = container.read(routerProvider);
@@ -123,5 +130,28 @@ void main() {
       tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
       0,
     );
+  });
+
+  testWidgets('a returning user can reach sign-in from onboarding', (
+    tester,
+  ) async {
+    final router = await _pumpRouter(
+      tester,
+      onboarded: false,
+      firebaseReady: true,
+    );
+    expect(_path(router), Routes.onboarding);
+
+    await tester.tap(find.text(AppStrings.clean.haveAccountSignIn));
+    await tester.pumpAndSettle();
+
+    // Not funnelled back to onboarding, unlike every other route.
+    expect(find.byType(SignInScreen), findsOneWidget);
+    expect(router.state.matchedLocation, Routes.signIn);
+  });
+
+  testWidgets('without Firebase, onboarding offers no sign-in', (tester) async {
+    await _pumpRouter(tester, onboarded: false);
+    expect(find.text(AppStrings.clean.haveAccountSignIn), findsNothing);
   });
 }

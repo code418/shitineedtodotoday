@@ -149,6 +149,7 @@ void main() {
       for (final route in [
         Routes.reminders,
         Routes.account,
+        Routes.signIn,
         Routes.household,
         Routes.taskDetailPath('a'),
       ]) {
@@ -195,6 +196,7 @@ void main() {
     for (final route in [
       Routes.reminders,
       Routes.account,
+      Routes.signIn,
       Routes.household,
       Routes.taskDetailPath('a'),
       Routes.today,

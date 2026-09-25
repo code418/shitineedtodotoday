@@ -1,8 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../app/router.dart';
 import '../../../core/design/design.dart';
+import '../../../core/firebase/firebase_providers.dart';
 import '../../../features/settings/application/settings_providers.dart';
 import '../../notifications/application/device_registration.dart';
 import '../../notifications/application/push_registrar.dart';
@@ -10,6 +13,7 @@ import '../../tasks/application/tasks_providers.dart';
 import '../data/auth_repository.dart';
 import '../data/google_sign_in_service.dart';
 import '../domain/account_validation.dart';
+import 'auth_field_decoration.dart';
 
 class AccountScreen extends ConsumerStatefulWidget {
   const AccountScreen({super.key});
@@ -30,24 +34,6 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
     super.dispose();
-  }
-
-  /// Shared decoration for the email/password fields: a filled, borderless,
-  /// rounded "sunken" input with an optional [errorText].
-  InputDecoration _fieldDecoration(String hint, String? errorText) {
-    final border = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(AppRadii.md),
-      borderSide: BorderSide.none,
-    );
-    return InputDecoration(
-      hintText: hint,
-      filled: true,
-      fillColor: context.palette.surfaceSunken,
-      border: border,
-      enabledBorder: border,
-      focusedBorder: border,
-      errorText: errorText,
-    );
   }
 
   Future<void> _upgrade() async {
@@ -220,7 +206,11 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               controller: _emailCtrl,
               keyboardType: TextInputType.emailAddress,
               autocorrect: false,
-              decoration: _fieldDecoration('you@example.com', _emailError),
+              decoration: authFieldDecoration(
+                context,
+                'you@example.com',
+                _emailError,
+              ),
             ),
             const SizedBox(height: AppSpacing.x4),
 
@@ -230,7 +220,11 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             TextField(
               controller: _passwordCtrl,
               obscureText: true,
-              decoration: _fieldDecoration('••••••••', _passwordError),
+              decoration: authFieldDecoration(
+                context,
+                '••••••••',
+                _passwordError,
+              ),
             ),
             const SizedBox(height: AppSpacing.x5),
 
@@ -270,6 +264,17 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                 block: true,
                 pill: true,
                 onPressed: _loading ? null : _continueWithGoogle,
+              ),
+            ],
+            if (ref.watch(firebaseReadyProvider)) ...[
+              const SizedBox(height: AppSpacing.x4),
+              Center(
+                child: TextButton(
+                  onPressed: _loading
+                      ? null
+                      : () => context.push(Routes.signIn),
+                  child: Text(strings.haveAccountSignIn),
+                ),
               ),
             ],
           ] else ...[

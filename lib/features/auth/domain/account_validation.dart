@@ -18,3 +18,8 @@ String? validatePassword(String password) {
   if (password.length < 8) return 'Use at least 8 characters';
   return null;
 }
+
+/// Sign-in only needs *a* password — the account's own rules applied when it
+/// was created. Returns an error message, or null if one was entered.
+String? validatePasswordEntered(String password) =>
+    password.isEmpty ? 'Enter your password' : null;

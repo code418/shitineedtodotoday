@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../dev/gallery/gallery_screen.dart';
 import '../features/auth/presentation/account_screen.dart';
+import '../features/auth/presentation/sign_in_screen.dart';
 import '../features/household/presentation/household_screen.dart';
 import '../features/notifications/presentation/reminders_screen.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
@@ -18,6 +19,7 @@ abstract final class Routes {
   static const onboarding = '/onboarding';
   static const settings = '/settings';
   static const account = '/account';
+  static const signIn = '/sign-in';
   static const reminders = '/reminders';
   static const household = '/household';
   static const insights = '/insights';
@@ -42,8 +44,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       final atOnboarding = state.matchedLocation == Routes.onboarding;
       // Until onboarding is complete, every entry point — including deep links
       // and notification taps to e.g. /schedule or /task/:id — funnels through
-      // onboarding, not just a launch on the Today tab.
-      if (!done && !atOnboarding) {
+      // onboarding, not just a launch on the Today tab. Sign-in is the one
+      // exception: onboarding offers it to returning users, and signing in
+      // completes onboarding.
+      if (!done && !atOnboarding && state.matchedLocation != Routes.signIn) {
         return Routes.onboarding;
       }
       if (done && atOnboarding) {
@@ -77,6 +81,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.account,
         builder: (context, state) => const AccountScreen(),
+      ),
+      GoRoute(
+        path: Routes.signIn,
+        builder: (context, state) => SignInScreen(
+          initialEmail: state.uri.queryParameters['email'],
+          fromOnboarding: state.uri.queryParameters['from'] == 'onboarding',
+        ),
       ),
       GoRoute(
         path: Routes.reminders,
