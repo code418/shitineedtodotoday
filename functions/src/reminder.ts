@@ -434,11 +434,16 @@ export function occursOn(rec: RecurrenceJson, day: Date): boolean {
 
   if (rec.runtimeType === "strict") {
     if (rec.exactDate) {
-      const e = new Date(rec.exactDate);
+      // Dart persists the picked day as a LOCAL-midnight toIso8601String() with
+      // no zone designator, which `new Date()` would parse as HOST-local time —
+      // a day early on any host east of UTC (the emulator, a UK developer in
+      // BST). Dart's `dateOnly(exactDate) == day` compares calendar fields, so
+      // compare the `yyyy-MM-dd` prefix: host-independent, and equally right
+      // for a `...Z` value. A non-string (malformed doc) never matches — the
+      // client can't decode that task either.
       return (
-        e.getUTCFullYear() === y &&
-        e.getUTCMonth() + 1 === m &&
-        e.getUTCDate() === dom
+        typeof rec.exactDate === "string" &&
+        rec.exactDate.slice(0, 10) === isoDay(day)
       );
     }
     if (rec.dayOfMonth != null) {

@@ -21,6 +21,7 @@ import {
   resolveZone,
   shouldSendDailyNudge,
 } from "./reminder";
+import type {RecurrenceJson} from "./reminder";
 
 test("minuteOfDay parses valid times and rejects bad ones", () => {
   assert.equal(minuteOfDay("00:00"), 0);
@@ -257,6 +258,54 @@ test("occursOn: strict dayOfMonth respects leap years and 30-day months", () => 
   const rec31 = {runtimeType: "strict", dayOfMonth: 31};
   assert.equal(occursOn(rec31, new Date(Date.UTC(2026, 3, 30))), true);
   assert.equal(occursOn(rec31, new Date(Date.UTC(2026, 3, 29))), false);
+});
+
+/**
+ * Runs [fn] with the process time zone set to [zone]. Node re-reads
+ * `process.env.TZ` on assignment, so this exercises host-zone-dependent parsing
+ * deterministically, whatever machine the suite runs on.
+ */
+function inProcessZone(zone: string, fn: () => void): void {
+  const previous = process.env.TZ;
+  process.env.TZ = zone;
+  try {
+    fn();
+  } finally {
+    if (previous === undefined) delete process.env.TZ;
+    else process.env.TZ = previous;
+  }
+}
+
+test("occursOn: a one-off (exactDate) fires on its own calendar day in any host zone", () => {
+  // Dart persists the picked date as a LOCAL-midnight toIso8601String(): no
+  // zone designator. It must match on its calendar day wherever the function
+  // (or the emulator / a developer's test run) happens to be hosted.
+  const rec = {runtimeType: "strict", exactDate: "2026-07-24T00:00:00.000"};
+  for (const zone of ["UTC", "Europe/London", "Asia/Tokyo", "America/New_York"]) {
+    inProcessZone(zone, () => {
+      assert.equal(occursOn(rec, new Date(Date.UTC(2026, 6, 24))), true, zone);
+      assert.equal(occursOn(rec, new Date(Date.UTC(2026, 6, 23))), false, zone);
+      assert.equal(occursOn(rec, new Date(Date.UTC(2026, 6, 25))), false, zone);
+    });
+  }
+});
+
+test("occursOn: a UTC-suffixed exactDate matches its date, like Dart's dateOnly", () => {
+  const rec = {runtimeType: "strict", exactDate: "2026-07-24T00:00:00.000Z"};
+  inProcessZone("Asia/Tokyo", () => {
+    assert.equal(occursOn(rec, new Date(Date.UTC(2026, 6, 24))), true);
+    assert.equal(occursOn(rec, new Date(Date.UTC(2026, 6, 23))), false);
+  });
+});
+
+test("occursOn: a non-string exactDate never matches (and never throws)", () => {
+  // A malformed doc (e.g. a Timestamp where an ISO string was expected) fails
+  // to decode on the client, so the task isn't shown there either.
+  const rec = {
+    runtimeType: "strict",
+    exactDate: { seconds: 1784851200, nanoseconds: 0 },
+  } as unknown as RecurrenceJson;
+  assert.equal(occursOn(rec, new Date(Date.UTC(2026, 6, 24))), false);
 });
 
 test("occursOn: flexible weekly fires only on the week's Monday", () => {
