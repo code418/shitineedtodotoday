@@ -25,6 +25,10 @@ class _RecordingTaskRepository implements TaskRepository {
   Future<void> delete(String ownerId, String taskId) async {}
   @override
   String newId(String ownerId) => 'x';
+
+  @override
+  Future<List<Task>> fetchTasksFromServer(String ownerId) =>
+      watchTasks(ownerId).first;
 }
 
 Task _task(String id, {String? assigneeId}) => Task(

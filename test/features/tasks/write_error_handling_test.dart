@@ -30,6 +30,10 @@ class _UpsertThrowsTaskRepository implements TaskRepository {
 
   @override
   String newId(String ownerId) => 'new-task';
+
+  @override
+  Future<List<Task>> fetchTasksFromServer(String ownerId) =>
+      watchTasks(ownerId).first;
 }
 
 /// A task repo that holds tasks but fails on `delete`.
@@ -51,6 +55,10 @@ class _DeleteThrowsTaskRepository implements TaskRepository {
 
   @override
   String newId(String ownerId) => 'new-task';
+
+  @override
+  Future<List<Task>> fetchTasksFromServer(String ownerId) =>
+      watchTasks(ownerId).first;
 }
 
 /// An occurrence repo whose writes (`upsert`) fail.

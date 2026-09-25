@@ -55,6 +55,10 @@ class _FakeTaskRepository implements TaskRepository {
 
   @override
   String newId(String ownerId) => 'new-id';
+
+  @override
+  Future<List<Task>> fetchTasksFromServer(String ownerId) =>
+      watchTasks(ownerId).first;
 }
 
 class _FakeOccurrenceRepository implements OccurrenceRepository {

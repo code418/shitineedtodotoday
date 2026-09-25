@@ -214,9 +214,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       final ownerId = ref.read(currentOwnerIdProvider);
       if (ownerId != null) {
         try {
-          await ref.read(pushRegistrarProvider).unregister(ownerId);
+          await ref
+              .read(pushRegistrarProvider)
+              .unregister(ownerId)
+              .timeout(SignInService.detachTimeout);
         } catch (_) {
-          // Ignore; sign out regardless.
+          // Ignore (incl. a timeout: the delete waits for the server, so
+          // offline it would spin forever); sign out regardless.
         }
       }
       await auth.signOut();

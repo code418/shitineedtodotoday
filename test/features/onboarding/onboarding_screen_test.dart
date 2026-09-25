@@ -32,6 +32,10 @@ class _FakeTaskRepository implements TaskRepository {
 
   @override
   String newId(String ownerId) => 'task-${_seq++}';
+
+  @override
+  Future<List<Task>> fetchTasksFromServer(String ownerId) =>
+      watchTasks(ownerId).first;
 }
 
 /// A task repo whose writes fail — simulates an offline/permission error
@@ -48,6 +52,10 @@ class _ThrowingTaskRepository implements TaskRepository {
 
   @override
   String newId(String ownerId) => 'task-x';
+
+  @override
+  Future<List<Task>> fetchTasksFromServer(String ownerId) =>
+      watchTasks(ownerId).first;
 }
 
 /// No-op occurrence repo so taskServiceProvider (which now depends on it for

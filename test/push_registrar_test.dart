@@ -168,4 +168,25 @@ void main() {
     // the owner is left with no token doc for this device.
     expect(repo.removed.map((r) => r.token), ['tok-1', 'tok-2']);
   });
+
+  test('unregister with no obtainable token has nothing to remove', () async {
+    // No FCM on this device: nothing was ever registered, and throwing would
+    // block anything that must detach first (sign-in).
+    final repo = FakePushTokenRepository();
+    final registrar = PushRegistrar(
+      messaging: _NoTokenMessaging(),
+      tokens: repo,
+      platform: 'android',
+    );
+
+    await expectLater(registrar.unregister('u1'), completes);
+    expect(repo.removed, isEmpty);
+  });
+}
+
+class _NoTokenMessaging extends FakePushMessaging {
+  _NoTokenMessaging() : super(null);
+
+  @override
+  Future<String?> getToken() async => throw Exception('no FCM');
 }

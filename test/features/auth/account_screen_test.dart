@@ -22,6 +22,7 @@ import 'package:snitd/features/notifications/data/device_time_zone.dart';
 import 'package:snitd/features/notifications/data/notification_prefs_repository.dart';
 import 'package:snitd/features/notifications/domain/notification_prefs.dart';
 import 'package:snitd/features/settings/application/settings_providers.dart';
+import 'package:snitd/features/tasks/application/tasks_providers.dart';
 
 import '../../push_registrar_test.dart'
     show FakePushMessaging, FakePushTokenRepository;
@@ -276,6 +277,43 @@ void main() {
     expect(find.text(AppStrings.clean.haveAccountSignIn), findsNothing);
   });
 
+  testWidgets('offline, sign-out still completes instead of spinning', (
+    tester,
+  ) async {
+    // Detaching the push token is a Firestore delete, which only completes
+    // once the server acknowledges it — offline, never.
+    final fake = _FakeAuthRepository();
+    await _buildScope(
+      tester: tester,
+      fake: fake,
+      status: const AccountStatus(
+        signedIn: true,
+        isAnonymous: false,
+        email: 'a@b.com',
+      ),
+      extraOverrides: [
+        currentOwnerIdProvider.overrideWithValue('u1'),
+        pushRegistrarProvider.overrideWithValue(
+          PushRegistrar(
+            messaging: FakePushMessaging('tok'),
+            tokens: _HangingTokens(),
+            platform: 'android',
+          ),
+        ),
+      ],
+    );
+
+    await tester.tap(find.text('Sign out'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sign out').last);
+    await tester.pump();
+    expect(fake.signedOut, isFalse, reason: 'still waiting on the delete');
+
+    await tester.pump(SignInService.detachTimeout);
+    await tester.pumpAndSettle();
+    expect(fake.signedOut, isTrue);
+  });
+
   testWidgets('sign-out warns that this device starts over empty', (
     tester,
   ) async {
@@ -517,4 +555,10 @@ class _RecordingSignIn implements SignInService {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// A token store whose deletes never complete (offline).
+class _HangingTokens extends FakePushTokenRepository {
+  @override
+  Future<void> remove(String ownerId, String token) => Completer<void>().future;
 }

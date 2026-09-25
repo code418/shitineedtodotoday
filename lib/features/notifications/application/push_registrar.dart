@@ -55,10 +55,23 @@ class PushRegistrar {
   /// reminders here. Call on sign-out, before switching owners — otherwise the
   /// signed-out account keeps this device registered and its nudges keep
   /// arriving. The FCM token itself stays valid for the next owner to claim.
+  ///
+  /// The removal is a Firestore delete, which completes only once the server
+  /// acknowledges it — offline it waits — so callers bound it with a timeout.
   Future<void> unregister(String ownerId) async {
     await _subscription?.cancel();
     _subscription = null;
-    final token = _currentToken ?? await messaging.getToken();
+    var token = _currentToken;
+    if (token == null) {
+      try {
+        token = await messaging.getToken();
+      } catch (_) {
+        // No token obtainable (e.g. no FCM on this device): there's nothing
+        // this device could have registered, so nothing to remove. Throwing
+        // here would block anything that must detach first, like sign-in.
+        token = null;
+      }
+    }
     if (token != null) {
       await tokens.remove(ownerId, token);
     }

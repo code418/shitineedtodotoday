@@ -38,7 +38,8 @@ class SignInResult {
 /// 1. Snapshot the guest's tasks + history — owner-only rules lock the device
 ///    out of the guest's data the moment it's signed in to another uid.
 /// 2. Detach this device's push token from the outgoing owner (that also needs
-///    its auth), or the dispatcher keeps nudging here for the guest's copy.
+///    its auth), or the dispatcher keeps nudging here for the guest's copy. If
+///    that fails or stalls, the switch is abandoned, not risked.
 /// 3. Sign in. On failure (wrong password…) the device is re-registered for
 ///    the previous owner, so nothing is lost by a typo.
 /// 4. Merge the guest's chores into the account ([planGuestMerge]).
@@ -50,6 +51,10 @@ class SignInService {
   SignInService(this._ref);
 
   final Ref _ref;
+
+  /// How long detaching the outgoing owner's push token may take before the
+  /// switch is abandoned (the delete waits for the server; offline, forever).
+  static const detachTimeout = Duration(seconds: 10);
 
   Future<SignInResult> signInWithEmail({
     required String email,
@@ -93,9 +98,17 @@ class SignInService {
 
     if (previous != null) {
       try {
-        await _ref.read(pushRegistrarProvider).unregister(previous.uid);
-      } catch (error) {
-        debugPrint('Push unregister before sign-in failed: $error');
+        await _ref
+            .read(pushRegistrarProvider)
+            .unregister(previous.uid)
+            .timeout(detachTimeout);
+      } catch (_) {
+        // Now is the only chance: once signed in elsewhere, owner-only rules
+        // lock this device out of the outgoing owner's docs, and a token left
+        // there would nudge it for the guest's leftover copy forever. So don't
+        // switch — put the device back as it was and let the caller report it.
+        await _ref.read(deviceRegistrationProvider).registerFor(previous.uid);
+        rethrow;
       }
     }
 
@@ -116,7 +129,10 @@ class SignInService {
         final plan = planGuestMerge(
           guestTasks: guestTasks,
           guestOccurrences: guestOccurrences,
-          accountTasks: await tasks.watchTasks(user.uid).first,
+          // From the server: this device's cache may hold a stale copy of an
+          // account last used here, and the duplicate check must see the
+          // account as it really is (else it drops or doubles chores).
+          accountTasks: await tasks.fetchTasksFromServer(user.uid),
           accountOwnerId: user.uid,
         );
         for (final task in plan.tasks) {

@@ -13,6 +13,12 @@ abstract interface class TaskRepository {
   /// Streams the owner's tasks, newest first.
   Stream<List<Task>> watchTasks(String ownerId);
 
+  /// One read of the owner's tasks straight from the server — never this
+  /// device's cache, which (with offline persistence) can hold a stale copy of
+  /// an account last used here long ago, and which [watchTasks]'s first
+  /// emission would return. Throws when the server can't be reached.
+  Future<List<Task>> fetchTasksFromServer(String ownerId);
+
   Future<void> upsert(Task task);
 
   Future<void> delete(String ownerId, String taskId);
@@ -45,6 +51,18 @@ class FirestoreTaskRepository implements TaskRepository {
             label: 'task',
           ),
         );
+  }
+
+  @override
+  Future<List<Task>> fetchTasksFromServer(String ownerId) async {
+    final snapshot = await _tasksRef(
+      ownerId,
+    ).get(const GetOptions(source: Source.server));
+    return decodeDocs(
+      [for (final doc in snapshot.docs) (doc.id, doc.data())],
+      Task.fromJson,
+      label: 'task',
+    );
   }
 
   @override

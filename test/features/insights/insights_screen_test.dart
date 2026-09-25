@@ -27,6 +27,10 @@ class _ThrowingTaskRepository implements TaskRepository {
 
   @override
   String newId(String ownerId) => 'x';
+
+  @override
+  Future<List<Task>> fetchTasksFromServer(String ownerId) =>
+      watchTasks(ownerId).first;
 }
 
 class _FakeOccurrenceRepository implements OccurrenceRepository {

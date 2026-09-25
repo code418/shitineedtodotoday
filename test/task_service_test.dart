@@ -43,6 +43,10 @@ class FakeTaskRepository implements TaskRepository {
 
   @override
   String newId(String ownerId) => 'task-${_seq++}';
+
+  @override
+  Future<List<Task>> fetchTasksFromServer(String ownerId) =>
+      watchTasks(ownerId).first;
 }
 
 void main() {

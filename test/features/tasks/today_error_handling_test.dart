@@ -26,6 +26,10 @@ class _ThrowingTaskRepository implements TaskRepository {
 
   @override
   String newId(String ownerId) => 'new-task';
+
+  @override
+  Future<List<Task>> fetchTasksFromServer(String ownerId) =>
+      watchTasks(ownerId).first;
 }
 
 void main() {

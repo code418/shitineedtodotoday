@@ -105,6 +105,30 @@ class _Zone implements DeviceTimeZone {
   Future<String?> current() async => 'Europe/Paris';
 }
 
+/// The account's tasks as this device's cache remembers them (stale) vs as
+/// the server has them (truth): a stale copy of an account used here before.
+class _StaleCacheTasks extends FakeTaskRepository {
+  List<Task> staleAccountCache = const [];
+
+  @override
+  Stream<List<Task>> watchTasks(String ownerId) => ownerId == 'acct'
+      ? Stream.value(staleAccountCache)
+      : super.watchTasks(ownerId);
+
+  @override
+  Future<List<Task>> fetchTasksFromServer(String ownerId) async => [
+    for (final t in store.values)
+      if (t.ownerId == ownerId) t,
+  ];
+}
+
+/// A token store whose deletes fail (the server can't be reached).
+class _FailingRemoveTokens extends FakePushTokenRepository {
+  @override
+  Future<void> remove(String ownerId, String token) async =>
+      throw Exception('unavailable');
+}
+
 Task _task(String id, String owner, String title) => Task(
   id: id,
   ownerId: owner,
@@ -116,7 +140,7 @@ Task _task(String id, String owner, String title) => Task(
 
 void main() {
   late _Auth auth;
-  late FakeTaskRepository tasks;
+  late _StaleCacheTasks tasks;
   late _Occurrences occurrences;
   late FakePushTokenRepository tokens;
   late _Prefs prefs;
@@ -124,7 +148,7 @@ void main() {
 
   setUp(() async {
     auth = _Auth(_User('guest', isAnonymous: true));
-    tasks = FakeTaskRepository()
+    tasks = _StaleCacheTasks()
       ..store['g1'] = _task('g1', 'guest', 'Water plants')
       ..store['g2'] = _task('g2', 'guest', 'Wipe the counters')
       ..store['a1'] = _task('a1', 'acct', 'Wipe the counters');
@@ -229,4 +253,66 @@ void main() {
     expect(result.mergedTasks, 0);
     expect(tokens.registered.map((r) => r.owner), ['acct']);
   });
+
+  test('the duplicate check sees the account as the server has it, not a '
+      'stale cached copy', () async {
+    // This device once held the account's list, including "Water plants",
+    // since deleted elsewhere. Trusting that cache would drop the guest's own
+    // "Water plants" — and its history — as a false duplicate.
+    tasks.staleAccountCache = [_task('old', 'acct', 'Water plants')];
+
+    final result = await service().signInWithEmail(
+      email: 'a@b.com',
+      password: 'secret123',
+    );
+
+    expect(result.mergedTasks, 1);
+    expect([
+      for (final t in tasks.store.values)
+        if (t.ownerId == 'acct') t.title,
+    ], contains('Water plants'));
+  });
+
+  test(
+    'if the guest\'s token can\'t be detached, the switch is abandoned',
+    () async {
+      // Once signed in elsewhere the device can never remove it (owner-only
+      // rules), and it would be nudged for the guest's leftover copy forever.
+      final failing = _FailingRemoveTokens();
+      final registrar = PushRegistrar(
+        messaging: FakePushMessaging('tok'),
+        tokens: failing,
+        platform: 'android',
+      );
+      await registrar.registerFor('guest');
+      failing.registered.clear();
+      final c = ProviderContainer(
+        overrides: [
+          authRepositoryProvider.overrideWithValue(auth),
+          taskRepositoryProvider.overrideWithValue(tasks),
+          occurrenceRepositoryProvider.overrideWithValue(occurrences),
+          pushRegistrarProvider.overrideWithValue(registrar),
+          timeZoneRegistrarProvider.overrideWithValue(
+            TimeZoneRegistrar(device: _Zone(), prefs: prefs),
+          ),
+        ],
+      );
+      addTearDown(c.dispose);
+
+      await expectLater(
+        c
+            .read(signInServiceProvider)
+            .signInWithEmail(email: 'a@b.com', password: 'secret123'),
+        throwsA(isA<Exception>()),
+      );
+
+      expect(auth.currentUser!.uid, 'guest', reason: 'never switched');
+      expect(failing.registered.map((r) => r.owner), ['guest']);
+      expect(occurrences.byOwner['acct'], isNull);
+      expect(
+        tasks.store.values.where((t) => t.ownerId == 'acct'),
+        hasLength(1),
+      );
+    },
+  );
 }
