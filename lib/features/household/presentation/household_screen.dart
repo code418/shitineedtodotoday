@@ -372,8 +372,9 @@ class _TurnRow extends StatelessWidget {
 
     return InkWell(
       onTap: task == null ? null : () => _showReassignSheet(context, task),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.x1),
+      // A full 48px touch target per row, not just the text line.
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: kMinInteractiveDimension),
         child: Row(
           children: [
             Expanded(

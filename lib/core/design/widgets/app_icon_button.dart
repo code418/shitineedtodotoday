@@ -71,30 +71,39 @@ class _AppIconButtonState extends State<AppIconButton> {
         onTapUp: (_) => setState(() => _pressed = false),
         onTapCancel: () => setState(() => _pressed = false),
         onTap: widget.onPressed,
-        child: AnimatedScale(
-          // Only show the press-shrink when interactive — a disabled button
-          // must not read as pressable, and (with the above) never gets stuck.
-          scale: (enabled && _pressed) ? 0.9 : 1,
-          duration: AppMotion.of(context, AppMotion.fast),
-          curve: AppMotion.spring,
-          child: AnimatedContainer(
-            duration: AppMotion.of(context, AppMotion.fast),
-            curve: AppMotion.soft,
-            width: widget.size,
-            height: widget.size,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              // Only show the hover background when actually interactive — a
-              // disabled button must not signal hover affordance.
-              color: (enabled && _hovering) ? spec.hover : spec.bg,
-            ),
-            child: Opacity(
-              opacity: enabled ? 1 : 0.5,
-              child: Icon(
-                widget.icon,
-                size: (widget.size * 0.5).roundToDouble(),
-                color: spec.fg,
+        // Keep the touch target at least 48 square even when the painted
+        // circle is smaller (44 by default, 28 for inline removes).
+        child: SizedBox.square(
+          dimension: widget.size >= kMinInteractiveDimension
+              ? widget.size
+              : kMinInteractiveDimension,
+          child: Center(
+            child: AnimatedScale(
+              // Only show the press-shrink when interactive — a disabled button
+              // must not read as pressable, and (with the above) never gets stuck.
+              scale: (enabled && _pressed) ? 0.9 : 1,
+              duration: AppMotion.of(context, AppMotion.fast),
+              curve: AppMotion.spring,
+              child: AnimatedContainer(
+                duration: AppMotion.of(context, AppMotion.fast),
+                curve: AppMotion.soft,
+                width: widget.size,
+                height: widget.size,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  // Only show the hover background when actually interactive — a
+                  // disabled button must not signal hover affordance.
+                  color: (enabled && _hovering) ? spec.hover : spec.bg,
+                ),
+                child: Opacity(
+                  opacity: enabled ? 1 : 0.5,
+                  child: Icon(
+                    widget.icon,
+                    size: (widget.size * 0.5).roundToDouble(),
+                    color: spec.fg,
+                  ),
+                ),
               ),
             ),
           ),

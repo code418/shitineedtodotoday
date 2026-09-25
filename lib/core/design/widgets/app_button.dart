@@ -119,10 +119,12 @@ class _AppButtonState extends State<AppButton> {
       ],
     );
 
+    // No explicit `label:` — the inner Text already names the button, and
+    // setting both made screen readers say it twice ("Add task, Add task").
+    // (Don't swap in excludeSemantics: that would also drop the tap action.)
     return Semantics(
       button: true,
       enabled: enabled,
-      label: widget.label,
       child: Opacity(
         opacity: enabled ? 1 : 0.45,
         child: GestureDetector(
@@ -141,27 +143,36 @@ class _AppButtonState extends State<AppButton> {
           onTapUp: (_) => setState(() => _pressed = false),
           onTapCancel: () => setState(() => _pressed = false),
           onTap: widget.onPressed,
-          child: AnimatedScale(
-            // Only show the press-shrink when interactive — a disabled button
-            // must not read as pressable, and (with the above) never gets stuck.
-            scale: (enabled && _pressed) ? 0.96 : 1,
-            duration: AppMotion.of(context, AppMotion.fast),
-            curve: AppMotion.spring,
-            child: Container(
-              height: s.height,
-              width: widget.block ? double.infinity : null,
-              padding: EdgeInsets.symmetric(horizontal: s.padX),
-              decoration: BoxDecoration(
-                color: v.bg,
-                borderRadius: BorderRadius.circular(
-                  widget.pill ? AppRadii.pill : AppRadii.md,
+          // Invisible vertical slack up to a 48px touch target for the
+          // shorter sizes; the painted button keeps its own height.
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              vertical: s.height >= kMinInteractiveDimension
+                  ? 0
+                  : (kMinInteractiveDimension - s.height) / 2,
+            ),
+            child: AnimatedScale(
+              // Only show the press-shrink when interactive — a disabled button
+              // must not read as pressable, and (with the above) never gets stuck.
+              scale: (enabled && _pressed) ? 0.96 : 1,
+              duration: AppMotion.of(context, AppMotion.fast),
+              curve: AppMotion.spring,
+              child: Container(
+                height: s.height,
+                width: widget.block ? double.infinity : null,
+                padding: EdgeInsets.symmetric(horizontal: s.padX),
+                decoration: BoxDecoration(
+                  color: v.bg,
+                  borderRadius: BorderRadius.circular(
+                    widget.pill ? AppRadii.pill : AppRadii.md,
+                  ),
+                  boxShadow: enabled ? v.shadow : const [],
+                  border: v.border == null
+                      ? null
+                      : Border.all(color: v.border!, width: 1),
                 ),
-                boxShadow: enabled ? v.shadow : const [],
-                border: v.border == null
-                    ? null
-                    : Border.all(color: v.border!, width: 1),
+                child: content,
               ),
-              child: content,
             ),
           ),
         ),

@@ -28,11 +28,16 @@ class AppTaskItem extends StatelessWidget {
   /// the row is not tappable and no [GestureDetector] is inserted.
   final VoidCallback? onTap;
 
+  static const double _pad = 16;
+  static const double _padV = 14;
+
   @override
   Widget build(BuildContext context) {
     final c = context.palette;
     final container = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      // The left edge + vertical padding belong to the checkbox's touch target
+      // (below), so the tick is easy to hit without moving anything visually.
+      padding: const EdgeInsets.only(right: _pad),
       decoration: BoxDecoration(
         color: c.surfaceCard,
         borderRadius: BorderRadius.circular(AppRadii.lg),
@@ -43,70 +48,81 @@ class AppTaskItem extends StatelessWidget {
           AppCheckbox(
             value: done,
             onChanged: onToggle == null ? null : (v) => onToggle!(v),
+            // Name the tick-box for screen readers ("Wipe the counters,
+            // checkbox, not checked") — otherwise it's an anonymous control.
+            semanticLabel: title,
+            padding: const EdgeInsets.fromLTRB(
+              _pad,
+              _padV,
+              AppSpacing.x3,
+              _padV,
+            ),
           ),
-          const SizedBox(width: AppSpacing.x3),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontFamily: AppTypography.fontSans,
-                    fontSize: AppTypography.title,
-                    fontWeight: AppTypography.bold,
-                    color: c.textPrimary,
-                    decoration: done
-                        ? TextDecoration.lineThrough
-                        : TextDecoration.none,
-                    decorationColor: c.textMuted,
-                  ),
-                ),
-                if (category != null || movedFrom != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 3),
-                    child: Row(
-                      children: [
-                        if (category != null)
-                          Text(
-                            category!,
-                            style: TextStyle(
-                              fontFamily: AppTypography.fontSans,
-                              fontSize: AppTypography.sizeXs,
-                              fontWeight: AppTypography.semibold,
-                              color: c.textMuted,
-                            ),
-                          ),
-                        if (category != null && movedFrom != null)
-                          const SizedBox(width: 8),
-                        if (movedFrom != null)
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                AppIcons.eventRepeat,
-                                size: 14,
-                                color: c.reschedule,
-                              ),
-                              const SizedBox(width: 3),
-                              Text(
-                                'moved from $movedFrom',
-                                style: TextStyle(
-                                  fontFamily: AppTypography.fontSans,
-                                  fontSize: AppTypography.sizeXs,
-                                  fontWeight: AppTypography.semibold,
-                                  color: c.reschedule,
-                                ),
-                              ),
-                            ],
-                          ),
-                      ],
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: _padV),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontFamily: AppTypography.fontSans,
+                      fontSize: AppTypography.title,
+                      fontWeight: AppTypography.bold,
+                      color: c.textPrimary,
+                      decoration: done
+                          ? TextDecoration.lineThrough
+                          : TextDecoration.none,
+                      decorationColor: c.textMuted,
                     ),
                   ),
-              ],
+                  if (category != null || movedFrom != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 3),
+                      child: Row(
+                        children: [
+                          if (category != null)
+                            Text(
+                              category!,
+                              style: TextStyle(
+                                fontFamily: AppTypography.fontSans,
+                                fontSize: AppTypography.sizeXs,
+                                fontWeight: AppTypography.semibold,
+                                color: c.textMuted,
+                              ),
+                            ),
+                          if (category != null && movedFrom != null)
+                            const SizedBox(width: 8),
+                          if (movedFrom != null)
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  AppIcons.eventRepeat,
+                                  size: 14,
+                                  color: c.reschedule,
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  'moved from $movedFrom',
+                                  style: TextStyle(
+                                    fontFamily: AppTypography.fontSans,
+                                    fontSize: AppTypography.sizeXs,
+                                    fontWeight: AppTypography.semibold,
+                                    color: c.reschedule,
+                                  ),
+                                ),
+                              ],
+                            ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
           if (minutes != null) ...[

@@ -72,33 +72,39 @@ class RemindersScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Icon(AppIcons.notifications, color: context.palette.brand),
-                    const SizedBox(width: AppSpacing.x4),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            strings.dailyNudgeTitle,
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            strings.dailyNudgeSubtitle,
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                        ],
+                // One screen-reader node: "Daily nudge, …, switch, on".
+                MergeSemantics(
+                  child: Row(
+                    children: [
+                      Icon(
+                        AppIcons.notifications,
+                        color: context.palette.brand,
                       ),
-                    ),
-                    const SizedBox(width: AppSpacing.x3),
-                    AppSwitch(
-                      value: prefs.dailyNudgeEnabled,
-                      onChanged: (v) =>
-                          save(prefs.copyWith(dailyNudgeEnabled: v)),
-                    ),
-                  ],
+                      const SizedBox(width: AppSpacing.x4),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              strings.dailyNudgeTitle,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              strings.dailyNudgeSubtitle,
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.x3),
+                      AppSwitch(
+                        value: prefs.dailyNudgeEnabled,
+                        onChanged: (v) =>
+                            save(prefs.copyWith(dailyNudgeEnabled: v)),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.x4),
                 _TimeRow(
@@ -119,33 +125,36 @@ class RemindersScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Icon(AppIcons.bedtime, color: context.palette.brand),
-                    const SizedBox(width: AppSpacing.x4),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            strings.quietHoursTitle,
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            strings.quietHoursSubtitle,
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                        ],
+                // One screen-reader node: "Quiet hours, …, switch, off".
+                MergeSemantics(
+                  child: Row(
+                    children: [
+                      Icon(AppIcons.bedtime, color: context.palette.brand),
+                      const SizedBox(width: AppSpacing.x4),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              strings.quietHoursTitle,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              strings.quietHoursSubtitle,
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: AppSpacing.x3),
-                    AppSwitch(
-                      value: prefs.quietHoursEnabled,
-                      onChanged: (v) =>
-                          save(prefs.copyWith(quietHoursEnabled: v)),
-                    ),
-                  ],
+                      const SizedBox(width: AppSpacing.x3),
+                      AppSwitch(
+                        value: prefs.quietHoursEnabled,
+                        onChanged: (v) =>
+                            save(prefs.copyWith(quietHoursEnabled: v)),
+                      ),
+                    ],
+                  ),
                 ),
                 if (prefs.quietHoursEnabled) ...[
                   const SizedBox(height: AppSpacing.x4),
@@ -291,24 +300,37 @@ class _TimeRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Opacity(
       opacity: enabled ? 1.0 : 0.45,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: enabled
-            ? () async {
-                final picked = await showTimePicker(
-                  context: context,
-                  initialTime: _toTimeOfDay(time),
-                );
-                if (picked != null) onPick(picked);
-              }
-            : null,
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
+      child: Semantics(
+        button: true,
+        enabled: enabled,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: enabled
+              ? () async {
+                  final picked = await showTimePicker(
+                    context: context,
+                    initialTime: _toTimeOfDay(time),
+                  );
+                  if (picked != null) onPick(picked);
+                }
+              : null,
+          // At least a full 48px touch target, not just the 24px text line.
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              minHeight: kMinInteractiveDimension,
             ),
-            AppBadge(label: time, tone: AppBadgeTone.brand),
-          ],
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    label,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ),
+                AppBadge(label: time, tone: AppBadgeTone.brand),
+              ],
+            ),
+          ),
         ),
       ),
     );

@@ -57,34 +57,37 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: AppSpacing.x4),
           AppCard(
-            child: Row(
-              children: [
-                Icon(AppIcons.mood, color: context.palette.brand),
-                const SizedBox(width: AppSpacing.x4),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        strings.profanityTitle,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        strings.profanitySubtitle,
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ],
+            // One screen-reader node: "Profanity mode, …, switch, off".
+            child: MergeSemantics(
+              child: Row(
+                children: [
+                  Icon(AppIcons.mood, color: context.palette.brand),
+                  const SizedBox(width: AppSpacing.x4),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          strings.profanityTitle,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          strings.profanitySubtitle,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(width: AppSpacing.x3),
-                AppSwitch(
-                  value: profanityEnabled,
-                  onChanged: (v) => ref
-                      .read(settingsControllerProvider.notifier)
-                      .setProfanityEnabled(v),
-                ),
-              ],
+                  const SizedBox(width: AppSpacing.x3),
+                  AppSwitch(
+                    value: profanityEnabled,
+                    onChanged: (v) => ref
+                        .read(settingsControllerProvider.notifier)
+                        .setProfanityEnabled(v),
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: AppSpacing.x4),

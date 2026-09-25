@@ -23,30 +23,38 @@ class AppSwitch extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: enabled ? () => onChanged!(!value) : null,
-        child: Opacity(
-          opacity: enabled ? 1 : 0.5,
-          child: AnimatedContainer(
-            duration: AppMotion.of(context, AppMotion.normal),
-            curve: AppMotion.soft,
-            width: _w,
-            height: _h,
-            decoration: BoxDecoration(
-              color: value ? c.brand : c.borderStrong,
-              borderRadius: BorderRadius.circular(AppRadii.pill),
-            ),
-            child: AnimatedAlign(
+        // Invisible vertical slack so the touch target is 48 tall, not the
+        // 30px pill. Label it by wrapping the host row in MergeSemantics, so a
+        // screen reader reads the row's title with the switch's state.
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            vertical: (kMinInteractiveDimension - _h) / 2,
+          ),
+          child: Opacity(
+            opacity: enabled ? 1 : 0.5,
+            child: AnimatedContainer(
               duration: AppMotion.of(context, AppMotion.normal),
-              curve: AppMotion.spring,
-              alignment: value ? Alignment.centerRight : Alignment.centerLeft,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 3),
-                child: Container(
-                  width: _knob,
-                  height: _knob,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.white,
-                    boxShadow: AppShadows.sm,
+              curve: AppMotion.soft,
+              width: _w,
+              height: _h,
+              decoration: BoxDecoration(
+                color: value ? c.brand : c.borderStrong,
+                borderRadius: BorderRadius.circular(AppRadii.pill),
+              ),
+              child: AnimatedAlign(
+                duration: AppMotion.of(context, AppMotion.normal),
+                curve: AppMotion.spring,
+                alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: Container(
+                    width: _knob,
+                    height: _knob,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.white,
+                      boxShadow: AppShadows.sm,
+                    ),
                   ),
                 ),
               ),
