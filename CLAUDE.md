@@ -17,7 +17,7 @@ energy-budget load balancing + overwhelm reset + onboarding, server-driven FCM
 reminders (settings + Cloud Function dispatcher), account upgrade + shared
 households, and insights + drag-to-reschedule agenda, all behind a Today /
 Schedule / Insights / You bottom-nav shell. See `docs/ROADMAP.md` for the
-phased plan (P6 multi-surface/accessibility remains).
+phased plan (P6's accessibility is done; multi-surface remains).
 
 ## Stack & key decisions
 
@@ -127,8 +127,11 @@ P1–P5 are live:
   (no Firestore `Timestamp`s), so the Dart client and the Cloud Function agree on
   shape; day maths uses `addDays`/`dateOnly` to stay DST-safe.
 
-The remaining milestone is **P6** (multi-surface / accessibility) — see
-`docs/ROADMAP.md`.
+The remaining milestone is **P6**'s multi-surface work (home-screen widgets,
+WearOS) — see `docs/ROADMAP.md`. Its accessibility half is done and guarded by
+`test/a11y/accessibility_guidelines_test.dart` (touch targets, labels and text
+contrast on every screen, both themes, plus a 200% text-scale walk): add new
+screens and sheets to it.
 
 ## Conventions
 

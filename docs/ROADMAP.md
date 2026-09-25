@@ -15,7 +15,8 @@ Everything below builds on the two foundations laid in the scaffold:
 ## Phases
 
 > **Status:** P1–P5 are feature-complete (built out from the scaffold).
-> P6 (multi-surface & accessibility) remains.
+> P6's accessibility work is done; its multi-surface work (home-screen
+> widgets, WearOS) remains.
 
 ### P0 — Scaffold ✅
 Buildable Flutter app (Android-first; iOS/web/desktop ride along), Riverpod,
@@ -73,8 +74,11 @@ When the second surface lands, extract `core` + `domain` into a shared package
   tap-to-complete, straight from the home screen (no app launch needed).
 - **WearOS** companion — quick-glance checklist, tap-to-complete, log-duration.
 - Wear tiles / complications and (later) iOS widgets.
-- **Accessibility** — a low-friction "focus" mode (one task at a time), large
-  tap targets, and full screen-reader support.
+- **Accessibility** ✅ — a low-friction "focus" mode (one task at a time,
+  `/focus`), large tap targets (48dp everywhere), full screen-reader support
+  (labelled controls, custom actions for drag/swipe gestures, readable
+  charts) and WCAG AA text contrast in both themes — all enforced by
+  `test/a11y/accessibility_guidelines_test.dart`.
 
 ## Notes
 - **Region:** all Firebase compute/data should sit in **europe-west2 (London)**.
