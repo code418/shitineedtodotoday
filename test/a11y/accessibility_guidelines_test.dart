@@ -152,6 +152,7 @@ void main() {
           Routes.reminders,
           Routes.account,
           Routes.signIn,
+          Routes.focus,
           Routes.household,
           Routes.taskDetailPath('a'),
         ]) {
@@ -200,6 +201,7 @@ void main() {
       Routes.reminders,
       Routes.account,
       Routes.signIn,
+      Routes.focus,
       Routes.household,
       Routes.taskDetailPath('a'),
       Routes.today,

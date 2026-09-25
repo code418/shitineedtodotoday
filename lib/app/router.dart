@@ -10,6 +10,7 @@ import '../features/notifications/presentation/reminders_screen.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../features/settings/application/settings_providers.dart';
 import '../features/settings/presentation/settings_screen.dart';
+import '../features/tasks/presentation/focus_screen.dart';
 import '../features/tasks/presentation/task_detail_screen.dart';
 import 'home_shell.dart';
 
@@ -24,6 +25,7 @@ abstract final class Routes {
   static const household = '/household';
   static const insights = '/insights';
   static const schedule = '/schedule';
+  static const focus = '/focus';
   static const gallery = '/gallery';
   static const taskDetail = '/task/:id';
 
@@ -96,6 +98,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.household,
         builder: (context, state) => const HouseholdScreen(),
+      ),
+      GoRoute(
+        path: Routes.focus,
+        builder: (context, state) => const FocusScreen(),
       ),
       GoRoute(
         path: Routes.taskDetail,

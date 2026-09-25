@@ -26,6 +26,7 @@ abstract final class AppIcons {
   static const IconData group = Symbols.group_rounded;
 
   static const IconData insights = Symbols.insights_rounded;
+  static const IconData focus = Symbols.center_focus_strong_rounded;
 
   static const IconData calendar = Symbols.calendar_month_rounded;
   static const IconData dragHandle = Symbols.drag_handle_rounded;

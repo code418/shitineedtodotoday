@@ -146,6 +146,13 @@ class AppStrings {
     required this.signedInMerged,
     required this.signedInMergeFailed,
     required this.signInInstead,
+    required this.focusAction,
+    required this.focusProgress,
+    required this.focusDone,
+    required this.focusLater,
+    required this.focusAllDoneTitle,
+    required this.focusAllDoneBody,
+    required this.focusBackToToday,
     required this.emailInUse,
     required this.weakPassword,
     required this.upgradeFailed,
@@ -346,6 +353,23 @@ class AppStrings {
 
   /// Snackbar action when an upgrade finds the email/Google account taken.
   final String signInInstead;
+
+  // Focus mode (one chore at a time)
+  final String focusAction;
+
+  /// "{left} of {total} left" — fill with [focusProgressText].
+  final String focusProgress;
+  final String focusDone;
+  final String focusLater;
+  final String focusAllDoneTitle;
+  final String focusAllDoneBody;
+  final String focusBackToToday;
+
+  /// [focusProgress] with its placeholders filled.
+  String focusProgressText({required int left, required int total}) =>
+      focusProgress
+          .replaceAll('{left}', '$left')
+          .replaceAll('{total}', '$total');
   final String emailInUse;
   final String weakPassword;
   final String upgradeFailed;
@@ -546,6 +570,13 @@ class AppStrings {
     signedInMergeFailed:
         "Signed in, but this device's guest tasks didn't come across",
     signInInstead: 'Sign in instead',
+    focusAction: 'Focus',
+    focusProgress: '{left} of {total} left',
+    focusDone: 'Done',
+    focusLater: 'Later',
+    focusAllDoneTitle: "That's everything for today",
+    focusAllDoneBody: 'Nice work. Enjoy the rest of your day.',
+    focusBackToToday: 'Back to Today',
     emailInUse: 'That email is already in use',
     weakPassword: 'That password is too weak',
     upgradeFailed: "Couldn't save your account — please try again",
@@ -734,6 +765,13 @@ class AppStrings {
     signedInMergeFailed:
         "Signed in, but this device's guest tasks didn't come across",
     signInInstead: 'Sign in instead',
+    focusAction: 'Focus',
+    focusProgress: '{left} of {total} left',
+    focusDone: 'Done',
+    focusLater: 'Later',
+    focusAllDoneTitle: "That's all your shit done for today",
+    focusAllDoneBody: 'Go put your feet up.',
+    focusBackToToday: 'Back to Today',
     emailInUse: 'That email is already in use',
     weakPassword: 'That password is too weak',
     upgradeFailed: "Couldn't save your account — please try again",

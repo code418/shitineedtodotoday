@@ -36,7 +36,21 @@ class TodayScreen extends ConsumerWidget {
     final budget = ref.watch(dailyEnergyBudgetProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text(strings.todayTitle)),
+      appBar: AppBar(
+        title: Text(strings.todayTitle),
+        actions: [
+          // One chore at a time, for days when the whole list is too much.
+          if (checklist.any((o) => o.isOpen))
+            Padding(
+              padding: const EdgeInsets.only(right: AppSpacing.x2),
+              child: AppIconButton(
+                icon: AppIcons.focus,
+                tooltip: strings.focusAction,
+                onPressed: () => context.push(Routes.focus),
+              ),
+            ),
+        ],
+      ),
       body: Column(
         children: [
           if (!firebaseReady)
