@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design/design.dart';
@@ -46,6 +47,35 @@ class ScheduleScreen extends ConsumerWidget {
   }
 }
 
+/// Moves [occ] onto [day]. The single path for both a drag-and-drop and a
+/// screen reader's "Move to …" action, so the two can't disagree.
+Future<void> _moveOccurrence(
+  BuildContext context,
+  WidgetRef ref,
+  TaskOccurrence occ,
+  AgendaDay day,
+) async {
+  if (dateOnly(occ.scheduledDate) == dateOnly(day.date)) return;
+  final strings = ref.read(appStringsProvider);
+  final messenger = ScaffoldMessenger.of(context);
+  // Don't stack two occurrences of the same task on one day: that would
+  // render the chore twice and let it be completed (and counted) twice.
+  if (day.occurrences.any((o) => o.taskId == occ.taskId)) {
+    messenger.showSnackBar(SnackBar(content: Text(strings.alreadyOnThatDay)));
+    return;
+  }
+  final svc = ref.read(occurrenceServiceProvider);
+  if (svc == null) return;
+  try {
+    await svc.moveTo(occ, day.date);
+    messenger.showSnackBar(
+      SnackBar(content: Text('${strings.movedToDay} ${weekdayLong(day.date)}')),
+    );
+  } catch (_) {
+    messenger.showSnackBar(SnackBar(content: Text(strings.actionFailed)));
+  }
+}
+
 class _DaySection extends ConsumerWidget {
   const _DaySection({required this.day, required this.now});
 
@@ -58,31 +88,8 @@ class _DaySection extends ConsumerWidget {
     final isToday = dateOnly(day.date) == dateOnly(now);
 
     return DragTarget<TaskOccurrence>(
-      onAcceptWithDetails: (details) async {
-        final occ = details.data;
-        if (dateOnly(occ.scheduledDate) == dateOnly(day.date)) return;
-        final messenger = ScaffoldMessenger.of(context);
-        // Don't stack two occurrences of the same task on one day: that would
-        // render the chore twice and let it be completed (and counted) twice.
-        if (day.occurrences.any((o) => o.taskId == occ.taskId)) {
-          messenger.showSnackBar(
-            SnackBar(content: Text(strings.alreadyOnThatDay)),
-          );
-          return;
-        }
-        final svc = ref.read(occurrenceServiceProvider);
-        if (svc == null) return;
-        try {
-          await svc.moveTo(occ, day.date);
-          messenger.showSnackBar(
-            SnackBar(
-              content: Text('${strings.movedToDay} ${weekdayLong(day.date)}'),
-            ),
-          );
-        } catch (_) {
-          messenger.showSnackBar(SnackBar(content: Text(strings.actionFailed)));
-        }
-      },
+      onAcceptWithDetails: (details) =>
+          _moveOccurrence(context, ref, details.data, day),
       builder: (context, candidateData, rejectedData) {
         final isHovering = candidateData.isNotEmpty;
         return AnimatedContainer(
@@ -157,34 +164,54 @@ class _OccurrenceRow extends ConsumerWidget {
       return _RowContent(title: title, effort: effort, done: true);
     }
 
-    return LongPressDraggable<TaskOccurrence>(
-      data: occurrence,
-      delay: const Duration(milliseconds: 400),
-      feedback: Material(
-        elevation: 6,
-        borderRadius: BorderRadius.circular(AppRadii.md),
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.x4,
-            vertical: AppSpacing.x3,
-          ),
-          decoration: BoxDecoration(
-            color: context.palette.surfaceCard,
-            borderRadius: BorderRadius.circular(AppRadii.md),
-          ),
-          child: Text(
-            title,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: context.palette.textPrimary,
+    // Long-press dragging is unreachable with a screen reader, so the same
+    // moves are offered as custom actions: "Move to Wednesday", one per other
+    // day of the week (weekday names are unique within Mon–Sun).
+    final strings = ref.watch(appStringsProvider);
+    final week = ref.watch(weekAgendaProvider);
+    final moveActions = <CustomSemanticsAction, VoidCallback>{
+      for (final day in week)
+        if (dateOnly(day.date) != dateOnly(occurrence.scheduledDate))
+          CustomSemanticsAction(
+            label: '${strings.moveToDay} ${weekdayLong(day.date)}',
+          ): () =>
+              _moveOccurrence(context, ref, occurrence, day),
+    };
+
+    return Semantics(
+      // Its own node, so the actions belong to THIS task — not merged into a
+      // shared ancestor alongside the day's other (possibly done) rows.
+      container: true,
+      customSemanticsActions: moveActions,
+      child: LongPressDraggable<TaskOccurrence>(
+        data: occurrence,
+        delay: const Duration(milliseconds: 400),
+        feedback: Material(
+          elevation: 6,
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.x4,
+              vertical: AppSpacing.x3,
+            ),
+            decoration: BoxDecoration(
+              color: context.palette.surfaceCard,
+              borderRadius: BorderRadius.circular(AppRadii.md),
+            ),
+            child: Text(
+              title,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: context.palette.textPrimary,
+              ),
             ),
           ),
         ),
-      ),
-      childWhenDragging: Opacity(
-        opacity: 0.35,
+        childWhenDragging: Opacity(
+          opacity: 0.35,
+          child: _RowContent(title: title, effort: effort),
+        ),
         child: _RowContent(title: title, effort: effort),
       ),
-      child: _RowContent(title: title, effort: effort),
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -43,12 +44,16 @@ class _ThrowingOccurrenceRepository implements OccurrenceRepository {
 /// Records upserts so a test can assert a blocked drag wrote nothing.
 class _RecordingOccurrenceRepository implements OccurrenceRepository {
   int upserts = 0;
+  TaskOccurrence? last;
   @override
   Stream<List<TaskOccurrence>> watchOccurrences(String ownerId) =>
       Stream.value(const <TaskOccurrence>[]);
   @override
-  Future<void> upsert(String ownerId, TaskOccurrence occurrence) async =>
-      upserts++;
+  Future<void> upsert(String ownerId, TaskOccurrence occurrence) async {
+    upserts++;
+    last = occurrence;
+  }
+
   @override
   Future<void> delete(String ownerId, String occurrenceId) async {}
   @override
@@ -217,5 +222,78 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text(AppStrings.clean.actionFailed), findsOneWidget);
+  });
+
+  testWidgets('a screen reader can move an open task via "Move to …" actions '
+      '(drag-and-drop alone is unreachable without sight)', (tester) async {
+    final semantics = tester.ensureSemantics();
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final occRepo = _RecordingOccurrenceRepository();
+
+    Task task(String id, String title, List<int> days) => Task(
+      id: id,
+      ownerId: 'u1',
+      title: title,
+      recurrence: Recurrence.strict(weekdays: days),
+      estimatedEffortMinutes: 15,
+      createdAt: DateTime(2026),
+      updatedAt: DateTime(2026),
+    );
+    final open = task('o', 'Open task', [DateTime.monday]);
+    final done = task('d', 'Done task', [DateTime.monday]);
+    final doneOcc = TaskOccurrence(
+      id: 'd_2026-06-29',
+      taskId: 'd',
+      scheduledDate: DateTime(2026, 6, 29),
+      status: OccurrenceStatus.done,
+      completedAt: DateTime(2026, 6, 29, 10),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          currentOwnerIdProvider.overrideWithValue('u1'),
+          clockProvider.overrideWithValue(() => DateTime(2026, 6, 29, 9)),
+          tasksProvider.overrideWith((ref) => Stream.value([open, done])),
+          occurrencesProvider.overrideWith((ref) => Stream.value([doneOcc])),
+          taskRepositoryProvider.overrideWithValue(
+            _StubTaskRepository([open, done]),
+          ),
+          occurrenceRepositoryProvider.overrideWithValue(occRepo),
+        ],
+        child: const MaterialApp(home: ScheduleScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    const strings = AppStrings.clean;
+    int idFor(String day) => CustomSemanticsAction.getIdentifier(
+      CustomSemanticsAction(label: '${strings.moveToDay} $day'),
+    );
+
+    // Completed work can't be moved (it would silently reopen), so it offers
+    // no actions — mirroring that it isn't draggable either.
+    final doneNode = tester.getSemantics(find.text('Done task'));
+    expect(doneNode.getSemanticsData().customSemanticsActionIds ?? [], isEmpty);
+
+    // The open task offers every OTHER day of the week, not its own.
+    final node = tester.getSemantics(find.text('Open task'));
+    final ids = node.getSemanticsData().customSemanticsActionIds;
+    expect(ids, hasLength(6));
+    expect(ids, contains(idFor('Wednesday')));
+    expect(ids, isNot(contains(idFor('Monday'))));
+
+    node.owner!.performAction(
+      node.id,
+      SemanticsAction.customAction,
+      idFor('Wednesday'),
+    );
+    await tester.pumpAndSettle();
+
+    expect(occRepo.last?.scheduledDate, DateTime(2026, 7, 1));
+    expect(find.text('${strings.movedToDay} Wednesday'), findsOneWidget);
+    semantics.dispose();
   });
 }

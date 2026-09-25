@@ -158,6 +158,7 @@ class AppStrings {
     required this.scheduleSettingsLink,
     required this.scheduleDragHint,
     required this.scheduleEmptyDay,
+    required this.moveToDay,
     required this.movedToDay,
     required this.alreadyOnThatDay,
     required this.todayLabelShort,
@@ -338,6 +339,9 @@ class AppStrings {
   final String scheduleSettingsLink;
   final String scheduleDragHint;
   final String scheduleEmptyDay;
+
+  /// Screen-reader action prefix on a Schedule task: "Move to Wednesday".
+  final String moveToDay;
   final String movedToDay;
   final String alreadyOnThatDay;
   final String todayLabelShort;
@@ -505,6 +509,7 @@ class AppStrings {
     scheduleSettingsLink: 'Schedule',
     scheduleDragHint: 'Press and hold a task, then drag it to another day.',
     scheduleEmptyDay: 'Nothing here',
+    moveToDay: 'Move to',
     movedToDay: 'Moved to',
     alreadyOnThatDay: 'That task is already on that day',
     todayLabelShort: 'Today',
@@ -670,6 +675,7 @@ class AppStrings {
     scheduleSettingsLink: 'Schedule',
     scheduleDragHint: 'Press and hold a task, then drag it to another day.',
     scheduleEmptyDay: 'Nothing here',
+    moveToDay: 'Move to',
     movedToDay: 'Moved to',
     alreadyOnThatDay: 'That task is already on that day',
     todayLabelShort: 'Today',
