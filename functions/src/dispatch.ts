@@ -9,22 +9,75 @@
  */
 
 import {
+  NotificationPrefs,
   OPEN_OCCURRENCE_STATUSES,
   RecurrenceJson,
   addUtcDays,
   claimExpiry,
   dayStartBound,
   isAlreadyExistsError,
+  localDateOnly,
+  minuteOfDayInZone,
+  nudgeTimingAllows,
   occurrenceIdFor,
   occursOn,
   outstandingTaskIds,
+  prefsFromDoc,
   reminderClaimId,
+  resolveZone,
 } from "./reminder";
 
 /** An active task as the dispatcher needs it: its id and recurrence. */
 export interface ActiveTask {
   id: string;
   recurrence: RecurrenceJson;
+}
+
+/** A user whose nudge is due this tick, with what evaluating it needs. */
+export interface DueUser {
+  prefs: NotificationPrefs;
+  /** Their local calendar day, as a date-only UTC Date. */
+  todayLocal: Date;
+  activeTasks: ActiveTask[];
+}
+
+/**
+ * Reads [uid]'s state for the tick at [now], cheapest first. The prefs doc
+ * alone decides whether the nudge is due — in the user's own zone (falling
+ * back to [fallbackZone]) — and for 95 of the 96 daily ticks it isn't, so the
+ * active-task query, which costs a read per task, runs only once the gate
+ * passes. Returns null when the nudge isn't due.
+ */
+export async function loadDueUser(
+  db: FirebaseFirestore.Firestore,
+  uid: string,
+  now: Date,
+  fallbackZone: string,
+  toleranceMinutes: number,
+): Promise<DueUser | null> {
+  const prefsSnap = await db.doc(`users/${uid}/meta/notifications`).get();
+  const prefs = prefsFromDoc(prefsSnap.data());
+
+  // Their configured HH:mm are wall-clock times in their zone, and "today" is
+  // their calendar day. The tick fires every 15 min of real time, which is
+  // also every 15 min in any whole-or-quarter-hour-offset zone, so the
+  // [nudge, nudge+tolerance] window still catches exactly one tick.
+  const zone = resolveZone(prefs.timeZone, fallbackZone);
+  const nowMinute = minuteOfDayInZone(now, zone);
+  if (!nudgeTimingAllows({prefs, nowMinute, toleranceMinutes})) return null;
+
+  const tasksSnap = await db
+    .collection(`users/${uid}/tasks`)
+    .where("isActive", "==", true)
+    .get();
+  return {
+    prefs,
+    todayLocal: localDateOnly(now, zone),
+    activeTasks: tasksSnap.docs.map((t) => ({
+      id: t.id,
+      recurrence: (t.get("recurrence") ?? {}) as RecurrenceJson,
+    })),
+  };
 }
 
 /**

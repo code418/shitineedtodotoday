@@ -17,7 +17,12 @@ import test from "node:test";
 import {deleteApp, initializeApp} from "firebase-admin/app";
 import {getFirestore, Timestamp} from "firebase-admin/firestore";
 
-import {claimDay, computeOutstanding, releaseClaim} from "./dispatch";
+import {
+  claimDay,
+  computeOutstanding,
+  loadDueUser,
+  releaseClaim,
+} from "./dispatch";
 
 const EMULATOR = Boolean(process.env.FIRESTORE_EMULATOR_HOST);
 const skip = EMULATOR ? false : "requires FIRESTORE_EMULATOR_HOST";
@@ -129,3 +134,89 @@ test("releaseClaim lets a later tick re-claim the day", {skip}, async () => {
     "after release the day is claimable again",
   );
 });
+
+// ── loadDueUser ───────────────────────────────────────────────────────────────
+
+/**
+ * [db] wrapped so the test can see which collections a call queried. Only
+ * `collection()` is intercepted; everything else passes straight through.
+ */
+function countingDb(): {db: FirebaseFirestore.Firestore; queried: string[]} {
+  const queried: string[] = [];
+  const wrapped = new Proxy(db, {
+    get(target, prop, receiver) {
+      if (prop === "collection") {
+        return (path: string) => {
+          queried.push(path);
+          return target.collection(path);
+        };
+      }
+      const value = Reflect.get(target, prop, receiver);
+      return typeof value === "function" ? value.bind(target) : value;
+    },
+  });
+  return {db: wrapped, queried};
+}
+
+const seedUser = async (uid: string, nudge: string, timeZone: string) => {
+  await db.doc(`users/${uid}/meta/notifications`).set({
+    dailyNudgeEnabled: true,
+    dailyNudgeTime: nudge,
+    quietHoursEnabled: false,
+    quietHoursStart: "21:00",
+    quietHoursEnd: "07:00",
+    timeZone,
+  });
+  await db.doc(`users/${uid}/tasks/t1`).set({
+    isActive: true,
+    recurrence: {runtimeType: "strict", weekdays: [5]},
+  });
+  await db.doc(`users/${uid}/tasks/t2`).set({
+    isActive: false,
+    recurrence: {runtimeType: "strict", weekdays: [5]},
+  });
+};
+
+test("loadDueUser: off-schedule ticks never run the task query", {skip}, async () => {
+  const uid = freshUid();
+  await seedUser(uid, "08:00", "Europe/London");
+  const {db: counted, queried} = countingDb();
+
+  // 12:00 UTC = 13:00 in London (BST): nowhere near the 08:00 nudge. This is
+  // 95 of every 96 daily ticks, so the per-task read must not happen here.
+  const due = await loadDueUser(
+    counted,
+    uid,
+    new Date(Date.UTC(2026, 6, 24, 12, 0)),
+    "Europe/London",
+    14,
+  );
+
+  assert.equal(due, null);
+  assert.deepEqual(queried, []);
+});
+
+test("loadDueUser: at the nudge time, returns the day and ACTIVE tasks", {skip}, async () => {
+  const uid = freshUid();
+  // 08:00 in Tokyo (UTC+9) is 23:00 UTC the previous day: the user's "today"
+  // is their local Friday 24th, not UTC's Thursday 23rd.
+  await seedUser(uid, "08:00", "Asia/Tokyo");
+  const {db: counted, queried} = countingDb();
+
+  const due = await loadDueUser(
+    counted,
+    uid,
+    new Date(Date.UTC(2026, 6, 23, 23, 0)),
+    "Europe/London",
+    14,
+  );
+
+  assert.ok(due);
+  assert.deepEqual(queried, [`users/${uid}/tasks`]);
+  assert.equal(due.todayLocal.toISOString(), TODAY.toISOString());
+  assert.deepEqual(
+    due.activeTasks.map((t) => t.id),
+    ["t1"],
+  );
+});
+

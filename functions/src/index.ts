@@ -4,15 +4,13 @@ import {getMessaging} from "firebase-admin/messaging";
 import {logger, setGlobalOptions} from "firebase-functions/v2";
 import {onSchedule} from "firebase-functions/v2/scheduler";
 
-import {claimDay, computeOutstanding, releaseClaim} from "./dispatch";
 import {
-  RecurrenceJson,
-  localDateOnly,
-  minuteOfDayInZone,
-  nudgeTimingAllows,
-  prefsFromDoc,
-  resolveZone,
-} from "./reminder";
+  claimDay,
+  computeOutstanding,
+  loadDueUser,
+  releaseClaim,
+} from "./dispatch";
+import {minuteOfDayInZone} from "./reminder";
 
 // Run all functions in London (europe-west2) — the region closest to our
 // users — to keep latency and data residency tight.
@@ -36,10 +34,10 @@ const MAX_MULTICAST_TOKENS = 500;
 /**
  * Reminder dispatcher.
  *
- * Runs every 15 minutes. For each user it reads their notification prefs and
- * active tasks in parallel, sends a single gentle daily nudge at their chosen
- * time (respecting quiet hours) when there is genuinely something outstanding,
- * and pushes it to their registered FCM device tokens. This server-driven push
+ * Runs every 15 minutes. For each user it reads their notification prefs (and,
+ * only when the nudge is due, their active tasks), sends a single gentle daily
+ * nudge at their chosen time (respecting quiet hours) when there is genuinely
+ * something outstanding, and pushes it to their registered FCM device tokens. This server-driven push
  * is the app's reminder mechanism — no on-device local notifications.
  *
  * "Outstanding" mirrors what the client actually renders on today's checklist
@@ -83,9 +81,10 @@ export const sendDueReminders = onSchedule(
     let recipients = 0;
 
     /**
-     * Process a single user: read prefs + active tasks in parallel, evaluate
-     * recurrence to decide if there's genuinely something to do today, send a
-     * push to their [tokens] if the nudge should fire, and prune stale tokens.
+     * Process a single user: read prefs and, if the nudge is due, active
+     * tasks; evaluate recurrence to decide if there's genuinely something to
+     * do today, send a push to their [tokens] if the nudge should fire, and
+     * prune stale tokens.
      */
     async function processUser(
       uid: string,
@@ -93,42 +92,18 @@ export const sendDueReminders = onSchedule(
     ): Promise<{recipients: number; pushed: number}> {
       if (tokens.length === 0) return {recipients: 0, pushed: 0};
 
-      const [prefsSnap, tasksSnap] = await Promise.all([
-        db.doc(`users/${uid}/meta/notifications`).get(),
-        db
-          .collection(`users/${uid}/tasks`)
-          .where("isActive", "==", true)
-          .get(),
-      ]);
+      // Prefs first: they alone decide whether this tick is the user's nudge
+      // time; the task query only runs for the few who are due.
+      const due = await loadDueUser(
+        db,
+        uid,
+        now,
+        TIME_ZONE,
+        TICK_TOLERANCE_MINUTES,
+      );
+      if (due === null) return {recipients: 0, pushed: 0};
+      const {todayLocal, activeTasks} = due;
 
-      const prefs = prefsFromDoc(prefsSnap.data());
-
-      // Evaluate this user in THEIR zone: their configured HH:mm are wall-clock
-      // times there, and "today" is their calendar day. The tick fires every
-      // 15 min of real time, which is also every 15 min in any whole-or-quarter-
-      // hour-offset zone, so the [nudge, nudge+14] window still catches exactly
-      // one tick. resolveZone falls back to London for a missing/bad value.
-      const zone = resolveZone(prefs.timeZone, TIME_ZONE);
-      const nowMinute = minuteOfDayInZone(now, zone);
-      // Today's LOCAL calendar day as a date-only UTC Date (DST-safe).
-      const todayLocal = localDateOnly(now, zone);
-
-      // Cheap gate first: only the few users whose nudge is actually due this
-      // tick proceed to the per-task occurrence reads below.
-      if (
-        !nudgeTimingAllows({
-          prefs,
-          nowMinute,
-          toleranceMinutes: TICK_TOLERANCE_MINUTES,
-        })
-      ) {
-        return {recipients: 0, pushed: 0};
-      }
-
-      const activeTasks = tasksSnap.docs.map((t) => ({
-        id: t.id,
-        recurrence: (t.get("recurrence") ?? {}) as RecurrenceJson,
-      }));
       const outstanding = await computeOutstanding(
         db,
         uid,
