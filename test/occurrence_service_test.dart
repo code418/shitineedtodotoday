@@ -143,6 +143,24 @@ void main() {
     expect(taskRepo.store['t1']!.estimatedEffortMinutes, 10);
   });
 
+  test('skip refuses a done occurrence instead of erasing the completion', () {
+    // Swiping "Not today" on a ticked-off chore used to flip it to skipped:
+    // the completion vanished from insights/streaks and its completedAt +
+    // duration were stranded. Un-ticking (reopen) is the way back.
+    final done = TaskOccurrence(
+      id: 't1_2026-06-29',
+      taskId: 't1',
+      scheduledDate: _monday,
+      status: OccurrenceStatus.done,
+      completedAt: clock,
+      actualDurationMinutes: 12,
+    );
+    return service.skip(done).then((result) {
+      expect(result, done);
+      expect(occRepo.store, isEmpty, reason: 'nothing may be written');
+    });
+  });
+
   test('skip marks the occurrence skipped, never failed', () async {
     final skipped = await service.skip(pending());
     expect(skipped.status, OccurrenceStatus.skipped);

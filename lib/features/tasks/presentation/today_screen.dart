@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -176,57 +177,73 @@ class TodayScreen extends ConsumerWidget {
                                 }
                               },
                             );
-                            return Dismissible(
-                              key: ValueKey(occ.id),
-                              direction: DismissDirection.endToStart,
-                              background: Container(
-                                alignment: Alignment.centerRight,
-                                padding: const EdgeInsets.only(
-                                  right: AppSpacing.x5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: context.palette.rescheduleSoft,
-                                  borderRadius: BorderRadius.circular(
-                                    AppRadii.lg,
+                            // Completed chores stay put: "Not today" on a
+                            // done row would erase the completion. Un-tick
+                            // to reopen instead.
+                            if (!occ.isOpen) return item;
+
+                            Future<bool> skip() async {
+                              final svc = ref.read(occurrenceServiceProvider);
+                              if (svc == null) return false;
+                              try {
+                                await svc.skip(occ);
+                                if (context.mounted) {
+                                  _snack(context, strings.taskSkipped);
+                                }
+                                return true;
+                              } catch (_) {
+                                if (context.mounted) {
+                                  _snack(context, strings.actionFailed);
+                                }
+                                return false;
+                              }
+                            }
+
+                            // The swipe is invisible to a screen reader, so the
+                            // same skip is also a named action on the row.
+                            return Semantics(
+                              container: true,
+                              customSemanticsActions: {
+                                CustomSemanticsAction(label: strings.notToday):
+                                    skip,
+                              },
+                              child: Dismissible(
+                                key: ValueKey(occ.id),
+                                direction: DismissDirection.endToStart,
+                                background: Container(
+                                  alignment: Alignment.centerRight,
+                                  padding: const EdgeInsets.only(
+                                    right: AppSpacing.x5,
                                   ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      AppIcons.eventRepeat,
-                                      color: context.palette.reschedule,
+                                  decoration: BoxDecoration(
+                                    color: context.palette.rescheduleSoft,
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadii.lg,
                                     ),
-                                    const SizedBox(width: AppSpacing.x2),
-                                    Text(
-                                      strings.notToday,
-                                      style: TextStyle(
-                                        fontFamily: AppTypography.fontSans,
-                                        fontSize: AppTypography.sizeSm,
-                                        fontWeight: AppTypography.semibold,
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        AppIcons.eventRepeat,
                                         color: context.palette.reschedule,
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(width: AppSpacing.x2),
+                                      Text(
+                                        strings.notToday,
+                                        style: TextStyle(
+                                          fontFamily: AppTypography.fontSans,
+                                          fontSize: AppTypography.sizeSm,
+                                          fontWeight: AppTypography.semibold,
+                                          color: context.palette.reschedule,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
+                                confirmDismiss: (_) => skip(),
+                                child: item,
                               ),
-                              confirmDismiss: (_) async {
-                                final svc = ref.read(occurrenceServiceProvider);
-                                if (svc == null) return false;
-                                try {
-                                  await svc.skip(occ);
-                                  if (context.mounted) {
-                                    _snack(context, strings.taskSkipped);
-                                  }
-                                  return true;
-                                } catch (_) {
-                                  if (context.mounted) {
-                                    _snack(context, strings.actionFailed);
-                                  }
-                                  return false;
-                                }
-                              },
-                              child: item,
                             );
                           },
                         ),

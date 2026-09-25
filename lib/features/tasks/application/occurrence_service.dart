@@ -76,6 +76,11 @@ class OccurrenceService {
 
   /// "Not today" — forgiven, not failed.
   Future<TaskOccurrence> skip(TaskOccurrence occurrence) async {
+    // Settled occurrences are never skipped — the [moveTo] invariant. Skipping
+    // a done one would erase the completion (gone from insights and streaks)
+    // and strand its completedAt/actualDurationMinutes; un-ticking ([reopen])
+    // is the way back, and it relearns the estimate. Re-skipping is a no-op.
+    if (!occurrence.isOpen) return occurrence;
     final skipped = occurrence.copyWith(status: OccurrenceStatus.skipped);
     await occurrences.upsert(ownerId, skipped);
     return skipped;
