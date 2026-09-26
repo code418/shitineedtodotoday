@@ -52,6 +52,11 @@ abstract class TaskOccurrence with _$TaskOccurrence {
     /// future scheduling can be more realistic.
     int? actualDurationMinutes,
 
+    /// True when [actualDurationMinutes] was filled in *for* the user rather
+    /// than reported — ticking a chore off on the home-screen widget logs the
+    /// task's estimate. The app flags such times so they can be corrected.
+    @Default(false) bool durationEstimated,
+
     /// Set when the user has *deliberately* placed this occurrence on a day
     /// (e.g. dragged it on the agenda). The load balancer leaves pinned
     /// occurrences where they are rather than spreading them.

@@ -15,6 +15,9 @@ class AppTaskItem extends StatelessWidget {
     this.movedFrom,
     this.onToggle,
     this.onTap,
+    this.minutesNote,
+    this.onMinutesTap,
+    this.minutesTapLabel,
   });
 
   final String title;
@@ -28,8 +31,43 @@ class AppTaskItem extends StatelessWidget {
   /// the row is not tappable and no [GestureDetector] is inserted.
   final VoidCallback? onTap;
 
+  /// Appended to the time badge, e.g. "est." for a time filled in for the
+  /// user rather than reported.
+  final String? minutesNote;
+
+  /// Makes the time badge tappable (e.g. to correct a logged time), with
+  /// [minutesTapLabel] as its screen-reader name.
+  final VoidCallback? onMinutesTap;
+  final String? minutesTapLabel;
+
   static const double _pad = 16;
   static const double _padV = 14;
+
+  Widget _timeBadge() {
+    final badge = AppBadge(
+      label: minutesNote == null
+          ? '~${minutes}m'
+          : '~${minutes}m · $minutesNote',
+      tone: done ? AppBadgeTone.done : null,
+    );
+    if (onMinutesTap == null) return badge;
+    return Semantics(
+      button: true,
+      label: minutesTapLabel,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onMinutesTap,
+        // A full 48dp touch target around the small badge.
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            minWidth: kMinInteractiveDimension,
+            minHeight: kMinInteractiveDimension,
+          ),
+          child: Align(widthFactor: 1, heightFactor: 1, child: badge),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -127,10 +165,7 @@ class AppTaskItem extends StatelessWidget {
           ),
           if (minutes != null) ...[
             const SizedBox(width: AppSpacing.x2),
-            AppBadge(
-              label: '~${minutes}m',
-              tone: done ? AppBadgeTone.done : null,
-            ),
+            _timeBadge(),
           ],
         ],
       ),

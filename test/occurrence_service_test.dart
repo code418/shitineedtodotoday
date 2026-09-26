@@ -143,6 +143,80 @@ void main() {
     expect(taskRepo.store['t1']!.estimatedEffortMinutes, 10);
   });
 
+  group('estimated times', () {
+    test('complete(estimated: true) flags the time as filled in', () async {
+      final result = await service.complete(
+        occurrence: pending(),
+        task: _task(),
+        actualMinutes: 15,
+        estimated: true,
+      );
+      expect(result.occurrence.actualDurationMinutes, 15);
+      expect(result.occurrence.durationEstimated, isTrue);
+      expect(occRepo.store['t1_2026-06-29']!.durationEstimated, isTrue);
+    });
+
+    test('a normal completion is not flagged', () async {
+      final result = await service.complete(
+        occurrence: pending(),
+        task: _task(),
+        actualMinutes: 12,
+      );
+      expect(result.occurrence.durationEstimated, isFalse);
+    });
+
+    test(
+      'updateDuration corrects the time, clears the flag and relearns',
+      () async {
+        // Two real 10m completions before; the widget logged the 30m estimate.
+        final prior = [
+          for (final day in [15, 22])
+            TaskOccurrence(
+              id: 't1_2026-06-$day',
+              taskId: 't1',
+              scheduledDate: DateTime(2026, 6, day),
+              status: OccurrenceStatus.done,
+              completedAt: DateTime(2026, 6, day, 9),
+              actualDurationMinutes: 10,
+            ),
+        ];
+        final ticked = TaskOccurrence(
+          id: 't1_2026-06-29',
+          taskId: 't1',
+          scheduledDate: _monday,
+          status: OccurrenceStatus.done,
+          completedAt: clock,
+          actualDurationMinutes: 30,
+          durationEstimated: true,
+        );
+
+        final result = await service.updateDuration(
+          occurrence: ticked,
+          task: _task(estimate: 30),
+          actualMinutes: 10,
+          history: [...prior, ticked],
+        );
+
+        expect(result.occurrence.actualDurationMinutes, 10);
+        expect(result.occurrence.durationEstimated, isFalse);
+        expect(occRepo.store['t1_2026-06-29']!.actualDurationMinutes, 10);
+        // Learned from 10/10/10 — the stale 30m copy in history isn't counted.
+        expect(result.updatedTask!.estimatedEffortMinutes, 10);
+        expect(taskRepo.store['t1']!.estimatedEffortMinutes, 10);
+      },
+    );
+
+    test('updateDuration leaves a not-done occurrence alone', () async {
+      final result = await service.updateDuration(
+        occurrence: pending(),
+        task: _task(),
+        actualMinutes: 10,
+      );
+      expect(result.occurrence.status, OccurrenceStatus.pending);
+      expect(occRepo.store, isEmpty);
+    });
+  });
+
   test('skip refuses a done occurrence instead of erasing the completion', () {
     // Swiping "Not today" on a ticked-off chore used to flip it to skipped:
     // the completion vanished from insights/streaks and its completedAt +

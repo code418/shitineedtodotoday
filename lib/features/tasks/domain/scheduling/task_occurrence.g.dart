@@ -27,6 +27,7 @@ _TaskOccurrence _$TaskOccurrenceFromJson(Map<String, dynamic> json) =>
           ? null
           : DateTime.parse(json['completedAt'] as String),
       actualDurationMinutes: (json['actualDurationMinutes'] as num?)?.toInt(),
+      durationEstimated: json['durationEstimated'] as bool? ?? false,
       pinned: json['pinned'] as bool? ?? false,
     );
 
@@ -41,6 +42,7 @@ Map<String, dynamic> _$TaskOccurrenceToJson(_TaskOccurrence instance) =>
       'originalDate': instance.originalDate?.toIso8601String(),
       'completedAt': instance.completedAt?.toIso8601String(),
       'actualDurationMinutes': instance.actualDurationMinutes,
+      'durationEstimated': instance.durationEstimated,
       'pinned': instance.pinned,
     };
 

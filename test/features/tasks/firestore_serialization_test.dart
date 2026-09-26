@@ -103,5 +103,31 @@ void main() {
       ).toJson();
       expect(firstUnsafePath(json), isNull);
     });
+
+    test('an estimated completion round-trips its flag', () {
+      final done = TaskOccurrence(
+        id: 'o1',
+        taskId: 't1',
+        scheduledDate: ts,
+        status: OccurrenceStatus.done,
+        completedAt: ts,
+        actualDurationMinutes: 15,
+        durationEstimated: true,
+      );
+      final json = done.toJson();
+      expect(firstUnsafePath(json), isNull);
+      expect(TaskOccurrence.fromJson(json), done);
+    });
+
+    test('a completion saved before the flag existed reads as reported', () {
+      final json = TaskOccurrence(
+        id: 'o1',
+        taskId: 't1',
+        scheduledDate: ts,
+        status: OccurrenceStatus.done,
+        actualDurationMinutes: 15,
+      ).toJson()..remove('durationEstimated');
+      expect(TaskOccurrence.fromJson(json).durationEstimated, isFalse);
+    });
   });
 }

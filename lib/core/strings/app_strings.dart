@@ -44,6 +44,10 @@ class AppStrings {
     required this.durationPrompt,
     required this.durationSubtitle,
     required this.durationSave,
+    required this.durationUpdate,
+    required this.timeUpdated,
+    required this.timeEstimatedShort,
+    required this.editTime,
     required this.learnedQuicker,
     required this.learnedSettled,
     required this.learnedPrefix,
@@ -242,6 +246,16 @@ class AppStrings {
   final String durationPrompt;
   final String durationSubtitle;
   final String durationSave;
+
+  // Correcting a logged time (e.g. an estimate the widget's tick logged)
+  final String durationUpdate;
+  final String timeUpdated;
+
+  /// Marks a time filled in for the user rather than reported: "~15m · est.".
+  final String timeEstimatedShort;
+
+  /// Screen-reader name for the tappable time on a completed chore.
+  final String editTime;
   final String learnedQuicker;
   final String learnedSettled;
   final String learnedPrefix;
@@ -459,6 +473,10 @@ class AppStrings {
     durationPrompt: 'How long did it take?',
     durationSubtitle: 'A rough number is fine — it helps us plan better.',
     durationSave: 'Log it',
+    durationUpdate: 'Update time',
+    timeUpdated: 'Time updated',
+    timeEstimatedShort: 'est.',
+    editTime: 'Edit time',
     learnedQuicker: 'quicker than you thought',
     learnedSettled: 'good to know',
     learnedPrefix: 'Learned: usually',
@@ -655,6 +673,10 @@ class AppStrings {
     durationPrompt: 'How long did that take?',
     durationSubtitle: "A rough number's fine — helps us plan your shit better.",
     durationSave: 'Log it',
+    durationUpdate: 'Update time',
+    timeUpdated: 'Time updated',
+    timeEstimatedShort: 'est.',
+    editTime: 'Edit time',
     learnedQuicker: 'faster than you reckoned',
     learnedSettled: 'good to know',
     learnedPrefix: 'Learned: usually',

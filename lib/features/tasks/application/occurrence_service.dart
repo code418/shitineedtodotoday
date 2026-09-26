@@ -39,39 +39,80 @@ class OccurrenceService {
   /// Tick a task off and record how long it actually took. Persists the done
   /// occurrence, then re-bases the task's estimate from its recent actuals
   /// ([history] = the task's prior occurrences, used to learn).
+  ///
+  /// [estimated] marks [actualMinutes] as filled in for the user rather than
+  /// reported (the home-screen widget's tick logs the estimate), so the app can
+  /// flag it for correction via [updateDuration].
   Future<CompletionResult> complete({
     required TaskOccurrence occurrence,
     required Task task,
     required int actualMinutes,
     Iterable<TaskOccurrence> history = const [],
+    bool estimated = false,
   }) async {
     final done = occurrence.copyWith(
       status: OccurrenceStatus.done,
       completedAt: now(),
       actualDurationMinutes: actualMinutes,
+      durationEstimated: estimated,
     );
     await occurrences.upsert(ownerId, done);
+    return CompletionResult(
+      occurrence: done,
+      updatedTask: await _relearn(task, done, history),
+    );
+  }
 
+  /// Correct how long a completed occurrence took — e.g. one ticked off on
+  /// the home-screen widget, which logged the estimate. The new time counts as
+  /// reported (clears [TaskOccurrence.durationEstimated]) and the task's
+  /// estimate is re-learned with it, exactly as [complete] would have. Only a
+  /// done occurrence has a time to correct; anything else is returned as-is.
+  Future<CompletionResult> updateDuration({
+    required TaskOccurrence occurrence,
+    required Task task,
+    required int actualMinutes,
+    Iterable<TaskOccurrence> history = const [],
+  }) async {
+    if (occurrence.status != OccurrenceStatus.done) {
+      return CompletionResult(occurrence: occurrence);
+    }
+    final corrected = occurrence.copyWith(
+      actualDurationMinutes: actualMinutes,
+      durationEstimated: false,
+    );
+    await occurrences.upsert(ownerId, corrected);
+    return CompletionResult(
+      occurrence: corrected,
+      updatedTask: await _relearn(task, corrected, history),
+    );
+  }
+
+  /// Re-bases [task]'s estimate on its recent actuals including [done],
+  /// persisting and returning the task when the estimate moved.
+  Future<Task?> _relearn(
+    Task task,
+    TaskOccurrence done,
+    Iterable<TaskOccurrence> history,
+  ) async {
     // Drop any prior copy of this occurrence from history before learning: if
     // the caller's history still holds a stale *done* copy of it (e.g. a
-    // complete → reopen → re-complete flow, or a not-yet-refreshed stream), it
-    // would otherwise be counted alongside `done` and double-weight this one
-    // occurrence in the mean. Mirrors the same guard in [reopen].
-    final priorActuals = history.where((o) => o.id != occurrence.id);
+    // complete → reopen → re-complete flow, a correction, or a not-yet-
+    // refreshed stream), it would otherwise be counted alongside [done] and
+    // double-weight this one occurrence in the mean. Mirrors [reopen].
+    final priorActuals = history.where((o) => o.id != done.id);
     final actuals = recentActualMinutes([...priorActuals, done]);
     final learned = learnedEstimateMinutes(
       actuals,
       fallback: task.estimatedEffortMinutes,
     );
-    Task? updatedTask;
-    if (learned != task.estimatedEffortMinutes) {
-      updatedTask = task.copyWith(
-        estimatedEffortMinutes: learned,
-        updatedAt: now(),
-      );
-      await tasks.upsert(updatedTask);
-    }
-    return CompletionResult(occurrence: done, updatedTask: updatedTask);
+    if (learned == task.estimatedEffortMinutes) return null;
+    final updatedTask = task.copyWith(
+      estimatedEffortMinutes: learned,
+      updatedAt: now(),
+    );
+    await tasks.upsert(updatedTask);
+    return updatedTask;
   }
 
   /// "Not today" — forgiven, not failed.

@@ -147,11 +147,29 @@ class TodayScreen extends ConsumerWidget {
                             final task = ref.watch(
                               taskByIdProvider(occ.taskId),
                             );
+                            final isDone = occ.status == OccurrenceStatus.done;
                             final item = AppTaskItem(
                               title: task?.title ?? occ.taskId,
-                              minutes: task?.estimatedEffortMinutes,
+                              // A done chore shows the time actually logged —
+                              // tappable, so an estimated one (a widget tick)
+                              // or a mis-logged one can be corrected.
+                              minutes: isDone
+                                  ? occ.actualDurationMinutes ??
+                                        task?.estimatedEffortMinutes
+                                  : task?.estimatedEffortMinutes,
+                              minutesNote: isDone && occ.durationEstimated
+                                  ? strings.timeEstimatedShort
+                                  : null,
+                              onMinutesTap: isDone && task != null
+                                  ? () => showLogDurationSheet(
+                                      context,
+                                      occurrence: occ,
+                                      task: task,
+                                    )
+                                  : null,
+                              minutesTapLabel: strings.editTime,
                               category: task?.category,
-                              done: occ.status == OccurrenceStatus.done,
+                              done: isDone,
                               movedFrom:
                                   (occ.status == OccurrenceStatus.rescheduled &&
                                       occ.originalDate != null)

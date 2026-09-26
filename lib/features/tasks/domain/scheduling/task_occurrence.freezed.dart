@@ -23,7 +23,10 @@ mixin _$TaskOccurrence {
  DateTime? get originalDate;/// When the user marked it done.
  DateTime? get completedAt;/// How long the user reported it actually took. Feeds effort learning so
 /// future scheduling can be more realistic.
- int? get actualDurationMinutes;/// Set when the user has *deliberately* placed this occurrence on a day
+ int? get actualDurationMinutes;/// True when [actualDurationMinutes] was filled in *for* the user rather
+/// than reported — ticking a chore off on the home-screen widget logs the
+/// task's estimate. The app flags such times so they can be corrected.
+ bool get durationEstimated;/// Set when the user has *deliberately* placed this occurrence on a day
 /// (e.g. dragged it on the agenda). The load balancer leaves pinned
 /// occurrences where they are rather than spreading them.
  bool get pinned;
@@ -39,16 +42,16 @@ $TaskOccurrenceCopyWith<TaskOccurrence> get copyWith => _$TaskOccurrenceCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskOccurrence&&(identical(other.id, id) || other.id == id)&&(identical(other.taskId, taskId) || other.taskId == taskId)&&(identical(other.scheduledDate, scheduledDate) || other.scheduledDate == scheduledDate)&&(identical(other.windowStart, windowStart) || other.windowStart == windowStart)&&(identical(other.windowEnd, windowEnd) || other.windowEnd == windowEnd)&&(identical(other.status, status) || other.status == status)&&(identical(other.originalDate, originalDate) || other.originalDate == originalDate)&&(identical(other.completedAt, completedAt) || other.completedAt == completedAt)&&(identical(other.actualDurationMinutes, actualDurationMinutes) || other.actualDurationMinutes == actualDurationMinutes)&&(identical(other.pinned, pinned) || other.pinned == pinned));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskOccurrence&&(identical(other.id, id) || other.id == id)&&(identical(other.taskId, taskId) || other.taskId == taskId)&&(identical(other.scheduledDate, scheduledDate) || other.scheduledDate == scheduledDate)&&(identical(other.windowStart, windowStart) || other.windowStart == windowStart)&&(identical(other.windowEnd, windowEnd) || other.windowEnd == windowEnd)&&(identical(other.status, status) || other.status == status)&&(identical(other.originalDate, originalDate) || other.originalDate == originalDate)&&(identical(other.completedAt, completedAt) || other.completedAt == completedAt)&&(identical(other.actualDurationMinutes, actualDurationMinutes) || other.actualDurationMinutes == actualDurationMinutes)&&(identical(other.durationEstimated, durationEstimated) || other.durationEstimated == durationEstimated)&&(identical(other.pinned, pinned) || other.pinned == pinned));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,taskId,scheduledDate,windowStart,windowEnd,status,originalDate,completedAt,actualDurationMinutes,pinned);
+int get hashCode => Object.hash(runtimeType,id,taskId,scheduledDate,windowStart,windowEnd,status,originalDate,completedAt,actualDurationMinutes,durationEstimated,pinned);
 
 @override
 String toString() {
-  return 'TaskOccurrence(id: $id, taskId: $taskId, scheduledDate: $scheduledDate, windowStart: $windowStart, windowEnd: $windowEnd, status: $status, originalDate: $originalDate, completedAt: $completedAt, actualDurationMinutes: $actualDurationMinutes, pinned: $pinned)';
+  return 'TaskOccurrence(id: $id, taskId: $taskId, scheduledDate: $scheduledDate, windowStart: $windowStart, windowEnd: $windowEnd, status: $status, originalDate: $originalDate, completedAt: $completedAt, actualDurationMinutes: $actualDurationMinutes, durationEstimated: $durationEstimated, pinned: $pinned)';
 }
 
 
@@ -59,7 +62,7 @@ abstract mixin class $TaskOccurrenceCopyWith<$Res>  {
   factory $TaskOccurrenceCopyWith(TaskOccurrence value, $Res Function(TaskOccurrence) _then) = _$TaskOccurrenceCopyWithImpl;
 @useResult
 $Res call({
- String id, String taskId, DateTime scheduledDate, DateTime? windowStart, DateTime? windowEnd, OccurrenceStatus status, DateTime? originalDate, DateTime? completedAt, int? actualDurationMinutes, bool pinned
+ String id, String taskId, DateTime scheduledDate, DateTime? windowStart, DateTime? windowEnd, OccurrenceStatus status, DateTime? originalDate, DateTime? completedAt, int? actualDurationMinutes, bool durationEstimated, bool pinned
 });
 
 
@@ -76,7 +79,7 @@ class _$TaskOccurrenceCopyWithImpl<$Res>
 
 /// Create a copy of TaskOccurrence
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? taskId = null,Object? scheduledDate = null,Object? windowStart = freezed,Object? windowEnd = freezed,Object? status = null,Object? originalDate = freezed,Object? completedAt = freezed,Object? actualDurationMinutes = freezed,Object? pinned = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? taskId = null,Object? scheduledDate = null,Object? windowStart = freezed,Object? windowEnd = freezed,Object? status = null,Object? originalDate = freezed,Object? completedAt = freezed,Object? actualDurationMinutes = freezed,Object? durationEstimated = null,Object? pinned = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,taskId: null == taskId ? _self.taskId : taskId // ignore: cast_nullable_to_non_nullable
@@ -87,7 +90,8 @@ as DateTime?,status: null == status ? _self.status : status // ignore: cast_null
 as OccurrenceStatus,originalDate: freezed == originalDate ? _self.originalDate : originalDate // ignore: cast_nullable_to_non_nullable
 as DateTime?,completedAt: freezed == completedAt ? _self.completedAt : completedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,actualDurationMinutes: freezed == actualDurationMinutes ? _self.actualDurationMinutes : actualDurationMinutes // ignore: cast_nullable_to_non_nullable
-as int?,pinned: null == pinned ? _self.pinned : pinned // ignore: cast_nullable_to_non_nullable
+as int?,durationEstimated: null == durationEstimated ? _self.durationEstimated : durationEstimated // ignore: cast_nullable_to_non_nullable
+as bool,pinned: null == pinned ? _self.pinned : pinned // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }
@@ -173,10 +177,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String taskId,  DateTime scheduledDate,  DateTime? windowStart,  DateTime? windowEnd,  OccurrenceStatus status,  DateTime? originalDate,  DateTime? completedAt,  int? actualDurationMinutes,  bool pinned)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String taskId,  DateTime scheduledDate,  DateTime? windowStart,  DateTime? windowEnd,  OccurrenceStatus status,  DateTime? originalDate,  DateTime? completedAt,  int? actualDurationMinutes,  bool durationEstimated,  bool pinned)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TaskOccurrence() when $default != null:
-return $default(_that.id,_that.taskId,_that.scheduledDate,_that.windowStart,_that.windowEnd,_that.status,_that.originalDate,_that.completedAt,_that.actualDurationMinutes,_that.pinned);case _:
+return $default(_that.id,_that.taskId,_that.scheduledDate,_that.windowStart,_that.windowEnd,_that.status,_that.originalDate,_that.completedAt,_that.actualDurationMinutes,_that.durationEstimated,_that.pinned);case _:
   return orElse();
 
 }
@@ -194,10 +198,10 @@ return $default(_that.id,_that.taskId,_that.scheduledDate,_that.windowStart,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String taskId,  DateTime scheduledDate,  DateTime? windowStart,  DateTime? windowEnd,  OccurrenceStatus status,  DateTime? originalDate,  DateTime? completedAt,  int? actualDurationMinutes,  bool pinned)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String taskId,  DateTime scheduledDate,  DateTime? windowStart,  DateTime? windowEnd,  OccurrenceStatus status,  DateTime? originalDate,  DateTime? completedAt,  int? actualDurationMinutes,  bool durationEstimated,  bool pinned)  $default,) {final _that = this;
 switch (_that) {
 case _TaskOccurrence():
-return $default(_that.id,_that.taskId,_that.scheduledDate,_that.windowStart,_that.windowEnd,_that.status,_that.originalDate,_that.completedAt,_that.actualDurationMinutes,_that.pinned);case _:
+return $default(_that.id,_that.taskId,_that.scheduledDate,_that.windowStart,_that.windowEnd,_that.status,_that.originalDate,_that.completedAt,_that.actualDurationMinutes,_that.durationEstimated,_that.pinned);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -214,10 +218,10 @@ return $default(_that.id,_that.taskId,_that.scheduledDate,_that.windowStart,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String taskId,  DateTime scheduledDate,  DateTime? windowStart,  DateTime? windowEnd,  OccurrenceStatus status,  DateTime? originalDate,  DateTime? completedAt,  int? actualDurationMinutes,  bool pinned)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String taskId,  DateTime scheduledDate,  DateTime? windowStart,  DateTime? windowEnd,  OccurrenceStatus status,  DateTime? originalDate,  DateTime? completedAt,  int? actualDurationMinutes,  bool durationEstimated,  bool pinned)?  $default,) {final _that = this;
 switch (_that) {
 case _TaskOccurrence() when $default != null:
-return $default(_that.id,_that.taskId,_that.scheduledDate,_that.windowStart,_that.windowEnd,_that.status,_that.originalDate,_that.completedAt,_that.actualDurationMinutes,_that.pinned);case _:
+return $default(_that.id,_that.taskId,_that.scheduledDate,_that.windowStart,_that.windowEnd,_that.status,_that.originalDate,_that.completedAt,_that.actualDurationMinutes,_that.durationEstimated,_that.pinned);case _:
   return null;
 
 }
@@ -229,7 +233,7 @@ return $default(_that.id,_that.taskId,_that.scheduledDate,_that.windowStart,_tha
 @JsonSerializable()
 
 class _TaskOccurrence extends TaskOccurrence {
-  const _TaskOccurrence({required this.id, required this.taskId, required this.scheduledDate, this.windowStart, this.windowEnd, this.status = OccurrenceStatus.pending, this.originalDate, this.completedAt, this.actualDurationMinutes, this.pinned = false}): super._();
+  const _TaskOccurrence({required this.id, required this.taskId, required this.scheduledDate, this.windowStart, this.windowEnd, this.status = OccurrenceStatus.pending, this.originalDate, this.completedAt, this.actualDurationMinutes, this.durationEstimated = false, this.pinned = false}): super._();
   factory _TaskOccurrence.fromJson(Map<String, dynamic> json) => _$TaskOccurrenceFromJson(json);
 
 @override final  String id;
@@ -249,6 +253,10 @@ class _TaskOccurrence extends TaskOccurrence {
 /// How long the user reported it actually took. Feeds effort learning so
 /// future scheduling can be more realistic.
 @override final  int? actualDurationMinutes;
+/// True when [actualDurationMinutes] was filled in *for* the user rather
+/// than reported — ticking a chore off on the home-screen widget logs the
+/// task's estimate. The app flags such times so they can be corrected.
+@override@JsonKey() final  bool durationEstimated;
 /// Set when the user has *deliberately* placed this occurrence on a day
 /// (e.g. dragged it on the agenda). The load balancer leaves pinned
 /// occurrences where they are rather than spreading them.
@@ -267,16 +275,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TaskOccurrence&&(identical(other.id, id) || other.id == id)&&(identical(other.taskId, taskId) || other.taskId == taskId)&&(identical(other.scheduledDate, scheduledDate) || other.scheduledDate == scheduledDate)&&(identical(other.windowStart, windowStart) || other.windowStart == windowStart)&&(identical(other.windowEnd, windowEnd) || other.windowEnd == windowEnd)&&(identical(other.status, status) || other.status == status)&&(identical(other.originalDate, originalDate) || other.originalDate == originalDate)&&(identical(other.completedAt, completedAt) || other.completedAt == completedAt)&&(identical(other.actualDurationMinutes, actualDurationMinutes) || other.actualDurationMinutes == actualDurationMinutes)&&(identical(other.pinned, pinned) || other.pinned == pinned));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TaskOccurrence&&(identical(other.id, id) || other.id == id)&&(identical(other.taskId, taskId) || other.taskId == taskId)&&(identical(other.scheduledDate, scheduledDate) || other.scheduledDate == scheduledDate)&&(identical(other.windowStart, windowStart) || other.windowStart == windowStart)&&(identical(other.windowEnd, windowEnd) || other.windowEnd == windowEnd)&&(identical(other.status, status) || other.status == status)&&(identical(other.originalDate, originalDate) || other.originalDate == originalDate)&&(identical(other.completedAt, completedAt) || other.completedAt == completedAt)&&(identical(other.actualDurationMinutes, actualDurationMinutes) || other.actualDurationMinutes == actualDurationMinutes)&&(identical(other.durationEstimated, durationEstimated) || other.durationEstimated == durationEstimated)&&(identical(other.pinned, pinned) || other.pinned == pinned));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,taskId,scheduledDate,windowStart,windowEnd,status,originalDate,completedAt,actualDurationMinutes,pinned);
+int get hashCode => Object.hash(runtimeType,id,taskId,scheduledDate,windowStart,windowEnd,status,originalDate,completedAt,actualDurationMinutes,durationEstimated,pinned);
 
 @override
 String toString() {
-  return 'TaskOccurrence(id: $id, taskId: $taskId, scheduledDate: $scheduledDate, windowStart: $windowStart, windowEnd: $windowEnd, status: $status, originalDate: $originalDate, completedAt: $completedAt, actualDurationMinutes: $actualDurationMinutes, pinned: $pinned)';
+  return 'TaskOccurrence(id: $id, taskId: $taskId, scheduledDate: $scheduledDate, windowStart: $windowStart, windowEnd: $windowEnd, status: $status, originalDate: $originalDate, completedAt: $completedAt, actualDurationMinutes: $actualDurationMinutes, durationEstimated: $durationEstimated, pinned: $pinned)';
 }
 
 
@@ -287,7 +295,7 @@ abstract mixin class _$TaskOccurrenceCopyWith<$Res> implements $TaskOccurrenceCo
   factory _$TaskOccurrenceCopyWith(_TaskOccurrence value, $Res Function(_TaskOccurrence) _then) = __$TaskOccurrenceCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String taskId, DateTime scheduledDate, DateTime? windowStart, DateTime? windowEnd, OccurrenceStatus status, DateTime? originalDate, DateTime? completedAt, int? actualDurationMinutes, bool pinned
+ String id, String taskId, DateTime scheduledDate, DateTime? windowStart, DateTime? windowEnd, OccurrenceStatus status, DateTime? originalDate, DateTime? completedAt, int? actualDurationMinutes, bool durationEstimated, bool pinned
 });
 
 
@@ -304,7 +312,7 @@ class __$TaskOccurrenceCopyWithImpl<$Res>
 
 /// Create a copy of TaskOccurrence
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? taskId = null,Object? scheduledDate = null,Object? windowStart = freezed,Object? windowEnd = freezed,Object? status = null,Object? originalDate = freezed,Object? completedAt = freezed,Object? actualDurationMinutes = freezed,Object? pinned = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? taskId = null,Object? scheduledDate = null,Object? windowStart = freezed,Object? windowEnd = freezed,Object? status = null,Object? originalDate = freezed,Object? completedAt = freezed,Object? actualDurationMinutes = freezed,Object? durationEstimated = null,Object? pinned = null,}) {
   return _then(_TaskOccurrence(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,taskId: null == taskId ? _self.taskId : taskId // ignore: cast_nullable_to_non_nullable
@@ -315,7 +323,8 @@ as DateTime?,status: null == status ? _self.status : status // ignore: cast_null
 as OccurrenceStatus,originalDate: freezed == originalDate ? _self.originalDate : originalDate // ignore: cast_nullable_to_non_nullable
 as DateTime?,completedAt: freezed == completedAt ? _self.completedAt : completedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,actualDurationMinutes: freezed == actualDurationMinutes ? _self.actualDurationMinutes : actualDurationMinutes // ignore: cast_nullable_to_non_nullable
-as int?,pinned: null == pinned ? _self.pinned : pinned // ignore: cast_nullable_to_non_nullable
+as int?,durationEstimated: null == durationEstimated ? _self.durationEstimated : durationEstimated // ignore: cast_nullable_to_non_nullable
+as bool,pinned: null == pinned ? _self.pinned : pinned // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }

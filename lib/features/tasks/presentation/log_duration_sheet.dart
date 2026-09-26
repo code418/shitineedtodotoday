@@ -11,7 +11,11 @@ import '../domain/task.dart';
 
 const _quickPickMinutes = [5, 10, 15, 30, 45, 60];
 
-/// Shows the "how long did it take?" sheet for a completed occurrence.
+/// Shows the "how long did it take?" sheet for [occurrence].
+///
+/// For an open occurrence, saving completes it. For one that's already done
+/// it corrects the logged time instead — e.g. the estimate a home-screen
+/// widget tick filled in — starting from the time on record.
 ///
 /// Awaiting the returned future resolves once the sheet is dismissed.
 Future<void> showLogDurationSheet(
@@ -40,10 +44,16 @@ class _LogDurationSheetState extends ConsumerState<_LogDurationSheet> {
   late int _minutes;
   bool _submitting = false;
 
+  /// Correcting an already-completed occurrence's time, not completing it.
+  bool get _editing => widget.occurrence.status == OccurrenceStatus.done;
+
   @override
   void initState() {
     super.initState();
-    _minutes = widget.task.estimatedEffortMinutes.clamp(5, 120);
+    _minutes =
+        (_editing ? widget.occurrence.actualDurationMinutes : null) ??
+        widget.task.estimatedEffortMinutes;
+    _minutes = _minutes.clamp(5, 120);
   }
 
   Future<void> _onLog() async {
@@ -62,12 +72,19 @@ class _LogDurationSheetState extends ConsumerState<_LogDurationSheet> {
     setState(() => _submitting = true);
     final CompletionResult result;
     try {
-      result = await svc.complete(
-        occurrence: widget.occurrence,
-        task: widget.task,
-        actualMinutes: _minutes,
-        history: history,
-      );
+      result = _editing
+          ? await svc.updateDuration(
+              occurrence: widget.occurrence,
+              task: widget.task,
+              actualMinutes: _minutes,
+              history: history,
+            )
+          : await svc.complete(
+              occurrence: widget.occurrence,
+              task: widget.task,
+              actualMinutes: _minutes,
+              history: history,
+            );
     } catch (_) {
       // Keep the sheet open so the user can retry logging the duration.
       if (!mounted) return;
@@ -96,6 +113,8 @@ class _LogDurationSheetState extends ConsumerState<_LogDurationSheet> {
           content: Text('${strings.learnedPrefix} ~${learned}m — $feedback'),
         ),
       );
+    } else if (_editing) {
+      messenger.showSnackBar(SnackBar(content: Text(strings.timeUpdated)));
     }
   }
 
@@ -157,7 +176,7 @@ class _LogDurationSheetState extends ConsumerState<_LogDurationSheet> {
 
             const SizedBox(height: AppSpacing.x5),
             AppButton(
-              label: strings.durationSave,
+              label: _editing ? strings.durationUpdate : strings.durationSave,
               block: true,
               pill: true,
               onPressed: _submitting ? null : _onLog,

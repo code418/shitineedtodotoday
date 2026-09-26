@@ -11,6 +11,7 @@ import '../application/tasks_providers.dart';
 import '../domain/effort_learning.dart';
 import '../domain/scheduling/recurrence_description.dart';
 import '../domain/scheduling/task_occurrence.dart';
+import 'log_duration_sheet.dart';
 import 'task_composer_sheet.dart';
 
 String _formatDate(DateTime d) =>
@@ -174,6 +175,15 @@ class TaskDetailScreen extends ConsumerWidget {
                           occ: occ,
                           estimate: estimate,
                           strings: strings,
+                          // A completion's time can be corrected here — e.g.
+                          // the estimate a home-screen widget tick logged.
+                          onEditTime: occ.status == OccurrenceStatus.done
+                              ? () => showLogDurationSheet(
+                                  context,
+                                  occurrence: occ,
+                                  task: task,
+                                )
+                              : null,
                         ),
                         if (occ != historyOccs.last)
                           const SizedBox(height: AppSpacing.x3),
@@ -355,11 +365,15 @@ class _HistoryRow extends StatelessWidget {
     required this.occ,
     required this.estimate,
     required this.strings,
+    this.onEditTime,
   });
 
   final TaskOccurrence occ;
   final int estimate;
   final AppStrings strings;
+
+  /// Set for completions: tapping the row edits the logged time.
+  final VoidCallback? onEditTime;
 
   @override
   Widget build(BuildContext context) {
@@ -369,7 +383,12 @@ class _HistoryRow extends StatelessWidget {
     switch (occ.status) {
       case OccurrenceStatus.done:
         final mins = occ.actualDurationMinutes ?? estimate;
-        pill = AppBadge(label: '~${mins}m', tone: AppBadgeTone.done);
+        pill = AppBadge(
+          label: occ.durationEstimated
+              ? '~${mins}m · ${strings.timeEstimatedShort}'
+              : '~${mins}m',
+          tone: AppBadgeTone.done,
+        );
       case OccurrenceStatus.skipped:
         pill = AppChip(
           label: strings.skippedLabel,
@@ -381,7 +400,7 @@ class _HistoryRow extends StatelessWidget {
         pill = const SizedBox.shrink();
     }
 
-    return Row(
+    final row = Row(
       children: [
         Expanded(
           child: Text(
@@ -390,7 +409,26 @@ class _HistoryRow extends StatelessWidget {
           ),
         ),
         pill,
+        if (onEditTime != null) ...[
+          const SizedBox(width: AppSpacing.x2),
+          Icon(AppIcons.edit, size: 16, color: context.palette.textMuted),
+        ],
       ],
+    );
+    if (onEditTime == null) return row;
+    return Semantics(
+      button: true,
+      hint: strings.editTime,
+      child: InkWell(
+        onTap: onEditTime,
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            minHeight: kMinInteractiveDimension,
+          ),
+          child: row,
+        ),
+      ),
     );
   }
 }
