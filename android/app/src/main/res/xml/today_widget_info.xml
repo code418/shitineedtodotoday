@@ -5,6 +5,7 @@
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:description="@string/today_widget_description"
     android:initialLayout="@layout/today_widget"
+    android:previewLayout="@layout/today_widget_preview"
     android:minWidth="250dp"
     android:minHeight="180dp"
     android:minResizeWidth="180dp"

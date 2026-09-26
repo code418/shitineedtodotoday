@@ -5,4 +5,9 @@
     <string name="today_widget_label">Today</string>
     <string name="today_widget_description">Today\'s chores at a glance. Tick them off right here.</string>
     <string name="today_widget_setup">Open Stuff I Need To Do Today to see today\'s list.</string>
+    <!-- Sample content for the widget picker's preview (Android 12+). -->
+    <string name="today_widget_preview_progress">2 of 3 left</string>
+    <string name="today_widget_preview_chore_1">Wipe the counters</string>
+    <string name="today_widget_preview_chore_2">Put the bins out</string>
+    <string name="today_widget_preview_chore_3">Water the plants</string>
 </resources>
