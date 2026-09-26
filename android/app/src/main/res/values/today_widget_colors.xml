@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Today widget colours: the app's palette tokens (AppPalette.light). -->
+<resources>
+    <color name="widget_surface">#FFFFFFFF</color>        <!-- surfaceCard -->
+    <color name="widget_text">#FF1B1D29</color>           <!-- textPrimary / ink900 -->
+    <color name="widget_text_muted">#FF686C81</color>     <!-- textMuted / ink550 -->
+    <color name="widget_text_brand">#FF3A55E6</color>     <!-- textBrand / blue600 -->
+    <color name="widget_done">#FF2FBF71</color>           <!-- done / green500 -->
+    <color name="widget_on_done">#FFFFFFFF</color>
+</resources>

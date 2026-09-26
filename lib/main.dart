@@ -1,7 +1,5 @@
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -10,10 +8,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/app.dart';
 import 'core/firebase/firebase_providers.dart';
+import 'core/firebase/firebase_setup.dart';
 import 'features/auth/data/auth_repository.dart';
+import 'features/home_widget/application/widget_background.dart';
+import 'features/home_widget/data/home_widget_bridge.dart';
 import 'features/notifications/application/device_registration.dart';
 import 'features/settings/application/settings_providers.dart';
-import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,6 +31,14 @@ Future<void> main() async {
   if (firebaseReady) {
     // Anonymous-first: get a user signed in so synced data has an owner.
     unawaited(_ensureSignedIn(container));
+    // Taps on the Android home-screen widget run onHomeWidgetTap in the
+    // background. Best-effort: the app works without the widget.
+    unawaited(
+      container
+          .read(homeWidgetBridgeProvider)
+          .registerTapHandler(onHomeWidgetTap)
+          .catchError((Object e) => debugPrint('Widget handler: $e')),
+    );
   }
 
   runApp(
@@ -45,15 +53,7 @@ Future<void> main() async {
 /// boots into an unconfigured/offline mode instead of crashing.
 Future<bool> _initializeFirebase() async {
   try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    // Offline-first: cache the owner's data on-device so the checklist works
-    // without a connection and syncs when it returns.
-    FirebaseFirestore.instance.settings = const Settings(
-      persistenceEnabled: true,
-      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
-    );
+    await initializeFirebaseCore();
   } catch (error, stackTrace) {
     debugPrint('Firebase not initialised: $error\n$stackTrace');
     return false;

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router.dart';
 import '../../../core/design/design.dart';
+import '../../home_widget/data/home_widget_bridge.dart';
 import '../application/settings_providers.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -144,6 +145,37 @@ class SettingsScreen extends ConsumerWidget {
               ],
             ),
           ),
+          // Only where the launcher supports adding widgets from an app
+          // (Android 8+, most launchers); elsewhere it's the widget picker.
+          if (ref.watch(widgetPinSupportedProvider).value ?? false) ...[
+            const SizedBox(height: AppSpacing.x4),
+            AppCard(
+              onTap: () => ref.read(homeWidgetBridgeProvider).requestPin(),
+              interactive: true,
+              child: Row(
+                children: [
+                  Icon(AppIcons.widgets, color: context.palette.brand),
+                  const SizedBox(width: AppSpacing.x4),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          strings.widgetAddTitle,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          strings.widgetAddBody,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           if (kDebugMode) ...[
             const SizedBox(height: AppSpacing.x4),
             AppCard(

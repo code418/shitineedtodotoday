@@ -157,6 +157,11 @@ class AppStrings {
     required this.focusAllDoneTitle,
     required this.focusAllDoneBody,
     required this.focusBackToToday,
+    required this.widgetStale,
+    required this.widgetMore,
+    required this.widgetTick,
+    required this.widgetAddTitle,
+    required this.widgetAddBody,
     required this.emailInUse,
     required this.weakPassword,
     required this.upgradeFailed,
@@ -379,6 +384,18 @@ class AppStrings {
   final String focusAllDoneBody;
   final String focusBackToToday;
 
+  // Home-screen widget (Android)
+  /// Shown when the widget still holds an earlier day's list.
+  final String widgetStale;
+
+  /// "+{n} more" — chores beyond the rows the widget has room for.
+  final String widgetMore;
+
+  /// Screen-reader prefix for a row's tick: "Tick off Wipe the counters".
+  final String widgetTick;
+  final String widgetAddTitle;
+  final String widgetAddBody;
+
   /// [focusProgress] with its placeholders filled.
   String focusProgressText({required int left, required int total}) =>
       focusProgress
@@ -595,6 +612,11 @@ class AppStrings {
     focusAllDoneTitle: "That's everything for today",
     focusAllDoneBody: 'Nice work. Enjoy the rest of your day.',
     focusBackToToday: 'Back to Today',
+    widgetStale: "Open the app to see today's list",
+    widgetMore: '+{n} more',
+    widgetTick: 'Tick off',
+    widgetAddTitle: 'Add Today to your home screen',
+    widgetAddBody: 'Tick chores off without opening the app.',
     emailInUse: 'That email is already in use',
     weakPassword: 'That password is too weak',
     upgradeFailed: "Couldn't save your account — please try again",
@@ -794,6 +816,11 @@ class AppStrings {
     focusAllDoneTitle: "That's all your shit done for today",
     focusAllDoneBody: 'Go put your feet up.',
     focusBackToToday: 'Back to Today',
+    widgetStale: "Open the app to see today's shit",
+    widgetMore: '+{n} more',
+    widgetTick: 'Tick off',
+    widgetAddTitle: 'Add Today to your home screen',
+    widgetAddBody: 'Tick shit off without even opening the app.',
     emailInUse: 'That email is already in use',
     weakPassword: 'That password is too weak',
     upgradeFailed: "Couldn't save your account — please try again",

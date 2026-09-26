@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widget-picker copy. Stays clean regardless of the in-app profanity toggle,
+     like the launcher label; the widget's own labels come from the app. -->
+<resources>
+    <string name="today_widget_label">Today</string>
+    <string name="today_widget_description">Today\'s chores at a glance. Tick them off right here.</string>
+    <string name="today_widget_setup">Open Stuff I Need To Do Today to see today\'s list.</string>
+</resources>
