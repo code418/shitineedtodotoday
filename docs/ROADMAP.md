@@ -15,8 +15,8 @@ Everything below builds on the two foundations laid in the scaffold:
 ## Phases
 
 > **Status:** P1–P5 are feature-complete (built out from the scaffold).
-> P6's accessibility work is done; its multi-surface work (home-screen
-> widgets, WearOS) remains.
+> P6's accessibility work and the Android home-screen widget are done;
+> WearOS (and iOS widgets) remain.
 
 ### P0 — Scaffold ✅
 Buildable Flutter app (Android-first; iOS/web/desktop ride along), Riverpod,
@@ -70,8 +70,10 @@ UI-agnostic so new surfaces reuse them with only a thin `presentation/` layer.
 When the second surface lands, extract `core` + `domain` into a shared package
 (melos workspace).
 
-- **Android home-screen widgets** — a glanceable "today" checklist widget with
-  tap-to-complete, straight from the home screen (no app launch needed).
+- **Android home-screen widget** ✅ — a glanceable "today" checklist with
+  tap-to-complete straight from the home screen (no app launch): a tick logs
+  the chore's estimate as its time, flagged as estimated so the app offers to
+  correct it. See `lib/features/home_widget/` and `TodayWidgetProvider.kt`.
 - **WearOS** companion — quick-glance checklist, tap-to-complete, log-duration.
 - Wear tiles / complications and (later) iOS widgets.
 - **Accessibility** ✅ — a low-friction "focus" mode (one task at a time,

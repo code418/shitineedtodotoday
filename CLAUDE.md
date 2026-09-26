@@ -17,7 +17,8 @@ energy-budget load balancing + overwhelm reset + onboarding, server-driven FCM
 reminders (settings + Cloud Function dispatcher), account upgrade + shared
 households, and insights + drag-to-reschedule agenda, all behind a Today /
 Schedule / Insights / You bottom-nav shell. See `docs/ROADMAP.md` for the
-phased plan (P6's accessibility is done; multi-surface remains).
+phased plan (P6's accessibility and the Android home-screen widget are
+done; WearOS remains).
 
 ## Stack & key decisions
 
@@ -127,8 +128,8 @@ P1–P5 are live:
   (no Firestore `Timestamp`s), so the Dart client and the Cloud Function agree on
   shape; day maths uses `addDays`/`dateOnly` to stay DST-safe.
 
-The remaining milestone is **P6**'s multi-surface work (home-screen widgets,
-WearOS) — see `docs/ROADMAP.md`. Its accessibility half is done and guarded by
+The remaining milestone is **P6**'s WearOS companion (and later iOS widgets)
+— see `docs/ROADMAP.md`. Its accessibility half is done and guarded by
 `test/a11y/accessibility_guidelines_test.dart` (touch targets, labels and text
 contrast on every screen, both themes, plus a 200% text-scale walk): add new
 screens and sheets to it.
@@ -239,6 +240,26 @@ rules are why the order matters: the guest's data can only be read — and its
 push token only removed — *before* the switch, so the merge is a copy and the
 guest's docs are left behind, unreachable. Password reset uses Firebase's
 built-in email; the Email/Password provider must be enabled in the console.
+
+### Android home-screen widget
+
+`lib/features/home_widget/` + `android/.../TodayWidgetProvider.kt`. The app
+publishes a self-contained **snapshot** (`WidgetSnapshot`: today's chores, open
+first, counts, labels in the active string set, the day and owner, and each
+row's full occurrence JSON — most of today is never persisted) whenever Today
+changes (`widgetSyncProvider`, listened to from the app root). The native
+widget only draws that snapshot; it never computes anything, and it shows
+"open the app" for a snapshot from an earlier day. A tick runs
+`onHomeWidgetTap` in a **background isolate** (the app may not be running):
+`WidgetCompleter` refuses a stale day, another owner, or a chore not on the
+widget, redraws optimistically, then completes via the normal
+`OccurrenceService.complete` with the estimate, `estimated: true`
+(`TaskOccurrence.durationEstimated`), which the app flags ("~15m · est.") and
+lets the user correct (`updateDuration`). `home_widget` is only imported by
+`home_widget_bridge.dart` (no-op off Android). Both receivers are
+`exported="false"`. Firebase init is shared with `main.dart`
+(`initializeFirebaseCore`) because the native Firestore instance is per
+process. Verify native changes on a device/emulator — widget tests can't.
 
 ## Git workflow
 
