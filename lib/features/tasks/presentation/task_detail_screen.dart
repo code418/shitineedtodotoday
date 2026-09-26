@@ -105,7 +105,12 @@ class TaskDetailScreen extends ConsumerWidget {
                   style: theme.textTheme.bodyLarge,
                 ),
                 const SizedBox(height: AppSpacing.x3),
-                Row(
+                // Wrap, so the badge drops below its label at a large system
+                // font rather than overflowing.
+                Wrap(
+                  spacing: AppSpacing.x2,
+                  runSpacing: AppSpacing.x1,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Text(
                       strings.estimateLabel,
@@ -113,7 +118,6 @@ class TaskDetailScreen extends ConsumerWidget {
                         color: context.palette.textMuted,
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.x2),
                     AppBadge(label: '~${estimate}m', tone: AppBadgeTone.brand),
                   ],
                 ),

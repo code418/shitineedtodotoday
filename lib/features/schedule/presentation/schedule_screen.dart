@@ -110,15 +110,18 @@ class _DaySection extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Day header row.
-              Row(
+              // Day header row (Wrap: the "Today" chip drops below the date
+              // at a large system font rather than overflowing).
+              Wrap(
+                spacing: AppSpacing.x2,
+                runSpacing: AppSpacing.x1,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Text(
                     '${weekdayShort(day.date)} ${day.date.day}',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   if (isToday) ...[
-                    const SizedBox(width: AppSpacing.x2),
                     AppChip(
                       label: strings.todayLabelShort,
                       tone: AppChipTone.today,

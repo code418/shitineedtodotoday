@@ -18,6 +18,7 @@ import 'package:snitd/features/tasks/application/tasks_providers.dart';
 import 'package:snitd/features/tasks/data/occurrence_repository.dart';
 import 'package:snitd/features/tasks/data/task_repository.dart';
 import 'package:snitd/features/tasks/domain/scheduling/recurrence.dart';
+import 'package:snitd/features/tasks/domain/scheduling/task_occurrence.dart';
 import 'package:snitd/features/tasks/domain/task.dart';
 import 'package:snitd/features/tasks/presentation/widgets/task_item.dart';
 
@@ -88,7 +89,18 @@ Future<void> _pumpApp(
         currentOwnerIdProvider.overrideWithValue('u1'),
         taskRepositoryProvider.overrideWithValue(tasks),
         occurrenceRepositoryProvider.overrideWithValue(
-          FakeOccurrenceRepository(),
+          // One chore already ticked off on the widget, so a completed row —
+          // with its tappable, estimated time — is on screen too.
+          FakeOccurrenceRepository()
+            ..store['b_2026-06-29'] = TaskOccurrence(
+              id: 'b_2026-06-29',
+              taskId: 'b',
+              scheduledDate: DateTime(2026, 6, 29),
+              status: OccurrenceStatus.done,
+              completedAt: DateTime(2026, 6, 29, 8),
+              actualDurationMinutes: 15,
+              durationEstimated: true,
+            ),
         ),
         clockProvider.overrideWithValue(() => DateTime(2026, 6, 29, 9)),
         notificationPrefsRepositoryProvider.overrideWithValue(_Prefs()),
@@ -121,6 +133,14 @@ Future<void> _expectAccessible(WidgetTester tester, String screen) async {
     );
   }
 }
+
+/// The (still open) "Wipe the counters" row and its tick — not just the first
+/// row, which may be a completed chore.
+final _openRow = find.widgetWithText(AppTaskItem, 'Wipe the counters');
+final _openTick = find.descendant(
+  of: _openRow,
+  matching: find.byType(AppCheckbox),
+);
 
 void _go(WidgetTester tester, String location) =>
     GoRouter.of(tester.element(find.byType(Scaffold).first)).go(location);
@@ -175,7 +195,7 @@ void main() {
   testWidgets('the task sheets meet the same guidelines', (tester) async {
     final semantics = tester.ensureSemantics();
     await _pumpApp(tester);
-    await tester.tap(find.byType(AppCheckbox).first);
+    await tester.tap(_openTick);
     await tester.pumpAndSettle();
     await _expectAccessible(tester, 'Log-duration sheet');
     Navigator.of(tester.element(find.byType(BottomSheet))).pop();
@@ -190,6 +210,10 @@ void main() {
   testWidgets('every screen lays out without overflow at 200% text', (
     tester,
   ) async {
+    // A typical phone (411 x 914 logical), not the roomy 800 x 600 default.
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.625;
+    addTearDown(tester.view.reset);
     await _pumpApp(tester, textScale: 2);
     // A RenderFlex overflow is reported as a test exception, so any screen
     // that can't cope with a large system font fails here.
@@ -209,7 +233,7 @@ void main() {
       _go(tester, route);
       await tester.pumpAndSettle();
     }
-    await tester.tap(find.byType(AppCheckbox).first);
+    await tester.tap(_openTick);
     await tester.pumpAndSettle();
     expect(find.byType(BottomSheet), findsOneWidget);
   });
@@ -223,7 +247,7 @@ void main() {
     // Previously an anonymous "checkbox, not checked" — nothing said which
     // chore it would complete.
     expect(
-      tester.getSemantics(find.byType(AppCheckbox).first),
+      tester.getSemantics(_openTick),
       matchesSemantics(
         label: 'Wipe the counters',
         hasCheckedState: true,
@@ -290,7 +314,7 @@ void main() {
     tester,
   ) async {
     await _pumpApp(tester);
-    final row = tester.getRect(find.byType(AppTaskItem).first);
+    final row = tester.getRect(_openRow);
 
     // The card's left padding is now part of the tick's touch target, so a
     // slightly-off tap still completes (and opens the log-duration sheet)

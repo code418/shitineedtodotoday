@@ -72,24 +72,31 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
           ] else ...[
             // ── Stats card ────────────────────────────────────────────────
             AppCard(
+              // Equal thirds, so at a large system font the labels wrap within
+              // their cell instead of pushing the row off-screen.
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _StatCell(
-                    label: strings.completionRateLabel,
-                    value: '${(s.completionRate * 100).round()}%',
+                  Expanded(
+                    child: _StatCell(
+                      label: strings.completionRateLabel,
+                      value: '${(s.completionRate * 100).round()}%',
+                    ),
                   ),
                   _Divider(),
-                  _StatCell(
-                    label: strings.streakLabel,
-                    value: '${s.streakDays}',
-                    icon: AppIcons.sun,
+                  Expanded(
+                    child: _StatCell(
+                      label: strings.streakLabel,
+                      value: '${s.streakDays}',
+                      icon: AppIcons.sun,
+                    ),
                   ),
                   _Divider(),
-                  _StatCell(
-                    label: strings.timeSpentLabel,
-                    value: '${s.totalMinutes}m',
-                    mono: true,
+                  Expanded(
+                    child: _StatCell(
+                      label: strings.timeSpentLabel,
+                      value: '${s.totalMinutes}m',
+                      mono: true,
+                    ),
                   ),
                 ],
               ),
@@ -168,25 +175,30 @@ class _StatCell extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (mono)
-              Text(
-                value,
-                style: AppTypography.mono(
-                  size: AppTypography.h2,
-                  weight: AppTypography.bold,
-                  color: context.palette.textPrimary,
-                ),
-              )
-            else
-              Text(value, style: theme.textTheme.headlineMedium),
-            if (icon != null) ...[
-              const SizedBox(width: 4),
-              Icon(icon, size: 18, color: context.palette.today),
+        // The big number stays on one line, shrinking only if its cell is
+        // too narrow for it.
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (mono)
+                Text(
+                  value,
+                  style: AppTypography.mono(
+                    size: AppTypography.h2,
+                    weight: AppTypography.bold,
+                    color: context.palette.textPrimary,
+                  ),
+                )
+              else
+                Text(value, style: theme.textTheme.headlineMedium),
+              if (icon != null) ...[
+                const SizedBox(width: 4),
+                Icon(icon, size: 18, color: context.palette.today),
+              ],
             ],
-          ],
+          ),
         ),
         const SizedBox(height: 2),
         Text(
@@ -221,18 +233,22 @@ class _BucketChart extends StatelessWidget {
     final maxCount = buckets.fold<int>(0, (m, b) => max(m, b.doneCount));
     const maxBarHeight = 80.0;
 
-    return SizedBox(
-      height: 120,
+    // A minimum height (not a fixed one) so the count and label text above
+    // and below each bar can grow with the system font; each bar gets an equal
+    // share of the width so a year's twelve still fit on a narrow phone.
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 120),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           for (final bucket in buckets)
-            _BucketBar(
-              bucket: bucket,
-              maxCount: maxCount,
-              maxBarHeight: maxBarHeight,
-              doneSuffix: doneSuffix,
+            Expanded(
+              child: _BucketBar(
+                bucket: bucket,
+                maxCount: maxCount,
+                maxBarHeight: maxBarHeight,
+                doneSuffix: doneSuffix,
+              ),
             ),
         ],
       ),
@@ -270,9 +286,12 @@ class _BucketBar extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (bucket.doneCount > 0)
-            Text(
-              '${bucket.doneCount}',
-              style: AppTypography.mono(size: AppTypography.size2xs),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                '${bucket.doneCount}',
+                style: AppTypography.mono(size: AppTypography.size2xs),
+              ),
             )
           else
             const SizedBox(height: 14),
@@ -290,9 +309,12 @@ class _BucketBar extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            bucket.label,
-            style: AppTypography.mono(size: AppTypography.size2xs),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              bucket.label,
+              style: AppTypography.mono(size: AppTypography.size2xs),
+            ),
           ),
         ],
       ),

@@ -45,17 +45,21 @@ class AppProgressMeter extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 if (label != null)
-                  Text(
-                    label!,
-                    style: TextStyle(
-                      fontFamily: AppTypography.fontSans,
-                      fontSize: AppTypography.sizeSm,
-                      fontWeight: AppTypography.bold,
-                      color: c.textSecondary,
+                  // Wraps at a large system font rather than overflowing.
+                  Flexible(
+                    child: Text(
+                      label!,
+                      style: TextStyle(
+                        fontFamily: AppTypography.fontSans,
+                        fontSize: AppTypography.sizeSm,
+                        fontWeight: AppTypography.bold,
+                        color: c.textSecondary,
+                      ),
                     ),
                   )
                 else
                   const SizedBox.shrink(),
+                const SizedBox(width: AppSpacing.x2),
                 if (showValue)
                   Text(
                     '${_fmt(value)}$unit / ${_fmt(max)}$unit',

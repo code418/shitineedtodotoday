@@ -108,14 +108,19 @@ class _AppButtonState extends State<AppButton> {
           Icon(widget.icon, size: s.icon, color: v.fg),
           SizedBox(width: s.gap),
         ],
-        Text(
-          widget.label,
-          style: TextStyle(
-            fontFamily: AppTypography.fontSans,
-            fontSize: s.font,
-            fontWeight: AppTypography.bold,
-            letterSpacing: -0.34,
-            color: v.fg,
+        // Flexible so a long label at a large system font wraps (and the
+        // button grows) instead of overflowing.
+        Flexible(
+          child: Text(
+            widget.label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: AppTypography.fontSans,
+              fontSize: s.font,
+              fontWeight: AppTypography.bold,
+              letterSpacing: -0.34,
+              color: v.fg,
+            ),
           ),
         ),
         if (widget.iconRight != null) ...[
@@ -164,9 +169,13 @@ class _AppButtonState extends State<AppButton> {
               duration: AppMotion.of(context, AppMotion.fast),
               curve: AppMotion.spring,
               child: Container(
-                height: s.height,
+                // A minimum, not a fixed height: a wrapped label grows it.
+                constraints: BoxConstraints(minHeight: s.height),
                 width: widget.block ? double.infinity : null,
-                padding: EdgeInsets.symmetric(horizontal: s.padX),
+                padding: EdgeInsets.symmetric(
+                  horizontal: s.padX,
+                  vertical: AppSpacing.x1,
+                ),
                 decoration: BoxDecoration(
                   color: v.bg,
                   borderRadius: BorderRadius.circular(

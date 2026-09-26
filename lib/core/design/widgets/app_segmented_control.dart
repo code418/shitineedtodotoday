@@ -56,39 +56,50 @@ class AppSegmentedControl<T> extends StatelessWidget {
                 for (final seg in segments)
                   // Named by its Text; an explicit label as well was read
                   // twice ("Week, Week").
-                  Semantics(
-                    button: true,
-                    selected: seg.value == value,
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () => onChanged(seg.value),
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: slack + inset),
-                        child: AnimatedContainer(
-                          duration: AppMotion.of(context, AppMotion.fast),
-                          curve: AppMotion.soft,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: seg.value == value
-                                ? c.surfaceCard
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(AppRadii.pill),
-                            boxShadow: seg.value == value
-                                ? AppShadows.sm
-                                : const [],
+                  Flexible(
+                    child: Semantics(
+                      button: true,
+                      selected: seg.value == value,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => onChanged(seg.value),
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            vertical: slack + inset,
                           ),
-                          child: Text(
-                            seg.label,
-                            style: TextStyle(
-                              fontFamily: AppTypography.fontSans,
-                              fontSize: small
-                                  ? AppTypography.sizeXs
-                                  : AppTypography.sizeSm,
-                              fontWeight: AppTypography.bold,
+                          child: AnimatedContainer(
+                            duration: AppMotion.of(context, AppMotion.fast),
+                            curve: AppMotion.soft,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
                               color: seg.value == value
-                                  ? c.textPrimary
-                                  : c.textMuted,
+                                  ? c.surfaceCard
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(
+                                AppRadii.pill,
+                              ),
+                              boxShadow: seg.value == value
+                                  ? AppShadows.sm
+                                  : const [],
+                            ),
+                            // Shrinks only if the segments can't all fit
+                            // (a large system font on a narrow phone).
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                seg.label,
+                                style: TextStyle(
+                                  fontFamily: AppTypography.fontSans,
+                                  fontSize: small
+                                      ? AppTypography.sizeXs
+                                      : AppTypography.sizeSm,
+                                  fontWeight: AppTypography.bold,
+                                  color: seg.value == value
+                                      ? c.textPrimary
+                                      : c.textMuted,
+                                ),
+                              ),
                             ),
                           ),
                         ),

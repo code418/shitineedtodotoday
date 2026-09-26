@@ -44,11 +44,19 @@ class AppTaskItem extends StatelessWidget {
   static const double _padV = 14;
 
   Widget _timeBadge() {
-    final badge = AppBadge(
-      label: minutesNote == null
-          ? '~${minutes}m'
-          : '~${minutes}m · $minutesNote',
-      tone: done ? AppBadgeTone.done : null,
+    // Capped and scaled down only if it would crowd out the title (large
+    // system fonts); at normal sizes it's untouched.
+    final badge = ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 128),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: AppBadge(
+          label: minutesNote == null
+              ? '~${minutes}m'
+              : '~${minutes}m · $minutesNote',
+          tone: done ? AppBadgeTone.done : null,
+        ),
+      ),
     );
     if (onMinutesTap == null) return badge;
     return Semantics(
@@ -121,7 +129,12 @@ class AppTaskItem extends StatelessWidget {
                   if (category != null || movedFrom != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 3),
-                      child: Row(
+                      // Wrap, not Row: at a large system font the category
+                      // and "moved from" note flow onto a second line.
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 2,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           if (category != null)
                             Text(
@@ -133,8 +146,6 @@ class AppTaskItem extends StatelessWidget {
                                 color: c.textMuted,
                               ),
                             ),
-                          if (category != null && movedFrom != null)
-                            const SizedBox(width: 8),
                           if (movedFrom != null)
                             Row(
                               mainAxisSize: MainAxisSize.min,
