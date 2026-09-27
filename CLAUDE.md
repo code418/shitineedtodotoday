@@ -194,6 +194,15 @@ Prerequisites: `npm i -g firebase-tools` and
    field override that exists in the project but is absent from
    `firestore.indexes.json` — read that prompt rather than forcing it.
 
+   The functions **predeploy** (`firebase.json`) calls `functions/`'s own `tsc`
+   directly rather than `npm run build`: the *standalone* `firebase` binary runs
+   npm scripts through a script-shell wrapper that mangles npm's `-c -- <cmd>`
+   (`/bin/sh: 0: Illegal option --`), so any `npm run` predeploy fails there.
+   `functions/tsconfig.json` pins `typeRoots` to its own `node_modules/@types`
+   so a stray `@types/*` in a parent directory can't break the build (TS walks
+   ancestor `node_modules/@types` by default). `firebase deploy --only
+   functions --dry-run` checks the whole pipeline without deploying.
+
 #### Google sign-in (account upgrade)
 
 The Account screen offers "Continue with Google" to upgrade the anonymous
