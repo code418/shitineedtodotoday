@@ -42,10 +42,16 @@ done; WearOS remains).
   to `Europe/London` for a missing/unknown zone (`resolveZone`).
 - `riverpod_lint` / `custom_lint` are intentionally omitted (version clash with
   current Riverpod/Freezed). Re-add when constraints align.
-- **Naming:** the store/display name is the clean **"Stuff I Need To Do Today"**
-  (acronym SINTDT). The internal Dart package `snitd` and bundle id
-  `io.agilepixel.snitd` predate the rename and are kept as-is — they're not
-  store-visible and renaming would be needless churn.
+- **Naming** (per Google Play's store-listing best practices): the Play title
+  and in-app name are the clean **"Stuff I Need To Do Today"** (24 of Play's 30
+  chars; acronym SINTDT, never used in the listing). The label under the icon
+  is **"Stuff To Do"** — `android:label`, iOS `CFBundleDisplayName`, web
+  `short_name` / `apple-mobile-web-app-title` — because launchers truncate at
+  ~12–15 chars, and it still sorts under "S" next to the store name. The whole
+  Play listing (text, screenshots, graphics, translations) must stay clean:
+  shoot screenshots with profanity mode off. The internal Dart package `snitd`
+  and application id `io.agilepixel.snitd` predate the rename; the id shows in
+  every Play URL and is permanent from the first upload.
 - **Profanity mode** (`features/settings`): an opt-in toggle (off by default,
   persisted via `shared_preferences`) swaps app-chrome text from
   `AppStrings.clean` to `AppStrings.profane`. All user-facing chrome strings go
