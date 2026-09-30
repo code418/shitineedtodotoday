@@ -67,6 +67,7 @@ firestore-debug.*.log
 **/.env.*
 
 .agents/skills
+.claude/skills
 
 .vscode
 # Claude Code harness worktrees (not part of the project)
